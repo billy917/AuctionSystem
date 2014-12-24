@@ -15,8 +15,8 @@ char keys[ROWS][COLS] = {
 	{'7','8','9'},
 	{'*','0','#'}
 };
-byte rowPins[ROWS] = {5, 4, 3, 2}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {8, 7, 6}; //connect to the column pinouts of the keypad
+byte rowPins[ROWS] = {5, 6, 7, 8}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {2, 3, 4}; //connect to the column pinouts of the keypad
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
@@ -29,7 +29,7 @@ void setup() {
   matrix.begin(0x70);  //0x70 is the 7-Segment address
   
   keypad.addEventListener(keypadEvent);
-  keypad.setDebounceTime(100);
+  keypad.setDebounceTime(20);
   
   // try to print a number thats too long
   matrix.print(0x0257,HEX);
@@ -40,28 +40,27 @@ void setup() {
 }
 
 void keypadEvent(KeypadEvent eKey){
-  switch (keypad.getState()){
-    case PRESSED:
-	Serial.print("Pressed: ");
-	Serial.println(eKey);
-        pressedKeySound();
-	switch (eKey){
-	  case '*': checkPassword(); break;
-	  case '#': resetPassword(); break;
-	  default: password.append(eKey); passwordLength++; updateLED(eKey);
-     }     
-     
-     if(4 == passwordLength){
-       checkPassword(); 
-     }
+  if(PRESSED == keypad.getState()){
+    Serial.print("Pressed: ");
+    Serial.println(eKey);
+    pressedKeySound();
+    switch (eKey){
+      case '*': checkPassword(); break;
+      case '#': resetPassword(); break;
+      default: password.append(eKey); passwordLength++; updateLED(eKey);
+    }
+         
+    if(4 == passwordLength){
+      checkPassword(); 
+    }
   }
 }
 
-void updateLED(){
+void pressedKeySound(){
   
 }
 
-void pressedKeySound(){
+void updateLED(char e){
   
 }
 
