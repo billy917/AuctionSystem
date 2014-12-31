@@ -63,7 +63,7 @@ void updateLED(){
   int j=0;
   for(int i=3-length;i<4;i++){
     int k = i;
-    if(i >1){k++;}
+    if(i>1){k++;}
     matrix.writeDigitNum(k,passChar[j]-'0',false);
     j++;
   }
