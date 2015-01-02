@@ -1,5 +1,9 @@
-//#include <Wire.h>
+//Coordinator xBee address - 40c04edf
+//I2C address: 1
+
+#include <Wire.h>
 #include <Servo.h>
+#include <XBee.h>
  
 // Pin 13 has an LED connected on most Arduino boards.
 
@@ -18,6 +22,10 @@ Servo servo3B;
 Servo servos[3][2] = {{servo1T,servo1B},{servo2T,servo2B},{servo3T,servo3B}};
 
 unsigned long timer = 0;
+
+XBee xbee = XBee();
+XBeeResponse response = XBeeResponse();
+ZBRxResponse rx = ZBRxResponse();
 
 // the setup routine runs once when you press reset:
 void setup() {           
@@ -41,32 +49,59 @@ void setup() {
   
   resetServoPositions();
 
-  timer = millis();   
+  Wire.begin(1);
+  Wire.onReceive(receiveEvent);
+  xbee.begin(Serial);   
 }
 
-boolean isEnabled = false;
+volatile int nextMode = 0;
 
-// the loop routine runs over and over again forever:
 void loop() {
-  if(millis() - timer > 10000){
-    Serial.println("waited 10s");
-    // waited 10 secs    
-    if(!isEnabled){
-      enableLaserWire(0);
-      enableLaserWire(1);
-      enableLaserWire(2);
-    } else {
-      disableLaserWire(0); 
-      disableLaserWire(1);
-      disableLaserWire(2);
-    }
-    isEnabled = !isEnabled;
-    timer = millis(); 
+  if(nextMode == 0){
+    handleXBeeMsg();
+  }
+  handleCommands();
+}
+
+void receiveEvent(int howMany){
+  while(Wire.available()){
+    nextMode = Wire.read(); 
   }
 }
 
+void handleXBeeMsg(){
+  xbee.readPacket();
+  if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    xbee.getResponse().getZBRxResponse(rx);
+    nextMode = rx.getData(0); 
+  } 
+}
+
+void handleCommands(){
+  if(nextMode != 0){
+    if(nextMode == 1){
+      //Turn Off  
+      disableLaserWire(0); 
+      disableLaserWire(1);
+      disableLaserWire(2);
+    } else if (nextMode == 2){
+      //Arm System
+    } else if (nextMode == 3){
+      //Turn On
+      enableLaserWire(0);
+      enableLaserWire(1);
+      enableLaserWire(2);
+    } else if(nextMode == 4){
+      //Disable half laser 
+      disableLaserWire(0); 
+      disableLaserWire(1);
+    } 
+    nextMode = 0;
+  } 
+}
+
 void resetServoPositions(){
-  for(int i=0; i<3; i++){
+  for(int i=0; i<3; i++){ 
     _updateServoPosition(i,servoInactivePositions[i][0], servoInactivePositions[i][1]);
   }
 }
@@ -166,21 +201,21 @@ void _calibrateLightSensor(int index){
   /**
   Take current light sensor reading and create a threadshold for light sensor
   **/ 
-  // !!!!!!!!!!! TO BE IMPLEMENTED !!!!!!!!!!!!!!!!
+  ////// TO BE IMPLEMENTED //////
 }
 
 void _turnOnLightSensor(int index){
   /**
   Turn on light sensor, which would raise an event if sensor value is greater than predefined threashold
   **/  
-  // !!!!!!!!!!! TO BE IMPLEMENTED !!!!!!!!!!!!!!!!
+  //////// TO BE IMPLEMENTED //////
 }
 
 void _turnOffLightSensor(int index){
   /**
   Turn off light sensor, which would ignore sensor value if it is greater than predefined threashold
   **/  
-  // !!!!!!!!!!! TO BE IMPLEMENTED !!!!!!!!!!!!!!!!
+  /////// TO BE IMPLEMENTED //////
 }
 
 

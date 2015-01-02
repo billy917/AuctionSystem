@@ -1,22 +1,23 @@
-
-#include <TinyWireM.h> 
+//I2C address: 2
+#include <Wire.h> 
 
 //PIN 0, 2 - I2C
 //PIN 1 = A, 3 = B, 4 = C
-int MODE_OFF = 0;
-int MODE_ON = 1;
+int MODE_OFF = 1;
 int MODE_RESET = 2;
+int MODE_ON = 3;
 
-int numSignals = 3;
-int signalPin[3] = {1, 3, 4};
-int lastSignalState[3] = {LOW, LOW, LOW};
-int curSignalState[3];
+int numSignals = 4;
+int signalPin[4] = {3, 4, 5, 6};
+int lastSignalState[4] = {LOW, LOW, LOW, LOW};
+int curSignalState[4];
 
 void setup() {                
-   pinMode(1,INPUT);
    pinMode(3,INPUT);
    pinMode(4,INPUT);
-   TinyWireM.begin();
+   pinMode(5,INPUT);
+   pinMode(6,INPUT);
+   Wire.begin();
    
    readCurrentSignalState();
    copyLastSignalState();
@@ -55,11 +56,11 @@ void loop() {
 }
 
 void send(int mode){
-  TinyWireM.beginTransmission(4);
-  TinyWireM.send(mode);              // sends one byte  
-  TinyWireM.endTransmission();    // stop transmitting
+  Wire.beginTransmission(1);
+  Wire.write(mode);              // sends one byte  
+  Wire.endTransmission();    // stop transmitting
   
-  TinyWireM.beginTransmission(5);
-  TinyWireM.send(mode);              // sends one byte  
-  TinyWireM.endTransmission();    // stop transmitting
+  Wire.beginTransmission(3);
+  Wire.write  (mode);              // sends one byte  
+  Wire.endTransmission();    // stop transmitting
 }
