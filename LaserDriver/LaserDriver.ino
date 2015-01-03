@@ -26,6 +26,7 @@ unsigned long timer = 0;
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
+uint8_t commandData[] = {0,0};
 
 // the setup routine runs once when you press reset:
 void setup() {           
@@ -73,7 +74,11 @@ void handleXBeeMsg(){
   xbee.readPacket();
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
-    nextMode = rx.getData(0); 
+    nextMode = rx.getData(0);
+    if(5 == nextMode){
+      commandData[0] = rx.getData(1);
+      commandData[1] = rx.getData(2);
+    }
   } 
 }
 
@@ -95,9 +100,33 @@ void handleCommands(){
       //Disable half laser 
       disableLaserWire(0); 
       disableLaserWire(1);
-    } 
+    } else if(nextMode == 5){
+      //Ad-Hoc reposition laser
+      //laserIndex = ; // possible value: 0, 1, 2
+      //movementDirection =  //0 = up, 1 = down, 2 = left, 3 = right
+      moveLaser(commandData[0], commandData[1]);
+    }
     nextMode = 0;
   } 
+}
+
+void moveLaser(int laserIndex, int movementDirection){
+  if (laserIndex >= 0 && laserIndex < 3){
+    if(movementDirection == 0){ 
+      // move up - top servo
+      _moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]+1);
+    } else if(movementDirection == 1){
+      // move down - top servo
+      _moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]-1);
+    } else if (movementDirection == 2){
+      // move left - bottom servo
+      _moveServo(servos[laserIndex][1], servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]+1);
+      Servo s = servos[laserIndex][1];
+    } else if (movementDirection == 3){
+      // move  - bottom servo
+      _moveServo(servos[laserIndex][1], servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]-1);
+    }
+  }
 }
 
 void resetServoPositions(){

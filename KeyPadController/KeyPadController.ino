@@ -31,9 +31,11 @@ int errorSound = NOTE_B0;
 XBee xbee = XBee();
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 Password password = Password( "9999" );
+Password adminPassword = Password( "8888" );
 char passChar[4] = {};
 int passwordLength = 0;
 volatile int mode, nextMode = 1;
+volatile boolean adminMode = false;
 
 void setup() {
   Serial.begin(9600);
@@ -54,14 +56,29 @@ void keypadEvent(KeypadEvent eKey){
   if(PRESSED == keypad.getState()){
     Serial.print("Pressed: ");
     Serial.println(eKey);
-    switch (eKey){
-      case '*': checkPassword(); break;
-      case '#': resetPassword(); break;
-      default: password.append(eKey); passChar[passwordLength]=eKey; updateLED(); pressedKeySound(eKey-'0'); passwordLength++; 
+    if(!adminMode){
+      switch (eKey){
+        case '*': checkPassword(); break;
+        case '#': resetPassword(); break;
+        default: password.append(eKey); adminPassword.append(eKey); passChar[passwordLength]=eKey; updateLED(); pressedKeySound(eKey-'0'); passwordLength++; 
+      }
+    } else {
+       switch (eKey){
+        case '*': break;
+        case '#': break;
+        default: passChar[passwordLength]=eKey; updateLED(); passwordLength++; 
+      }
     }
-         
-    if(4 == passwordLength){
-      checkPassword(); 
+    
+    if(adminMode && 2 == passwordLength){
+      nextMode = 5;
+      adminMode = false;
+      resetPassword();
+    } else if(4 == passwordLength){
+      checkAdminPassword();
+      if(!adminMode){
+        checkPassword(); 
+      }
     }
   }
 }
@@ -88,8 +105,10 @@ void blinkLED(int delayDuration, int times){
     matrix.clear();
     matrix.writeDisplay();
     tone(speakerPin, errorSound, delayDuration);
+    delay(delayDuration);
     updateLED();
     tone(speakerPin, errorSound, delayDuration);
+    delay(delayDuration);
   }
 }
 
@@ -105,6 +124,13 @@ void pressedKeySound(int numberPressed){
 }
 void sucessUnlockSound(){}
 void failUnlockSound(){}
+
+void checkAdminPassword(){
+  if(adminPassword.evaluate()){
+    adminMode = true;
+    resetPassword();
+  }  
+}
 
 void checkPassword(){
   blinkLED(250,4);
@@ -146,7 +172,10 @@ void handleCommands(){
     } else if (nextMode == 3){
       //Turn On
       instructModeChange(nextMode);
-    } 
+    } else if (nextMode == 5){
+       //Reposition laser
+      instructRepositionLaser(); 
+    }
     mode = nextMode;
   } 
 }
@@ -154,6 +183,24 @@ void handleCommands(){
 void instructModeChange(int nextMode){
   uint8_t payload[] = { nextMode, 0, 0 };
   
+  XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40c04edf);
+  ZBTxRequest zbTx = ZBTxRequest(addr64, payload, sizeof(payload));
+  xbee.send(zbTx);
+}
+
+void instructRepositionLaser(){
+  
+  uint8_t moveDirection = 0;
+  if(passChar[1] == '2'){
+    moveDirection = 0;  
+  } else if(passChar[1] == '4'){
+    moveDirection = 2;  
+  } else if(passChar[1] == '6'){
+    moveDirection = 3;  
+  } else if(passChar[1] == '8'){
+    moveDirection = 1;  
+  }
+  uint8_t payload[] = { 5, passChar[0]-'0', moveDirection };
   XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40c04edf);
   ZBTxRequest zbTx = ZBTxRequest(addr64, payload, sizeof(payload));
   xbee.send(zbTx);
