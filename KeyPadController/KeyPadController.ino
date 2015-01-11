@@ -1,5 +1,5 @@
 //Coordinator xBee address - 40c04F18
-
+//I2C address: 1
 // 1) http:/itp.nyu.edu/physcomp/labs/labs-arduino-digital-and-analog/tone-output-using-an-arduino/
 // 2) http://code.google.com/p/rogue-code/wiki/ToneLibraryDocumentation
 
@@ -36,6 +36,13 @@ char passChar[4] = {};
 int passwordLength = 0;
 volatile int mode, nextMode = 1;
 volatile boolean adminMode = false;
+volatile boolean servoMode = false;
+
+uint8_t xbeePayload[3] = { 0, 0, 0 };
+XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
+XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
+ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
+ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 
 void setup() {
   Serial.begin(9600);
@@ -45,31 +52,42 @@ void setup() {
   keypad.setDebounceTime(20);
   
   // try to print a number thats too long
-  matrix.print(0x0254,HEX);
+  matrix.print(0x0255,HEX);
   matrix.writeDisplay();
   
   Serial2.begin(9600);
   xbee.setSerial(Serial2);
 }
 
+int servoIndex = -1;
 void keypadEvent(KeypadEvent eKey){
   if(PRESSED == keypad.getState()){
     Serial.print("Pressed: ");
     Serial.println(eKey);
-    if(!adminMode){
+    Serial.println(adminMode);
+    if(adminMode) {
+      if(servoMode){
+        switch (eKey){
+          case '*': servoIndex = -1; break; 
+          case '#': servoMode = false;  servoIndex = -1; break; 
+          default: passChar[0]=eKey; updateLED(); passwordLength=1; servoIndex = eKey - '0';
+        } 
+      } else {
+        switch (eKey){
+          case '*': servoIndex = -1; break; 
+          case '#': adminMode=false; resetPassword(); servoIndex = -1; break; 
+          default: passChar[0]=eKey; updateLED(); passwordLength=1; servoMode = true; servoIndex = eKey - '0';
+        }
+      }
+    } else {
       switch (eKey){
         case '*': checkPassword(); break;
         case '#': resetPassword(); break;
         default: password.append(eKey); adminPassword.append(eKey); passChar[passwordLength]=eKey; updateLED(); pressedKeySound(eKey-'0'); passwordLength++; 
       }
-    } else {
-       switch (eKey){
-        case '*': break;
-        case '#': break;
-        default: passChar[passwordLength]=eKey; updateLED(); passwordLength++; 
-      }
-    }
+    } 
     
+    Serial.println(passwordLength);
     if(adminMode && 2 == passwordLength){
       nextMode = 5;
       adminMode = false;
@@ -126,10 +144,14 @@ void sucessUnlockSound(){}
 void failUnlockSound(){}
 
 void checkAdminPassword(){
+  Serial.println("Check admin");
   if(adminPassword.evaluate()){
+    Serial.println("admin true");
     adminMode = true;
     resetPassword();
-  }  
+  } else {
+     Serial.println("admin false"); 
+  }
 }
 
 void checkPassword(){
@@ -152,6 +174,7 @@ void checkPassword(){
 
 void resetPassword(){
   password.reset();
+  adminPassword.reset();
   passwordLength = 0;
   resetLED();
 }
@@ -174,34 +197,42 @@ void handleCommands(){
       instructModeChange(nextMode);
     } else if (nextMode == 5){
        //Reposition laser
-      instructRepositionLaser(); 
+      //instructRepositionLaser(); 
     }
     mode = nextMode;
   } 
 }
 
 void instructModeChange(int nextMode){
-  uint8_t payload[] = { nextMode, 0, 0 };
+  // send instruction to other xBee on mode change
+  xbeePayload[0] = nextMode;
+  xbeePayload[1] = 0;
+  xbeePayload[2] = 0;  
+  xbee.send(laser1Tx);
+  xbee.send(laser2Tx);
   
-  XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40c04edf);
-  ZBTxRequest zbTx = ZBTxRequest(addr64, payload, sizeof(payload));
-  xbee.send(zbTx);
+  // send instructions to internal I2C nodes on mode change
+  Wire.beginTransmission(2); //2 == LaserDriver2 addr
+  Wire.write(mode);
+  Wire.endTransmission();
 }
 
-void instructRepositionLaser(){
+void instructRepositionLaser(int laserIndex, int moveDirectionChar){
   
   uint8_t moveDirection = 0;
-  if(passChar[1] == '2'){
+  if(moveDirectionChar == '2'){
     moveDirection = 0;  
-  } else if(passChar[1] == '4'){
+  } else if(moveDirectionChar == '4'){
     moveDirection = 2;  
-  } else if(passChar[1] == '6'){
+  } else if(moveDirectionChar == '6'){
     moveDirection = 3;  
-  } else if(passChar[1] == '8'){
+  } else if(moveDirectionChar == '8'){
     moveDirection = 1;  
   }
-  uint8_t payload[] = { 5, passChar[0]-'0', moveDirection };
-  XBeeAddress64 addr64 = XBeeAddress64(0x0013a200, 0x40c04edf);
-  ZBTxRequest zbTx = ZBTxRequest(addr64, payload, sizeof(payload));
-  xbee.send(zbTx);
+  xbeePayload[0] = 5;
+  xbeePayload[1] = laserIndex;
+  xbeePayload[2] = moveDirection;
+  
+  xbee.send(laser1Tx);
+  xbee.send(laser2Tx);
 }

@@ -9,8 +9,8 @@
 
 int laserPins[3] = {4,8,12};
 int servoPins[3][2] = {{3,5},{6,9},{10,11}};
-int servoInactivePositions[3][2] = {{1,1},{1,1},{1,1}}; // {Top,Bottom}
-int servoActivePositions[3][2] = {{45,90},{45,90},{45,90}}; // {Top,Bottom}
+int servoInactivePositions[3][2] = {{90,180},{90,160},{45,180}}; // {Top,Bottom}
+int servoActivePositions[3][2] = {{0,90},{20,70},{-30,90}}; // {Top,Bottom}
 int servoCurrentPositions[3][2] = {{0,0},{0,0},{0,0}};
 
 Servo servo1T;
@@ -39,12 +39,14 @@ void setup() {
     digitalWrite(laserPins[i], LOW);    
   }
   
+  /*
   servo1T.attach(servoPins[0][0]);
   servo1B.attach(servoPins[0][1]);
   servo2T.attach(servoPins[1][0]);
   servo2B.attach(servoPins[1][1]);
   servo3T.attach(servoPins[2][0]);
   servo3B.attach(servoPins[2][1]);
+  */
   //Wire.begin(5);
   //Wire.onReceive(receiveEvent);
   
@@ -114,48 +116,56 @@ void moveLaser(int laserIndex, int movementDirection){
   if (laserIndex >= 0 && laserIndex < 3){
     if(movementDirection == 0){ 
       // move up - top servo
-      _moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]+1);
+      //_moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]+1);
+      _moveServo(laserIndex, 0, servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]+1, false);
     } else if(movementDirection == 1){
       // move down - top servo
-      _moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]-1);
+      //_moveServo(servos[laserIndex][0], servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]-1);
+      _moveServo(laserIndex, 0, servoCurrentPositions[laserIndex][0], servoCurrentPositions[laserIndex][0]-1, false);
     } else if (movementDirection == 2){
       // move left - bottom servo
-      _moveServo(servos[laserIndex][1], servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]+1);
-      Servo s = servos[laserIndex][1];
+      //_moveServo(servos[laserIndex][1], servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]+1);
+      _moveServo(laserIndex, 1, servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]+1, false);
     } else if (movementDirection == 3){
       // move  - bottom servo
-      _moveServo(servos[laserIndex][1], servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]-1);
+      _moveServo(laserIndex, 1, servoCurrentPositions[laserIndex][1], servoCurrentPositions[laserIndex][1]-1, false);
     }
   }
 }
 
 void resetServoPositions(){
   for(int i=0; i<3; i++){ 
-    _updateServoPosition(i,servoInactivePositions[i][0], servoInactivePositions[i][1]);
+    _updateServoPosition(i,servoInactivePositions[i][0], servoInactivePositions[i][1], true);
   }
 }
 
-void _updateServoPosition(int index, int topPosition, int bottomPosition){
-  _moveServo(servos[index][0], servoCurrentPositions[index][0], topPosition);
-  servoCurrentPositions[index][0] = topPosition;
-
-  _moveServo(servos[index][1], servoCurrentPositions[index][1], bottomPosition);
-  servoCurrentPositions[index][1] = bottomPosition;
+void _updateServoPosition(int index, int topPosition, int bottomPosition, boolean ignoreCurrentPosition){
+    _moveServo(index, 0, servoCurrentPositions[index][0], topPosition, ignoreCurrentPosition);
+    _moveServo(index, 1, servoCurrentPositions[index][1], bottomPosition, ignoreCurrentPosition);
 }
 
-void _moveServo(Servo servo, int currentPosition, int newPosition){
-  int steps = 1;
-  if (currentPosition > newPosition){
-    steps = steps * -1; 
-  }
-  unsigned long servoTimer = millis();
-  while( currentPosition != newPosition){
-    if(millis() - servoTimer > 10){
-      currentPosition = currentPosition + steps;
-      servo.write(currentPosition);
-      servoTimer = millis();
+void _moveServo(int laserIndex, int topBottomIndex, int currentPosition, int newPosition, boolean ignoreCurrentPosition){
+  servos[laserIndex][topBottomIndex].attach(servoPins[laserIndex][topBottomIndex]);
+  
+  if(ignoreCurrentPosition){
+    servos[laserIndex][topBottomIndex].write(newPosition);
+  } else {
+    int steps = 1;
+    if (currentPosition > newPosition){
+      steps = steps * -1; 
+    }
+    unsigned long servoTimer = millis();
+  
+    while( currentPosition != newPosition){
+      if(millis() - servoTimer > 10){
+        currentPosition = currentPosition + steps;
+        servos[laserIndex][topBottomIndex].write(currentPosition);
+        servoTimer = millis();
+      }
     }
   }
+  servos[laserIndex][topBottomIndex].detach();
+  servoCurrentPositions[laserIndex][topBottomIndex] = newPosition;
 }
 
 void enableLaserWire(int index){
@@ -216,14 +226,14 @@ void _positionActiveServo(int index){
   /**
   Set servo to active positions
   **/
-  _updateServoPosition(index, servoActivePositions[index][0], servoActivePositions[index][1]);
+  _updateServoPosition(index, servoActivePositions[index][0], servoActivePositions[index][1], false);
 }
 
 void _positionInactiveServo(int index){
   /**
   Set servo to inactive position
   **/
-  _updateServoPosition(index, servoInactivePositions[index][0], servoInactivePositions[index][1]);
+  _updateServoPosition(index, servoInactivePositions[index][0], servoInactivePositions[index][1], false);
 }
 
 void _calibrateLightSensor(int index){
