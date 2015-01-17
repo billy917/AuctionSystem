@@ -56,11 +56,11 @@ void loop() {
 }
 
 void send(int mode){
-  Wire.beginTransmission(1);
+  Wire.beginTransmission(1); //LaserDriver
   Wire.write(mode);              // sends one byte  
   Wire.endTransmission();    // stop transmitting
   
-  Wire.beginTransmission(3);
+  Wire.beginTransmission(4); //ShelfLock
   Wire.write  (mode);              // sends one byte  
   Wire.endTransmission();    // stop transmitting
 }

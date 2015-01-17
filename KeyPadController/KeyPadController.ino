@@ -10,7 +10,6 @@
 
 #include <Keypad.h>
 #include <Password.h>
-#include <XBee.h>
 
 Adafruit_7segment matrix = Adafruit_7segment();
 
@@ -28,7 +27,6 @@ int speakerPin = 9;
 int keySounds[10] = {NOTE_A4, NOTE_AS4, NOTE_B4, NOTE_C4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4};
 int errorSound = NOTE_B0;
 
-XBee xbee = XBee();
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 Password password = Password( "9999" );
 Password adminPassword = Password( "8888" );
@@ -37,12 +35,6 @@ int passwordLength = 0;
 volatile int mode, nextMode = 1;
 volatile boolean adminMode = false;
 volatile boolean servoMode = false;
-
-uint8_t xbeePayload[3] = { 0, 0, 0 };
-XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
-XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
-ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
-ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 
 void setup() {
   Serial.begin(9600);
@@ -55,8 +47,7 @@ void setup() {
   matrix.print(0x0255,HEX);
   matrix.writeDisplay();
   
-  Serial2.begin(9600);
-  xbee.setSerial(Serial2);
+  Wire.begin(1);
 }
 
 int servoIndex = -1;
@@ -204,13 +195,6 @@ void handleCommands(){
 }
 
 void instructModeChange(int nextMode){
-  // send instruction to other xBee on mode change
-  xbeePayload[0] = nextMode;
-  xbeePayload[1] = 0;
-  xbeePayload[2] = 0;  
-  xbee.send(laser1Tx);
-  xbee.send(laser2Tx);
-  
   // send instructions to internal I2C nodes on mode change
   Wire.beginTransmission(2); //2 == LaserDriver2 addr
   Wire.write(mode);
@@ -233,6 +217,5 @@ void instructRepositionLaser(int laserIndex, int moveDirectionChar){
   xbeePayload[1] = laserIndex;
   xbeePayload[2] = moveDirection;
   
-  xbee.send(laser1Tx);
-  xbee.send(laser2Tx);
+  //xbee.send(laser1Tx);  
 }

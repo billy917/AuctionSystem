@@ -1,5 +1,5 @@
-//Coordinator xBee address - 40c04edf
-//I2C address: 1
+//Coordinator xBee address - 40c04ef1
+//I2C address: 2
 
 #include <Wire.h>
 #include <Servo.h>
@@ -28,10 +28,10 @@ XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
 uint8_t commandData[] = {0,0};
 
-uint8_t xbeePayload[3] = { 0, 0, 0 };
-XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
-ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 
+uint8_t xbeePayload[3] = { 0, 0, 0 };
+XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
+ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
 // the setup routine runs once when you press reset:
 void setup() {           
@@ -43,16 +43,26 @@ void setup() {
     pinMode(laserPins[i], OUTPUT);
     digitalWrite(laserPins[i], LOW);    
   }
- 
+  
+  /*
+  servo1T.attach(servoPins[0][0]);
+  servo1B.attach(servoPins[0][1]);
+  servo2T.attach(servoPins[1][0]);
+  servo2B.attach(servoPins[1][1]);
+  servo3T.attach(servoPins[2][0]);
+  servo3B.attach(servoPins[2][1]);
+  */
+  //Wire.begin(5);
+  //Wire.onReceive(receiveEvent);
+  
   resetServoPositions();
 
-  Wire.begin(1);
+  Wire.begin(2);
   Wire.onReceive(receiveEvent);
   xbee.begin(Serial);   
 }
 
 volatile int nextMode = 0;
-volatile char commandSource = ' ';
 
 void loop() {
   if(nextMode == 0){
@@ -65,7 +75,6 @@ void receiveEvent(int howMany){
   while(Wire.available()){
     nextMode = Wire.read(); 
   }
-  commandSource = 'I';
 }
 
 void handleXBeeMsg(){
@@ -77,8 +86,7 @@ void handleXBeeMsg(){
       commandData[0] = rx.getData(1);
       commandData[1] = rx.getData(2);
     }
-    commandSource = 'X';
-  }   
+  } 
 }
 
 void instructModeChange(int nextMode){
@@ -86,17 +94,16 @@ void instructModeChange(int nextMode){
   xbeePayload[0] = nextMode;
   xbeePayload[1] = 0;
   xbeePayload[2] = 0;  
-  xbee.send(laser2Tx);
+  xbee.send(laser1Tx);
 }
 
 void handleCommands(){
   if(nextMode != 0){
     if(nextMode == 1){
       //Turn Off  
-      if('I' == commandSource){
-        // only tell other xBee if the nextMode command came from I2C
-        instructModeChange(nextMode);
-      }
+      
+      //instruct laser mode change via xBee
+      instructModeChange(nextMode);
       
       disableLaserWire(0); 
       disableLaserWire(1);
@@ -105,10 +112,10 @@ void handleCommands(){
       //Arm System
     } else if (nextMode == 3){
       //Turn On
-      if('I' == commandSource){
-        // only tell other xBee if the nextMode command came from I2C
-        instructModeChange(nextMode);
-      }
+      
+      //instruct laser mode change via xBee
+      instructModeChange(nextMode);
+      
       enableLaserWire(0);
       enableLaserWire(1);
       enableLaserWire(2);
@@ -271,3 +278,14 @@ void _turnOffLightSensor(int index){
   /////// TO BE IMPLEMENTED //////
 }
 
+
+/*
+void receiveEvent(int howMany)
+{
+  while(1 < Wire.available()) // loop through all but the last
+  {
+    char c = Wire.read(); // receive byte as a character
+  }
+  int x = Wire.read();    // receive byte as an integer
+}
+*/
