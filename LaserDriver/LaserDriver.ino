@@ -81,7 +81,7 @@ void handleXBeeMsg(){
   }   
 }
 
-void instructModeChange(int nextMode){
+void instructXBeeModeChange(int nextMode){
   // send instruction to other xBee on mode change
   xbeePayload[0] = nextMode;
   xbeePayload[1] = 0;
@@ -89,15 +89,24 @@ void instructModeChange(int nextMode){
   xbee.send(laser2Tx);
 }
 
+void instructI2CModeChange(int nextMode){
+  // send instruction to other I2C modules on mode change
+  Wire.beginTransmission(4); //4 == ShelfLock
+  Wire.write(nextMode);
+  Wire.endTransmission();
+}
+
 void handleCommands(){
   if(nextMode != 0){
+    if('I' == commandSource){
+      // only tell other xBee if the nextMode command came from I2C
+      instructXBeeModeChange(nextMode); 
+    } else if ('X' == commandSource){
+      instructI2CModeChange(nextMode); 
+    }
+    
     if(nextMode == 1){
       //Turn Off  
-      if('I' == commandSource){
-        // only tell other xBee if the nextMode command came from I2C
-        instructModeChange(nextMode);
-      }
-      
       disableLaserWire(0); 
       disableLaserWire(1);
       disableLaserWire(2);
@@ -105,10 +114,6 @@ void handleCommands(){
       //Arm System
     } else if (nextMode == 3){
       //Turn On
-      if('I' == commandSource){
-        // only tell other xBee if the nextMode command came from I2C
-        instructModeChange(nextMode);
-      }
       enableLaserWire(0);
       enableLaserWire(1);
       enableLaserWire(2);
@@ -121,8 +126,12 @@ void handleCommands(){
       //laserIndex = ; // possible value: 0, 1, 2
       //movementDirection =  //0 = up, 1 = down, 2 = left, 3 = right
       moveLaser(commandData[0], commandData[1]);
+    } else if (nextMode == 6){
+      //Sensor mode change
+      
     }
     nextMode = 0;
+    commandSource = ' ';
   } 
 }
 

@@ -44,17 +44,6 @@ void setup() {
     digitalWrite(laserPins[i], LOW);    
   }
   
-  /*
-  servo1T.attach(servoPins[0][0]);
-  servo1B.attach(servoPins[0][1]);
-  servo2T.attach(servoPins[1][0]);
-  servo2B.attach(servoPins[1][1]);
-  servo3T.attach(servoPins[2][0]);
-  servo3B.attach(servoPins[2][1]);
-  */
-  //Wire.begin(5);
-  //Wire.onReceive(receiveEvent);
-  
   resetServoPositions();
 
   Wire.begin(2);

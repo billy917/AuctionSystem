@@ -61,6 +61,6 @@ void send(int mode){
   Wire.endTransmission();    // stop transmitting
   
   Wire.beginTransmission(4); //ShelfLock
-  Wire.write  (mode);              // sends one byte  
+  Wire.write(mode);              // sends one byte  
   Wire.endTransmission();    // stop transmitting
 }
