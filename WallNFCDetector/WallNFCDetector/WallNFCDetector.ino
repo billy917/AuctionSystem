@@ -4,8 +4,10 @@
 
 #define IRQ   (2)
 #define RESET (3)  // Not connected by default on the NFC Shield
+#define NFC_DETECTOR_ID 0
 
 Adafruit_NFCShield_I2C nfc(IRQ, RESET);
+
 SoftI2C i2c = SoftI2C(12, 13);  //data, clock
 
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
@@ -47,7 +49,7 @@ void loop() {
   // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
   boolean detectedNFCChip = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
   
-  if(detectedNFCChip){
+  if(detectedNFCChip & 7 == uidLength){
     readNFCChip();
     sendI2CMessage();
   }
@@ -63,32 +65,13 @@ void readNFCChip(){
   
   if (uidLength == 7)
   {
-    // We probably have a Mifare Ultralight card ...
-    Serial.println("Seems to be a Mifare Ultralight tag (7 byte UID)");
-  
-    // Try to read the first general-purpose user page (#4)
-    Serial.println("Reading page 4");
-    uint8_t data[32];
-    boolean success = nfc.mifareultralight_ReadPage (4, data);
-    if (success)
-    {
-      // Data seems to have been read ... spit it out
-      nfc.PrintHexChar(data, 4);
-      Serial.println("");
-  
-      // Wait a bit before reading the card again
-      delay(1000);
-    }
-    else
-    {
-      Serial.println("Ooops ... unable to read the requested page!?");
-    }
+    
   }   
 }
   
 void sendI2CMessage(){
-  i2c.startWrite(1); // transmit to device #4
-  i2c.write('A');        // sends five bytes
+  i2c.startWrite(1); // transmit to device #1 (NFCDetectorManager)
+  i2c.write(NFC_DETECTOR_ID);        // sends five bytes
   i2c.write(1);              // sends one byte  
   i2c.endWrite();    // stop transmitting
   delay(500);
