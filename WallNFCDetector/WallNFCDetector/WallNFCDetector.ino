@@ -48,12 +48,7 @@ char* getString(byte array[], byte len)
 }
 
 void loop() {
-  
-<<<<<<< HEAD
-  if(detectedNFCChip & 7 == uidLength){
-    readNFCChip();
-    sendI2CMessage();
-=======
+
   boolean detectedChip = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength)
   if(detectedChip){
     detectedNFCChip = true;
@@ -67,7 +62,6 @@ void loop() {
     }
     detectedNFChip = false;
     clearLastUID();
->>>>>>> f285081090e791c520254ecf21cf70f0c8eecacd
   }
   
   // Wait a bit before reading the card again
@@ -96,9 +90,7 @@ void readNFCChip(){
   
   if (uidLength == 7)
   {
-<<<<<<< HEAD
-    
-=======
+
     // We probably have a Mifare Ultralight card ...
     Serial.println("Seems to be a Mifare Ultralight tag (7 byte UID)");
     
@@ -116,7 +108,6 @@ void readNFCChip(){
     {
       Serial.println("Ooops ... unable to read the requested page!?");
     }
->>>>>>> f285081090e791c520254ecf21cf70f0c8eecacd
   }   
 }
 

@@ -8,9 +8,7 @@ XBee xbee = XBee();
 uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c0edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
-<<<<<<< HEAD
-int led = 13;
-=======
+
 
 volatile uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
 uint8_t uidLength = 7;  // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
@@ -18,21 +16,14 @@ uint8_t uidLength = 7;  // Length of the UID (4 or 7 bytes depending on ISO14443
 // need to store expected UID for each detector
 volatile uint8_t expectedUid[3][7] = {{0,0,0,0,0,0,0},{0,0,0,0,0,0,0},{0,0,0,0,0,0,0}};
 
->>>>>>> f285081090e791c520254ecf21cf70f0c8eecacd
+
 void setup() {
   Serial.begin(9600);
 
   Wire.begin(1);
   Wire.onReceive(receiveI2CEvent);
-<<<<<<< HEAD
-  
-  Serial.begin(9600);
-  Serial.println("Hello");
-  
-  pinMode(led, OUTPUT);
-=======
+
   xbee.begin(Serial);  
->>>>>>> f285081090e791c520254ecf21cf70f0c8eecacd
 }
 
 void receiveI2CEvent(int howMany){
@@ -51,14 +42,6 @@ void receiveI2CEvent(int howMany){
       Serial.print(c);         // print the character
     }
   }
-<<<<<<< HEAD
-  int x = Wire.read();    // receive byte as an integer
-  Serial.println(x);         // print the integer
-  digitalWrite(led, HIGH);
-  delay(500);
-  digitalWrite(led, LOW);
-=======
->>>>>>> f285081090e791c520254ecf21cf70f0c8eecacd
 }
  
 char* getString(byte array[], byte len)
