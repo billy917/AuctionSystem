@@ -33,6 +33,9 @@ uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
+XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0);
+ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
+
 // the setup routine runs once when you press reset:
 void setup() {           
 
@@ -83,7 +86,8 @@ void instructModeChange(int nextMode){
   xbeePayload[0] = nextMode;
   xbeePayload[1] = 0;
   xbeePayload[2] = 0;  
-  xbee.send(laser1Tx);
+  xbee.send(laser1Tx);  
+  xbee.send(laser3Tx);
 }
 
 void handleCommands(){

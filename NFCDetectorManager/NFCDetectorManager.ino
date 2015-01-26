@@ -9,15 +9,18 @@ uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c0edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
-
 volatile uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
+volatile uint8_t detectorId = 0; //(0,1,2)
+volatile uint8_t mode = 0; // //(0 - missingNFCChip, 1 - NewNFCChip)
 uint8_t uidLength = 7;  // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-
+volatile boolean receivedMessage = false;
 // need to store expected UID for each detector
-volatile uint8_t expectedUid[3][7] = {{0,0,0,0,0,0,0},{0,0,0,0,0,0,0},{0,0,0,0,0,0,0}};
+volatile uint8_t expectedUid[3][7] = {{0x04, 0xBB, 0x82, 0xEA, 0xC2, 0x23, 0x80},{0,0,0,0,0,0,0},{0,0,0,0,0,0,0}};
 
-
+int led = 13;
 void setup() {
+  pinMode(led, OUTPUT);  
+    
   Serial.begin(9600);
 
   Wire.begin(1);
@@ -28,12 +31,12 @@ void setup() {
 
 void receiveI2CEvent(int howMany){
   if(9 == howMany){
-    char detectorId = Wire.read();
-    char mode = Wire.read();
+    detectorId = Wire.read(); 
+    mode = Wire.read(); 
     for(int i=0; i<uidLength; i++){
       uid[i] = Wire.read(); 
     }
-    check
+    receivedMessage = true; // TODO: need better way to queue incoming requests
   } else {
     Serial.print("Got message with unexpected length:");
     while(1 < Wire.available()) // loop through all but the last
@@ -55,14 +58,38 @@ char* getString(byte array[], byte len)
 }
 
 void loop() {
-  //noop
+  if(receivedMessage){
+    if(0 == mode){
+      instructXBeeUpdate(false);
+      blinkLED(2);
+    } else if(detectedNFCMatchExpectedId()){
+      instructXBeeUpdate(true);
+      blinkLED(1);
+    }
+    receivedMessage = false; 
+  }
 }
 
-void instructXBeeUpdate(int detectorId, int onOff){
+boolean detectedNFCMatchExpectedId(){
+  boolean matchExpected = true;
+  // add logic to compare expected UID
+  return matchExpected;  
+}
+
+void instructXBeeUpdate(boolean detectedCorrectNFC){
   // send instruction to other xBee on mode change
-  xbeePayload[0] = 6;
-  xbeePayload[1] = 0;
-  xbeePayload[2] = 0;  
+  xbeePayload[0] = 6; // message typeId
+  xbeePayload[1] = detectorId;
+  xbeePayload[2] = detectedCorrectNFC;  
   xbee.send(laser1Tx);
+}
+
+void blinkLED(int times){
+  for(int i=0; i<times; i++){
+    digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)
+    delay(500);               // wait for a second
+    digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW
+    delay(500);     
+  }
 }
 

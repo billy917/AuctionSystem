@@ -30,7 +30,10 @@ uint8_t commandData[] = {0,0};
 
 uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
+XBeeAddress64 hackerAddr = XBeeAddress64(0x0013a200, 0x00000000);
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
+ZBTxRequest hackerTx = ZBTxRequest(hackerAddr, xbeePayload, sizeof(xbeePayload));
+
 
 
 // the setup routine runs once when you press reset:

@@ -1,6 +1,9 @@
+//Coordinator xBee address - 40b9df66
+
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library
 #include <SPI.h>
+#include <XBee.h>
 
 #define TFT_CS     10
 #define TFT_RST    9  // you can also connect this to the Arduino reset
@@ -24,7 +27,18 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 #define DetectSensor 2
 #define ScrewPeter 3
 
-void setup(void) {
+XBee xbee = XBee();
+XBeeResponse response = XBeeResponse();
+ZBRxResponse rx = ZBRxResponse();
+uint8_t commandData[] = {0,0};
+
+uint8_t xbeePayload[3] = { 0, 0, 0 };
+XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); // send commands to LaserDriver2
+ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
+
+volatile boolean laserEnabled = false;
+
+void setup(void) {  
   // Use this initializer if you're using a 1.8" TFT
   tft.initR(INITR_BLACKTAB);   // initialize a ST7735S chip, black tab
   tft.setRotation(3);
@@ -35,6 +49,9 @@ void setup(void) {
   drawInitialization();
   
   drawMenu();
+  
+  Serial.begin(9600);
+  xbee.begin(Serial);   
 }
 
 int currentMenu = MainMenu;
@@ -42,9 +59,10 @@ int currentMenu = MainMenu;
 // 1 - Hack System
 // 2 - Detect Sensor
 // 3 - Screw Peter
+// 4 - Toogle Laser
 
 int currentRowSelection = 0;
-int maxRows[] = {3};
+int maxRows[] = {4};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -62,6 +80,19 @@ void drawMenu(){
       drawScrewPeter();
       break;
   }
+}
+
+void toggleLaser(){
+   if(laserEnabled){
+     laserEnabled = false;
+   } else {
+     laserEnabled = true;
+   }
+   uint8_t mode = 3;
+   if(!laserEnabled){
+     mode = 1;
+   } 
+   instructXBeeModeChange(mode);
 }
 
 void drawHackSystem(){
@@ -113,6 +144,19 @@ void drawMainMenu(){
     tft.print("->");
   }
   tft.println("3)Fuck Peter?\n");
+  if(3 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.print("4)Toogle Laser (");
+  if(laserEnabled){
+    tft.setTextColor(ST7735_GREEN);
+    tft.print("ON");
+  } else {
+    tft.setTextColor(ST7735_RED);
+    tft.print("OFF");
+  }
+  tft.setTextColor(ST7735_WHITE);
+  tft.println(")\n");
 }
 
 void loop() {
@@ -129,14 +173,14 @@ boolean handleJoystickAction(int joystickState){
   switch(joystickState){
     case Up:
       currentRowSelection -= 1;
-      if(currentRowSelection == -1){
+      if(currentRowSelection <= -1){
         currentRowSelection = maxRows[currentMenu] - 1;
       } 
       updated = true;
       break;
     case Down:
       currentRowSelection += 1;
-      if(currentRowSelection == maxRows[currentMenu]){
+      if(currentRowSelection >= maxRows[currentMenu]){
         currentRowSelection = 0;
       } 
       updated = true;
@@ -163,7 +207,10 @@ boolean handleMenuSelection(){
     } else if(currentRowSelection == 2){
       currentMenu = ScrewPeter;
       updated = true;
-    }
+    } else if(currentRowSelection == 3){
+      toggleLaser();
+      updated = true; 
+    } 
   }
   return updated;
 }
@@ -182,10 +229,10 @@ int CheckJoystick()
 {
   int joystickState = analogRead(3);
   if (joystickState < 50) return Left;
-  if (joystickState < 200) return Down;
+  if (joystickState < 250) return Down;
   if (joystickState < 400) return Press;
   if (joystickState < 600) return Right;
-  if (joystickState < 1000) return Up;
+  if (joystickState < 1020) return Up;
   return Neutral;
 }
 
@@ -230,6 +277,28 @@ void drawInitialization(){
   tft.setTextColor(ST7735_GREEN);
   tft.println("OK");
   delay(2000);
+}
+
+/*
+void handleXBeeMsg(){
+  xbee.readPacket();
+  if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    xbee.getResponse().getZBRxResponse(rx);
+    nextMode = rx.getData(0);
+    if(5 == nextMode){
+      commandData[0] = rx.getData(1);
+      commandData[1] = rx.getData(2);
+    }
+    commandSource = 'X';
+  }   
+}
+*/
+void instructXBeeModeChange(int nextMode){
+  // send instruction to other xBee on mode change
+  xbeePayload[0] = nextMode;
+  xbeePayload[1] = 0;
+  xbeePayload[2] = 0;  
+  xbee.send(laser2Tx);
 }
 
 /*
