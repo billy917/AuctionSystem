@@ -132,7 +132,14 @@ void handleCommands(){
     } else if (nextMode == 6){
       //Sensor mode change
       
+    } else if (nextMode == 7){
+      //Unlock shelf
+        
+    } else if (nextMode == 8){
+      //Lock shefl
+      
     }
+    
     nextMode = 0;
     commandSource = ' ';
   } 
