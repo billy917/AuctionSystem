@@ -8,7 +8,7 @@
 
 Adafruit_NFCShield_I2C nfc(IRQ, RESET);
 
-SoftI2C i2c = SoftI2C(12, 13);  //data, clock
+SoftI2C i2c = SoftI2C(12, 13);  //data, clock // green, yellow
 
 uint8_t lastUid[] = { 0, 0, 0, 0, 0, 0, 0 };
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
