@@ -76,7 +76,7 @@ void handleXBeeMsg(){
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
     nextMode = rx.getData(0);
-    if(5 == nextMode){
+    if(5 == nextMode || 6 == nextMode){
       commandData[0] = rx.getData(1);
       commandData[1] = rx.getData(2);
     }
@@ -96,6 +96,22 @@ void instructI2CModeChange(int nextMode){
   // send instruction to other I2C modules on mode change
   Wire.beginTransmission(4); //4 == ShelfLock
   Wire.write(nextMode);
+  Wire.endTransmission();
+}
+
+void instructI2CUnlockShelf(){
+  // send instruction to other I2C modules on mode change
+  Wire.beginTransmission(4); //4 == ShelfLock
+  Wire.write(6);
+  Wire.write(1);
+  Wire.endTransmission();
+}
+
+void instructI2CLockShelf(){
+  // send instruction to other I2C modules on mode change
+  Wire.beginTransmission(4); //4 == ShelfLock
+  Wire.write(6);
+  Wire.write(0);
   Wire.endTransmission();
 }
 
@@ -131,14 +147,14 @@ void handleCommands(){
       moveLaser(commandData[0], commandData[1]);
     } else if (nextMode == 6){
       //Sensor mode change
-      
-    } else if (nextMode == 7){
-      //Unlock shelf
-        
-    } else if (nextMode == 8){
-      //Lock shefl
-      
-    }
+      if(commandData[1]){
+        //correct NFC 
+        instructI2CUnlockShelf();
+      } else {
+        //incorrect NFC 
+        instructI2CLockShelf();
+      }
+    } 
     
     nextMode = 0;
     commandSource = ' ';

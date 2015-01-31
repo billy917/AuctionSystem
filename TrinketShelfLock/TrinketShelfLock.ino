@@ -7,16 +7,19 @@ int lockState = HIGH;
 // this function is registered as an event, see setup()
 void receiveEvent(uint8_t howMany)
 {
-  while(1 < TinyWireS.available()){
-    TinyWireS.receive(); 
+  uint8_t mode = 0;
+  if(TinyWireS.available() > 0){
+    mode = TinyWireS.receive(); 
   }
   
-  int x = TinyWireS.receive();    // receive byte as an integer
-  if(1==x){
-    lockState = HIGH;
-    digitalWrite(lockPin, HIGH);
-    delay(5000);
-    digitalWrite(lockPin, LOW);
+  if(mode == 6){
+    boolean isUnlock = TinyWireS.receive();    // receive byte as an integer
+    if(isUnlock){
+      lockState = HIGH;
+      digitalWrite(lockPin, HIGH);
+      delay(5000);
+      digitalWrite(lockPin, LOW);
+    }
   }
 }
 

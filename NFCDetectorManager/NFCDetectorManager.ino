@@ -9,13 +9,17 @@ uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c0edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
+XBeeAddress64 toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66);
+ZBTxRequest toolTx = ZBTxRequest(toolAddr, xbeePayload, sizeof(xbeePayload));
+
+
 volatile uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
 volatile uint8_t detectorId = 0; //(0,1,2)
 volatile uint8_t mode = 0; // //(0 - missingNFCChip, 1 - NewNFCChip)
 uint8_t uidLength = 7;  // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
 volatile boolean receivedMessage = false;
 // need to store expected UID for each detector
-volatile uint8_t expectedUid[3][7] = {{0x04, 0xBA, 0x82, 0xEA, 0xC2, 0x23, 0x80}, {0x04, 0xEC, 0x82, 0xEA, 0xC2, 0x23, 0x80},{0x04, 0x04, 0x82, 0xEA, 0xC2, 0x23, 0x81}};
+volatile uint8_t expectedUid[3][7] = {{0x04, 0x8A, 0x82, 0xEA, 0xC2, 0x23, 0x80}, {0x04, 0xEC, 0x82, 0xEA, 0xC2, 0x23, 0x80},{0x04, 0x04, 0x82, 0xEA, 0xC2, 0x23, 0x81}};
 uint8_t hackToolUid[1][7] = {{0x04, 0xBB, 0x82, 0xEA, 0xC2, 0x23, 0x80}};
 
 int led = 13;
@@ -24,7 +28,7 @@ void setup() {
     
   Serial.begin(9600);
 
-  Wire.begin(1);
+  Wire.begin(10);
   Wire.onReceive(receiveI2CEvent);
 
   xbee.begin(Serial);  
@@ -32,7 +36,6 @@ void setup() {
 
 void receiveI2CEvent(int howMany){
   if(9 == howMany){
-    blinkLED(4);
     detectorId = Wire.read(); 
     mode = Wire.read(); 
     for(int i=0; i<uidLength; i++){
@@ -46,7 +49,6 @@ void receiveI2CEvent(int howMany){
       char c = Wire.read(); // receive byte as a character
       Serial.print(c);         // print the character
     }
-    blinkLED(3);
   }
 }
  
@@ -62,12 +64,11 @@ char* getString(byte array[], byte len)
 
 void loop() {
   if(receivedMessage){
+    blinkLED(1);
     if(0 == mode){
       instructXBeeUpdate(false);
-      blinkLED(2);
     } else if(detectedNFCMatchExpectedId()){
       instructXBeeUpdate(true);
-      blinkLED(1);
     }
     receivedMessage = false; 
   }
@@ -75,7 +76,16 @@ void loop() {
 
 boolean detectedNFCMatchExpectedId(){
   boolean matchExpected = true;
-  // add logic to compare expected UID
+
+  if(detectorId >= 0 && detectorId < 3){
+    for( int i=0; i < uidLength; i++){
+      if(uid[i] != expectedUid[detectorId][i]){
+        matchExpected = false;
+        break; 
+      }      
+    }
+  }
+
   return matchExpected;  
 }
 
@@ -85,6 +95,7 @@ void instructXBeeUpdate(boolean detectedCorrectNFC){
   xbeePayload[1] = detectorId;
   xbeePayload[2] = detectedCorrectNFC;  
   xbee.send(laser1Tx);
+  xbee.send(toolTx);
 }
 
 void blinkLED(int times){
@@ -95,4 +106,6 @@ void blinkLED(int times){
     delay(500);     
   }
 }
+
+
 

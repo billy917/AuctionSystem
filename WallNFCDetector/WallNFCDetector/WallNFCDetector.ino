@@ -1,25 +1,32 @@
 #include <Wire.h>
-#include <Adafruit_NFCShield_I2C.h>
-#include "SoftI2C.h"
+#include <Adafruit_PN532.h>
 
-#define IRQ   (2)
-#define RESET (3)  // Not connected by default on the NFC Shield
-#define NFC_DETECTOR_ID 0
+#define SCK  (8)
+#define MOSI (11)
+#define SS   (10)
+#define MISO (9)
 
-Adafruit_NFCShield_I2C nfc(IRQ, RESET);
+#define NFC_DETECTOR_ID 2
 
-SoftI2C i2c = SoftI2C(12, 13);  //data, clock // green, yellow
+Adafruit_PN532 nfc(SCK, MISO, MOSI, SS);
+
 
 uint8_t lastUid[] = { 0, 0, 0, 0, 0, 0, 0 };
 uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-uint8_t uidLength = 7;  // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
+uint8_t uidLength = 7;  // Length of theUID (4 or 7 bytes depending on ISO14443A card type)
 boolean detectedNFCChip = false;
 
 // I2C Message 9 bytes - (sourceId, on/off, 7bit uid)
 
+int led = 13;
+int ledMode = LOW;
 void setup() {
-  Serial.begin(115200);
+//  pinMode(led, OUTPUT); 
+  
+  Serial.begin(9600);
   Serial.println("Hello");
+  delay(50);
+  Wire.begin(2);
   delay(50);
   nfc.begin();
   
@@ -33,7 +40,6 @@ void setup() {
   Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
   Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
 
-  nfc.setPassiveActivationRetries(0x01);
   nfc.SAMConfig();
 }
  
@@ -49,24 +55,29 @@ char* getString(byte array[], byte len)
 
 void loop() {
 
-  boolean detectedChip = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
-  if(detectedChip){
+  boolean success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
+  if(success){
     nfc.PrintHex(uid, uidLength);Serial.println("");
     detectedNFCChip = true;
+    
     if(!isSameAsLastDetectedChip()){
+      Serial.println("Is not same as last chip");
       notifyFoundNFCChip();
+    } else {
+      Serial.println("Is same as last chip"); 
     }
     updateLastUID();
+
   } else {
     if(detectedNFCChip){
       detectedNFCChip = false;
       clearLastUID();
-      notifyCannotFindNFCChip();     
+      notifyCannotFindNFCChip();  
     } else {
       detectedNFCChip = false;
     }
   }
-  
+
   // Wait a bit before reading the card again
   delay(500);
 }
@@ -96,23 +107,26 @@ boolean isSameAsLastDetectedChip(){
 
 void notifyFoundNFCChip(){
   Serial.println("NFC Found");
-  i2c.startWrite(1); // transmit to device #1 (NFCDetectorManager
-  i2c.write(NFC_DETECTOR_ID);    // this NFC detector Id
-  i2c.write(1);    // detected new NFC (1) or detected missing NFC (0)
+  Wire.beginTransmission(10); // transmit to device #1 (NFCDetectorManager
+  Wire.write(NFC_DETECTOR_ID);    // this NFC detector Id
+  Wire.write(1);    // detected new NFC (1) or detected missing NFC (0)
   for(int i=0; i< uidLength; i++){
-    i2c.write(uid[i]);
+    Wire.write(uid[i]);
   }
-  i2c.endWrite();
+  Wire.endTransmission();
+  Serial.println("Done writing Found");
 }
 
 void notifyCannotFindNFCChip(){
   Serial.println("NFC Not Found");
-  i2c.startWrite(1); // transmit to device #1 (NFCDetectorManager
-  i2c.write(NFC_DETECTOR_ID);    // this NFC detector Id
-  i2c.write(0);    // detected new NFC (1) or detected missing NFC (0)
+  Wire.beginTransmission(10); // transmit to device #1 (NFCDetectorManager
+  Wire.write(NFC_DETECTOR_ID);    // this NFC detector Id
+  Wire.write(0);    // detected new NFC (1) or detected missing NFC (0)
   for(int i=0; i< uidLength; i++){
-    i2c.write(0);
+    Wire.write(0);
   }
-  i2c.endWrite();
+  Wire.endTransmission();
+  Serial.println("Done writing Mot Found");
+  
 }
 

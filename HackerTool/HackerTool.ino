@@ -25,7 +25,7 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 #define MainMenu 0
 #define HackSystem 1
 #define DetectSensor 2
-#define ScrewPeter 3
+#define UnlockShelf 3
 
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -37,6 +37,11 @@ XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); // send comman
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 
 volatile boolean laserEnabled = false;
+volatile boolean nfcDetected[1] = {false};
+
+boolean detectedNFC(){
+  return nfcDetected[0]; 
+}
 
 void setup(void) {  
   // Use this initializer if you're using a 1.8" TFT
@@ -44,9 +49,9 @@ void setup(void) {
   tft.setRotation(3);
   
   // Trapped logo splash screen
-  drawSplash();
+  //drawSplash();
 
-  drawInitialization();
+  //drawInitialization();
   
   drawMenu();
   
@@ -58,7 +63,7 @@ int currentMenu = MainMenu;
 // 0 - Main Menu
 // 1 - Hack System
 // 2 - Detect Sensor
-// 3 - Screw Peter
+// 3 - Unl
 // 4 - Toogle Laser
 
 int currentRowSelection = 0;
@@ -76,8 +81,8 @@ void drawMenu(){
     case DetectSensor:
       drawDetectSensor();
       break;
-    case ScrewPeter:
-      drawScrewPeter();
+    case UnlockShelf:
+      drawMainMenu();
       break;
   }
 }
@@ -115,16 +120,6 @@ void drawDetectSensor(){
   tft.println("Connect to security system and download the system's wireless frequency first...");
 }
 
-void drawScrewPeter(){
-  tft.setTextColor(ST7735_WHITE);
-  tft.setTextSize(2);
-  tft.setCursor(10,0);
-  tft.println("\nFuck Peter\n");
-  
-  tft.setTextSize(1); 
-  tft.println("Just tell Maggie that he  likes men");
-}
-
 void drawMainMenu(){
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
@@ -143,7 +138,7 @@ void drawMainMenu(){
   if(2 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("3)Fuck Peter?\n");
+  tft.println("3)Unlock shelf\n");
   if(3 == currentRowSelection){
     tft.print("->");
   }
@@ -157,14 +152,28 @@ void drawMainMenu(){
   }
   tft.setTextColor(ST7735_WHITE);
   tft.println(")\n");
+  tft.print("5) NFC detected (");
+  if(detectedNFC()){
+    tft.setTextColor(ST7735_GREEN);
+    tft.print("YES");
+  } else {
+    tft.setTextColor(ST7735_RED);
+    tft.print("NO");
+  }
+  tft.setTextColor(ST7735_WHITE);
+  tft.println(")\n");
 }
 
 void loop() {
+  boolean needRefresh = handleXBeeMsg();
+  
   int joystickPosition = CheckJoystick();
   if(Neutral != joystickPosition){
-    if(handleJoystickAction(joystickPosition)){
-      drawMenu();
-    }
+     needRefresh = needRefresh || handleJoystickAction(joystickPosition);
+  }
+  
+  if(needRefresh){
+    drawMenu();
   }
 }
 
@@ -205,7 +214,8 @@ boolean handleMenuSelection(){
       currentMenu = DetectSensor;
       updated = true;
     } else if(currentRowSelection == 2){
-      currentMenu = ScrewPeter;
+      currentMenu = UnlockShelf;
+      unlockShelf();
       updated = true;
     } else if(currentRowSelection == 3){
       toggleLaser();
@@ -217,7 +227,7 @@ boolean handleMenuSelection(){
 
 boolean handleMenuBack(){
   boolean updated = false;
-  if(currentMenu == HackSystem || currentMenu == DetectSensor || currentMenu == ScrewPeter){
+  if(currentMenu == HackSystem || currentMenu == DetectSensor || currentMenu == UnlockShelf){
     currentMenu = MainMenu; 
     updated = true;
   }
@@ -279,25 +289,28 @@ void drawInitialization(){
   delay(2000);
 }
 
-/*
-void handleXBeeMsg(){
+boolean handleXBeeMsg(){
   xbee.readPacket();
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
-    nextMode = rx.getData(0);
-    if(5 == nextMode){
-      commandData[0] = rx.getData(1);
-      commandData[1] = rx.getData(2);
+    if(6 ==  rx.getData(0)){
+      //detectorId = rx.getData(1);
+      nfcDetected[0] = rx.getData(2);
+      return true;
     }
-    commandSource = 'X';
   }   
+  return false;
 }
-*/
+
+void unlockShelf(){
+ instructXBeeModeChange(1); 
+}
+
 void instructXBeeModeChange(int nextMode){
   // send instruction to other xBee on mode change
   xbeePayload[0] = nextMode;
-  xbeePayload[1] = 0;
-  xbeePayload[2] = 0;  
+  xbeePayload[1] = 1;
+  xbeePayload[2] = 1;  
   xbee.send(laser2Tx);
 }
 
