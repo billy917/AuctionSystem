@@ -1,22 +1,23 @@
 #include <Wire.h>
 #include <Adafruit_PN532.h>
-#include "NFCDetector.h"
+#include <NFCDetector.h>
 
+#define NFC_DETECTOR_ID 5
+#define I2C_ADDR 105
 
-#define NFC_DETECTOR_ID 2
-#define I2C_ADDR 101
-
-uint8_t lastUid[] = { 0, 0, 0, 0, 0, 0, 0 };
-uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
-boolean detectedNFCChip = false;
-
-// I2C Message 9 bytes - (sourceId, on/off, 7bit uid)
-
-int led = 13;
-int ledMode = LOW;
+// I2C Message 9 bytes - (MessageTypeId, DetectorId, Parameter)
 
 NFCDetector detector(NFC_DETECTOR_ID, I2C_ADDR);
+int led = 13;
+
 void setup(){
+  Serial.begin(9600);
+  pinMode(led, OUTPUT); 
+
+  Serial.println(F("Hi"));
+  
+  detector.initNFCCard();
+  
   if(!detector.isNFCCardDetected()){
     Serial.println(F("NFC card not detected!")); 
     while (1); // halt
@@ -25,122 +26,22 @@ void setup(){
     while(!detector.isRegistered()){
       detector.registerWithNFCManager();
       if(!detector.isRegistered()){
-        delay(60000);
+        delay(15000); //delay 15 sec[
       } else {
         Serial.println(F("Registered with NFCManager")); 
       }
     }
   }
 }
-
-/*
-void setup2() {
-//  pinMode(led, OUTPUT); 
-  
-  Serial.begin(9600);
-  Serial.println("Hello");
-  delay(50);
-  Wire.begin(2);
-  delay(50);
-  nfc.begin();
-  
-  uint32_t versiondata = nfc.getFirmwareVersion();
-  if (! versiondata) {
-    Serial.print("Didn't find PN53x board");
-    while (1); // halt
-  }
-  // Got ok data, print it out!
-  Serial.print("Found chip PN5"); Serial.println((versiondata>>24) & 0xFF, HEX); 
-  Serial.print("Firmware ver. "); Serial.print((versiondata>>16) & 0xFF, DEC); 
-  Serial.print('.'); Serial.println((versiondata>>8) & 0xFF, DEC);
-
-  nfc.SAMConfig();
-}*/
  
-char* getString(byte array[], byte len)
-{
-  char concatString[len+1];
-  for(byte i=0; i<len; i++){
-    concatString[i] = array[0];
-  }
-  concatString[len] = '\0';
-  return concatString;
-}
-
 void loop() {
-
-  boolean success = true;//nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, uid, &uidLength);
-  if(success){
-    //nfc.PrintHex(uid, uidLength);Serial.println("");
-    detectedNFCChip = true;
-    
-    if(!isSameAsLastDetectedChip()){
-      Serial.println("Is not same as last chip");
-      notifyFoundNFCChip();
-    } else {
-      Serial.println("Is same as last chip"); 
-    }
-    updateLastUID();
-
+  detector.detectNFCChanges();
+  if(detector.detectedNFC()){
+    digitalWrite(led, HIGH);
   } else {
-    if(detectedNFCChip){
-      detectedNFCChip = false;
-      clearLastUID();
-      notifyCannotFindNFCChip();  
-    } else {
-      detectedNFCChip = false;
-    }
+    digitalWrite(led, LOW); 
   }
-
   // Wait a bit before reading the card again
-  delay(500);
-}
-
-void updateLastUID(){
- //for(int i=0; i<uidLength; i++){
- //  lastUid[i] = uid[i];
- //} 
-}
-
-void clearLastUID(){
- //for(int i=0; i<uidLength; i++){
- //  lastUid[i] = 0;
- //} 
-}
-
-boolean isSameAsLastDetectedChip(){
-  boolean isSame = true;
-  /*for(int i=0; i< uidLength; i++){
-    if(uid[i] != lastUid[i]){
-      isSame = false;
-      break;
-    }  
-  }*/
-  return isSame;
-}
-
-void notifyFoundNFCChip(){
-  Serial.println("NFC Found");
-  Wire.beginTransmission(10); // transmit to device #1 (NFCDetectorManager
-  Wire.write(NFC_DETECTOR_ID);    // this NFC detector Id
-  Wire.write(1);    // detected new NFC (1) or detected missing NFC (0)
-  /*for(int i=0; i< uidLength; i++){
-    Wire.write(uid[i]);
-  }*/
-  Wire.endTransmission();
-  Serial.println("Done writing Found");
-}
-
-void notifyCannotFindNFCChip(){
-  Serial.println("NFC Not Found");
-  Wire.beginTransmission(10); // transmit to device #1 (NFCDetectorManager
-  Wire.write(NFC_DETECTOR_ID);    // this NFC detector Id
-  Wire.write(0);    // detected new NFC (1) or detected missing NFC (0)
-  /*for(int i=0; i< uidLength; i++){
-    Wire.write(0);
-  }*/
-  Wire.endTransmission();
-  Serial.println("Done writing Mot Found");
-  
+  delay(100);
 }
 
