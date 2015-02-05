@@ -17,17 +17,35 @@ class NFCDetector
     
     bool isRegistered();
     bool isNFCCardDetected();
+    bool detectedNFC();
 
+    void initNFCCard();
     void registerWithNFCManager();
     void printFirmwareInfo();
     void detectNFCChanges();
+
   private:
     int _detectorId;   
     bool _isRegistered; 
+    bool _lastDetectedChip;
     uint32_t _nfcFirmwareVersion;
-    uint8_t _uid[7]; 
-    uint8_t _lastUid[7];
-    uint8_t _uidLength;
+    uint8_t _uid[UID_LENGTH]; 
+    uint8_t _lastUid[UID_LENGTH];
+    uint8_t _expectedUid[UID_LENGTH];
+    uint8_t _expectedToolUid[UID_LENGTH];
+
+    void _updateLastUID();
+    void _clearLastUID();
+
+    bool _isSameAsLastDetectedChip();
+    bool _detectedExpectedChip();
+    bool _detectedToolChip();
+    
+    void _notifyFoundToolChip();
+    void _notifyFoundNFCChip();
+    void _notifyCannotFindNFCChip();
+
+
 };
 
 #endif

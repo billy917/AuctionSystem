@@ -2,8 +2,8 @@
 #include <Adafruit_PN532.h>
 #include <NFCDetector.h>
 
-#define NFC_DETECTOR_ID 5
-#define I2C_ADDR 105
+#define NFC_DETECTOR_ID 3
+#define I2C_ADDR 103
 
 // I2C Message 9 bytes - (MessageTypeId, DetectorId, Parameter)
 

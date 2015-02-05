@@ -7,14 +7,21 @@
 #define NFCManager_h
 
 #include "Arduino.h"
+#include <XBee.h>
 
 class NFCManager
 {
   public:
-    NFCManager(int managerId);
+    NFCManager(int managerId, bool localLockManager);
     void registerWithShelfLockManager();
+    void handleI2CMessage(uint8_t dataLength, uint8_t data[]);
+  	void setXBeeReference(XBee* xbee_pointer);
   private:
-    int _detectorId;    
+    int _managerId;
+    int _numRegisteredDetector;
+    uint8_t _detectorIdIndexMap;
+    bool _localLockManager;    
+    XBee* _xbee_pointer;
 };
 
 #endif

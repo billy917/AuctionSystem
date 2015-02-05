@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <XBee.h>
- 
+#include "NFCManager.h"
 //Router xBee address - 40c04f18
 //I2C address - 1  
   
@@ -49,9 +49,9 @@ void receiveI2CEvent(int howMany){
 void loop() {
   if(receivedMessage){
     blinkLED(1);
-    if(6 == msgType && 1 == param){
+    if(6 == msgType && 2 == param){
       instructXBeeUpdate(false);
-    } else if(6 == msgType && 2 == param){
+    } else if(6 == msgType && 1 == param){
       instructXBeeUpdate(true);
     }
     receivedMessage = false; 
