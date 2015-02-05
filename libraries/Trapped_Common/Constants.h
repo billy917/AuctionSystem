@@ -6,20 +6,31 @@
 #ifndef Constants_h
 #define Constants_h
 
-const int NFC_MANAGER_I2C_ADDR = 100;
+const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 
 const int UID_LENGTH = 7;
 const uint8_t MESSAGETYPEID_NFC = 6; //enum are ints
+const uint8_t MESSAGETYPEID_NFC_MANAGE = 7;
+
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
 const uint8_t MESSAGETYPEID_NFC_FOUNDTOOL = 3;
+const uint8_t MESSAGETYPEID_NFC_REGISTER = 4; // detector registering with manager
+
+const uint8_t MESSAGETYPEID_NFC_MANAGE_FOUND = 1;
+const uint8_t MESSAGETYPEID_NFC_MANAGE_NOTFOUND = 2;
 
 /*
 NFC message protocol
-	[0] messageTypeId (6)
+ 	Detector <-> Manager
+	[0] messageTypeId (6)   
 	[1] detectorId
 	[2] parameter (1 = found, 2 = not found, 3 = found tool)
 
+	Manager <-> Lock
+	[0] messageTypeId (7)
+	[1] managerId
+	[2] parameter (1 = all found, 2 = not found)
 	
 */
 
