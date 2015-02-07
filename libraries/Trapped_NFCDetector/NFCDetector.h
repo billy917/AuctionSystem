@@ -25,7 +25,7 @@ class NFCDetector
     void detectNFCChanges();
 
   private:
-    int _detectorId;   
+    int _detectorId;   // from 0 to 4
     bool _isRegistered; 
     bool _lastDetectedChip;
     uint32_t _nfcFirmwareVersion;

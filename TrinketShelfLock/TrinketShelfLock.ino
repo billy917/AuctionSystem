@@ -1,5 +1,6 @@
 #include <TinyWireS.h>
 
+
 int lockPin = 1;
 int lockState = HIGH;
 
@@ -12,11 +13,14 @@ void receiveEvent(uint8_t howMany)
     mode = TinyWireS.receive(); 
   }
   
-  if(mode == 6){
-    boolean isUnlock = TinyWireS.receive();    // receive byte as an integer
-    if(isUnlock){
-      lockState = HIGH;
-      digitalWrite(lockPin, HIGH);
+  if(mode == 8){
+    uint8_t command = TinyWireS.receive();    // receive byte as an integer
+    if(1 == command){
+       digitalWrite(lockPin, LOW);
+    } else if (2 == command){
+       digitalWrite(lockPin, HIGH);
+    } else if (3 == command){
+       digitalWrite(lockPin, HIGH);
       delay(5000);
       digitalWrite(lockPin, LOW);
     }
@@ -26,7 +30,7 @@ void receiveEvent(uint8_t howMany)
 void setup()
 {
   pinMode(lockPin, OUTPUT);
-  TinyWireS.begin(4);
+  TinyWireS.begin(106);
   TinyWireS.onReceive(receiveEvent); // register event
   
   digitalWrite(lockPin, HIGH);

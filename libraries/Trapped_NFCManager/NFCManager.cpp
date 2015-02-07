@@ -10,9 +10,10 @@
 #include <Constants.h>
 #include <XBee.h>
 
-NFCManager::NFCManager(int managerId, bool localLockManager){
+NFCManager::NFCManager(int managerId, bool isPrimary){
 	_managerId = managerId;
-	_localLockManager = localLockManager;
+	_isPrimary = isPrimary;
+	_shelfIsLocked = true;
 	_numRegisteredDetector = 3;
 	_registeredDetectorIds[0] = 3;
 	_registeredDetectorIds[1] = 4;
@@ -20,6 +21,11 @@ NFCManager::NFCManager(int managerId, bool localLockManager){
 	_registeredDetectorStates[0] = false;
 	_registeredDetectorStates[1] = false;
 	_registeredDetectorStates[2] = false;
+	_managerStates[0] = false;
+	_managerStates[1] = false;
+	_managerStates[2] = false;
+	_managerStates[3] = false;
+	_managerStates[4] = false;
 	_xBeePayload[0]=0;
 	_xBeePayload[1]=0;
 	_xBeePayload[2]=0;
@@ -39,45 +45,89 @@ void NFCManager::setLockManagerI2CAdder(int i2cAddr){
 	_localLockManagerAddr = i2cAddr;
 }
 
-void NFCManager::handleI2CMessage(uint8_t dataLength, volatile uint8_t data[]){
-	if(3 == dataLength){
-		if(data[0] == MESSAGETYPEID_NFC){
-			if(data[2] == MESSAGETYPEID_NFC_REGISTER){
-				// got a message from detector requesting to register itself
-				if(_numRegisteredDetector < 3){
-					_registerDetector(data[1]);					
-				}
-			} else {
-				bool previousState = _areAllDetectorDetected();
-				// got a message from detector, relay it to the lock manager via Laser1			
-				_updateDetectorStates(data[1], (bool) data[2]);
-				if(_areAllDetectorDetected()){
-					_notifyLockManager(true);
-				} else if (previousState){
-					_notifyLockManager(false);
-				}
+void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){	
+	if(MESSAGETYPEID_NFC == data[0]){ // Detector <-> Manager
+		if(data[2] == MESSAGETYPEID_NFC_REGISTER){
+			// got a message from detector requesting to register itself
+			if(_numRegisteredDetector < 3){
+				_registerDetector(data[1]);					
 			}
+		} else  if (data[2] == MESSAGETYPEID_NFC_MANAGE_FOUND || data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
+			// got a message from detector, relay it to the lock manager via Laser1	
+			bool detected = true;
+			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
+				detected = false;
+			}		
+			_updateDetectorStates(data[1], detected);
+			if(!_isPrimary){
+				_notifyPrimaryManager(data[1], detected);
+			} else {
+				// any local detector changes should check for potential lock updates
+				_managerStates[data[1]] = detected;
+				_checkAndUpdateLock();
+			}
+		}
+	} else if (MESSAGETYPEID_NFC_MANAGE == data[0]){ // Manager <-> Primary Manager
+		if(MESSAGETYPEID_NFC_MANAGE_FOUND == data[2]){ // Manager telling me (Primary) that their detector detected NFC
+			_managerStates[data[3]] = true;
+			_checkAndUpdateLock();
+		} else if (MESSAGETYPEID_NFC_MANAGE_NOTFOUND == data[2]){ // Manager tell me (Primary) that thier detector no longer detect NFC
+			_managerStates[data[3]] = false;
+			_checkAndUpdateLock();
+		} 
+	} else if (MESSAGETYPEID_NFC_TOOL == data[0]){ // Primary Manager <-> Tool
+		if(MESSAGETYPEID_NFC_TOOL_REQUEST == data[1]){ // tool requesting for overall status
+			// send message to tool with overal status
+			_notifyToolOverallStatus();
 		}
 	}
 }
 
-void NFCManager::_notifyLockManager(bool allDetectedExpectedNFC){
-	if(_localLockManager){
-		Wire.beginTransmission(_localLockManagerAddr); // transmit to device #100 (NFCDetectorManager
-		Wire.write(MESSAGETYPEID_NFC_MANAGE);
-		Wire.write(_managerId); // this NFC detector Id
-		Wire.write(allDetectedExpectedNFC);    
-			// all detector detected expected NFC chips (1) 
-			// one detector cannot detect expected NFC (2)			
-		Wire.endTransmission();
-	} else {
-		_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
-		_xBeePayload[1] = _managerId;
-		_xBeePayload[2] = allDetectedExpectedNFC ? MESSAGETYPEID_NFC_MANAGE : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
-		_xbee_pointer->send(_laser1ZBTxRequest);
-		_xbee_pointer->send(_toolZBTxRequest);
+void NFCManager::_checkAndUpdateLock(){
+	bool shouldBeLocked = false;
+	for(int i=0; i<5; i++){
+		if(!_managerStates[i]){
+			shouldBeLocked = true;
+			break;
+		}
 	}
 
+	if(shouldBeLocked && !_shelfIsLocked){
+		// lock shelf
+		_sendLockMessage(MESSAGETYPEID_NFC_LOCK_LOCK);
+		_shelfIsLocked = true;
+	} else if (!shouldBeLocked && _shelfIsLocked){
+		// unlock shelf
+		_sendLockMessage(MESSAGETYPEID_NFC_LOCK_UNLOCK);
+		_shelfIsLocked = false;
+	}
+}
+
+void NFCManager::_sendLockMessage(bool state){
+	// send I2C message to lock
+	Wire.beginTransmission(SHELF_LOCK_I2C_ADDR); // transmit to device #100 (NFCDetectorManager
+	Wire.write(MESSAGETYPEID_NFC_LOCK);
+	Wire.write(state); 
+	Wire.endTransmission();
+}
+
+void NFCManager::_notifyToolOverallStatus(){
+	//Sends Tool a XBee message with a status of each detector
+	_xBeePayload[0] = MESSAGETYPEID_NFC_TOOL;
+	_xBeePayload[1] = MESSAGETYPEID_NFC_TOOL_STATUS;
+	for(int i=0; i<5; i++){
+		_xBeePayload[i+2] = _managerStates[i];
+	}
+	_xbee_pointer->send(_toolZBTxRequest);
+}
+
+void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected){
+	_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
+	_xBeePayload[1] = _managerId;
+	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
+	_xBeePayload[3] = detectorId;
+	_xbee_pointer->send(_laser1ZBTxRequest);
+	_xbee_pointer->send(_toolZBTxRequest);
 }
 
 void NFCManager::_registerDetector(uint8_t detectorId){
@@ -92,7 +142,7 @@ void NFCManager::setXBeeReference(XBee* xbee_pointer){
 
 void NFCManager::_updateDetectorStates(uint8_t detectorId, bool detectedExpectedNFC){
 	int i=0;
-	for(int i=0; i<_numRegisteredDetector; i++){
+	for(i=0; i<_numRegisteredDetector; i++){
 		if(detectorId == _registeredDetectorIds[i]){
 			break;
 		}

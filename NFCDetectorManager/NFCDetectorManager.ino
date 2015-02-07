@@ -6,7 +6,7 @@
 //I2C address - 1  
   
 XBee xbee = XBee();
-volatile uint8_t i2cData[3] = {0,0,0};
+volatile uint8_t i2cDataBuffer[9] = {0,0,0,0,0,0,0,0,0};
 volatile boolean receivedMessage = false;
 // need to store expected UID for each detector
 
@@ -22,11 +22,15 @@ void setup() {
   nfcManager.setXBeeReference(&xbee);
 }
 
-void receiveI2CEvent(int howMany){
-  if(3 == howMany){
-    i2cData[0] = Wire.read();
-    i2cData[1] = Wire.read(); 
-    i2cData[2] = Wire.read();
+void receiveI2CEvent(int howMany){  
+  if(NFC_MESSAGE_MAX_SIZE+1 > howMany){ // assume 9 is the max size of XBee message
+    for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
+      if(i>=howMany){
+        i2cDataBuffer[i] = 0;
+      } else {
+        i2cDataBuffer[i] = Wire.read(); 
+      }
+    }
     receivedMessage = true; // TODO: need better way to queue incoming requests
   } else {
     while(1 < Wire.available()) // loop through all but the last
@@ -39,11 +43,22 @@ void receiveI2CEvent(int howMany){
 
 void loop() {
   if(receivedMessage){
-    nfcManager.handleI2CMessage(3, i2cData);
+    uint8_t data[NFC_MESSAGE_MAX_SIZE] = {};
+    for(int i=0;i<NFC_MESSAGE_MAX_SIZE;i++){
+      data[i] = i2cDataBuffer[i]; 
+    }  
+    nfcManager.handleI2CMessage(9, data);
+
+    clearI2CBuffer();
     receivedMessage = false; 
   }
 }
 
+void clearI2CBuffer(){
+  for(int i=0; i<UID_LENGTH; i++){
+    i2cDataBuffer[i] = 0;
+  }
+}
 
 void blinkLED(int times){
   for(int i=0; i<times; i++){

@@ -13,21 +13,23 @@
 class NFCManager
 {
   public:
-    NFCManager(int managerId, bool localLockManager);
+    NFCManager(int managerId, bool isPrimary);
     void registerWithShelfLockManager();
-    void handleI2CMessage(uint8_t dataLength, volatile uint8_t data[]);
+    void handleI2CMessage(uint8_t dataLength, uint8_t data[]);
   	void setXBeeReference(XBee* xbee_pointer);
     void setLockManagerI2CAdder(int i2cAddr);
 
   private:
     int _managerId;
     int _numRegisteredDetector;
-    int _registeredDetectorIds[];
-    bool _registeredDetectorStates[];
-    uint8_t _xBeePayload[];
+    int _registeredDetectorIds[3];
+    bool _registeredDetectorStates[3];
+    bool _managerStates[5];
+    uint8_t _xBeePayload[NFC_MESSAGE_MAX_SIZE];
     uint8_t _detectorIdIndexMap;
-    bool _localLockManager;  // if localLockManager is true, then relay messages via I2C
-    int _localLockManagerAddr; // if localLockManager is true, set the I2C addr for the LockManager
+    bool _shelfIsLocked;
+    bool _isPrimary;  // if _isPrimary is true, then relay messages via I2C
+    int _localLockManagerAddr; // if _isPrimary is true, set the I2C addr for the LockManager
     XBee* _xbee_pointer;
     
     XBeeAddress64 _laser1Addr;
@@ -38,7 +40,10 @@ class NFCManager
     void _registerDetector(uint8_t detectorId);
     void _updateDetectorStates(uint8_t detectorId, bool detectedExpectedNFC);
     bool _areAllDetectorDetected();
-    void _notifyLockManager(bool allDetectedExpectedNFC);
+    void _notifyPrimaryManager(uint8_t detectorId, bool detected);
+    void _checkAndUpdateLock();
+    void _sendLockMessage(bool unlock);
+    void _notifyToolOverallStatus();
 };
 
 #endif
