@@ -9,6 +9,7 @@
 const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 	// 101 - 105 == NFC detectors
 const int SHELF_LOCK_I2C_ADDR = 106;
+const int BGM_I2C_ADDR = 107;
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -50,8 +51,15 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 1;  // x -> LaserController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 2; // x -> LaserController
 
-const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
 
+const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
+const uint8_t MESSAGETYPEID_BGM_PLAY = 2;
+const uint8_t MESSAGETYPEID_BGM_STOP = 3;
+const uint8_t MESSAGETYPEID_BGM_NEXT = 4;
+
+
+const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
+const int GLOBAL_LASER_MANAGER_ID[] = {0,0,0,1,1,1,2,2,2};
 /*
 Laser Control message protocol
 	x -> LaserController
@@ -113,4 +121,18 @@ Pic 5 - 0x04 0xF6 0x87 0x82 0x1C 0x23 0x80
 
 */
 
+<<<<<<< HEAD
 #endif
+=======
+/*
+XBee
+0x0013a200, 0x40c04f18 - NFC Manager
+0x0013a200, 0x40c337e0 - laser3
+0x0013a200, 0x40c04ef1 - laser2
+0x0013a200, 0x40c04edf - laser1
+0x0013a200, 0x40b9df66 - Tool
+
+*/
+
+#endif
+>>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94

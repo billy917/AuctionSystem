@@ -5,7 +5,6 @@
 #include "Playlist.h"
 
 Playlist::Playlist () {
-    fillDataSong();
     init();
 }
 
@@ -14,12 +13,6 @@ void Playlist::init (){
     currentSongLength = 0;
     currentSong = songList[0];
     Serial.println ("Playlist created successfully.");
-}
-
-void Playlist::fillDataSong() {
-    for (int i = 0; i < TOTAL_SONGS; i++){
-        songList[i] = new Song (180, String(i));
-    }
 }
 
 void Playlist::info(){
@@ -38,11 +31,6 @@ void Playlist::status(){
     Serial.print (" - ");
     Serial.println (currentSong->length);
 
-    if (currentSongLength >= currentSong->length){
-        nextSong();
-    } else{
-        currentSongLength += 1;
-    }
 }
 
 void Playlist::playSong(){

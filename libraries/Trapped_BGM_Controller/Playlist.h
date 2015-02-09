@@ -26,8 +26,7 @@ class Playlist{
         void stopSong();
 
     protected:
-        void init ();
-        void fillDataSong();
+        void init();
 };
 
 #endif
