@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <Servo.h>
 #include <XBee.h>
+#include "Constants.h"
+#include "LaserController.h"
  
 // Pin 13 has an LED connected on most Arduino boards.
 
@@ -28,7 +30,7 @@ XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
 uint8_t commandData[] = {0,0};
 
-
+uint8_t xbeeData[3] = {0,0,0};
 uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
@@ -36,15 +38,18 @@ ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload))
 XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0);
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
+int laserControllerId = 1;
+LaserController laserController(laserControllerId,false);
+
 // the setup routine runs once when you press reset:
 void setup() {           
-
   Serial.begin(9600);
-  
+ 
   // initialize the digital pin as an output.
   for(int i=0; i<3; i++){
     pinMode(laserPins[i], OUTPUT);
-    digitalWrite(laserPins[i], LOW);    
+    digitalWrite(laserPins[i],LOW);
+    laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i]);
   }
   
   resetServoPositions();
@@ -74,9 +79,12 @@ void handleXBeeMsg(){
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
     nextMode = rx.getData(0);
-    if(5 == nextMode){
+    xbeeData[0] = nextMode;
+    if(5 == nextMode || 12 == nextMode){
       commandData[0] = rx.getData(1);
+      xbeeData[1] = commandData[0];
       commandData[1] = rx.getData(2);
+      xbeeData[2] = commandData[1];
     }
   } 
 }
@@ -92,7 +100,9 @@ void instructModeChange(int nextMode){
 
 void handleCommands(){
   if(nextMode != 0){
-    if(nextMode == 1){
+    if(laserController.canHandleMessageType(xbeeData[0])){
+      laserController.handleMessage(3, xbeeData);
+    } else if(nextMode == 1){
       //Turn Off  
       
       //instruct laser mode change via xBee
