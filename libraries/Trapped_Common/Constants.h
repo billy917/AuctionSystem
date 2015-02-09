@@ -10,11 +10,19 @@ const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 	// 101 - 105 == NFC detectors
 const int SHELF_LOCK_I2C_ADDR = 106;
 
+	// hardware I2C address
+	// - 7-Segment LED 0x70 -- 112
+	// - Light sensor 0x29, 0x39, 0x49  -- 41, 57, 73
+	// - LCD - 0x3F -- 63
+
 const int UID_LENGTH = 7;
 const uint8_t MESSAGETYPEID_NFC = 6; //enum are ints
 const uint8_t MESSAGETYPEID_NFC_MANAGE = 7;
 const uint8_t MESSAGETYPEID_NFC_LOCK = 8;
 const uint8_t MESSAGETYPEID_NFC_TOOL = 9;
+const uint8_t MESSAGETYPEID_LASER_SENSOR = 10;
+const uint8_t MESSAGETYPEID_LASER_CONTROL = 11;
+const uint8_t MESSAGETYPEID_BGM = 12;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -26,6 +34,7 @@ const uint8_t MESSAGETYPEID_NFC_MANAGE_NOTFOUND = 2;
 const uint8_t MESSAGETYPEID_NFC_MANAGE_REGISTER = 3; // register with primary manager
 const uint8_t MESSAGETYPEID_NFC_MANAGE_REQUEST = 4; // PrimaryManager -> Manager
 const uint8_t MESSAGETYPEID_NFC_MANAGE_STATUS = 5; // Manager -> PrimaryManager
+const uint8_t MESSAGETYPEID_NFC_MANAGE_DEBUG = 6; // PrimaryManager -> set DebugMode
 
 const uint8_t MESSAGETYPEID_NFC_LOCK_LOCK = 1; 	// Manager -> Lock
 const uint8_t MESSAGETYPEID_NFC_LOCK_UNLOCK = 2; // Manager -> Unlock
@@ -33,8 +42,38 @@ const uint8_t MESSAGETYPEID_NFC_LOCK_UNLOCK_5SEC = 3; // Manager -> Unlock 5 sec
 
 const uint8_t MESSAGETYPEID_NFC_TOOL_REQUEST = 1; // Tool -> PrimaryManager
 const uint8_t MESSAGETYPEID_NFC_TOOL_STATUS = 2; // PrimaryManager -> Tool
+const uint8_t MESSAGETYPEID_NFC_TOOL_DEBUG = 3; // Tool -> PrimaryManager set DebugMode
+
+const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Laser1
+const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
+
+const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 1;  // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 2; // x -> LaserController
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
+
+/*
+Laser Control message protocol
+	x -> LaserController
+	[0] messageTypeId (11)
+	[1] detailedMessageType (1 = on, 2 = off)
+	[2] laserId
+*/
+
+/*
+LASER Sensor message protocol
+	Manager <-> Tool
+	[0] messageTypeId (10)
+	[1] detailedMessageType (1 = enable debug, 2 = request status, 3 = status response, 4 = trip event)
+	[2] sensorId
+	[3] sensorState (only for detailedMessageType #2) 
+
+	Manager <-> PrimaryManager (next to clock)
+	[0] messageTypeId (10)
+	[1] detailedMessageType (1 = tripped laser)
+	[2] sensorId	
+*/
+
 /*
 NFC message protocol
  	Detector <-> Manager
@@ -45,7 +84,7 @@ NFC message protocol
 	Manager <-> Primary Manager
 	[0] messageTypeId (7)
 	[1] managerId
-	[2] parameter (1 = found, 2 = not found, 3 = register with primary Manager, 4 = request status, 5 = status response)
+	[2] parameter (1 = found, 2 = not found, 3 = register with primary Manager, 4 = request status, 5 = status response, 6 = set debug mode)
 	[3] detectorId (for 1 and 2)
 
 	Primary Manager <-> Lock
@@ -54,7 +93,7 @@ NFC message protocol
 	
 	Primary Manager <-> Tool
 	[0] messageTypeId (9)
-	[1] parameter (1 = request status, 2 = status response)
+	[1] parameter (1 = request status, 2 = status response, 3 = set debug mode)
 	[2] data (populated for messageType 2)
 			uint8_t numDetectors, [uint8_t detectorId, uint8_t state]  - state:{0,1}
 
