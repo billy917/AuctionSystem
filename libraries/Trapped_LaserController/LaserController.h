@@ -19,7 +19,8 @@ class LaserController
 
   private:
     int _controllerId;
-    int _laserIds[3];
+    int _numRegisteredLasers;
+    int _localLaserIds[3];
     int _laserPins[3];
     int _laserStates[3];
 
