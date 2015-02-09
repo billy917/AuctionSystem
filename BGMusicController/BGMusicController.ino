@@ -2,7 +2,7 @@
  * BGMusicController.ino
 */
 
-#include "PlaylistPin.h"
+#include "Playlist.h"
 
 // Initialize variables
 int keypad = 0; // for keypad input
@@ -18,17 +18,18 @@ void setup() {
 
     Serial.begin(9600); // opens serial port, sets data rate to 9600    
 
-    playlist = new PlaylistPin();
+    playlist = new Playlist();
+    fillDataSong();
     playlist->info();
     Serial.println ("Ready");
 
     playlist->playSong();
     pinMode(playlist->currentSongIndex + 2, OUTPUT);
-}
+} //end setup()
 
 void loop() {
     while (verify != true) {
-        //playlist->status();
+        playlist->status();
         if (playlist->currentSongLength >=
             playlist->currentSong->length) {
             
@@ -47,7 +48,7 @@ void loop() {
     }
 
     Serial.println ("Correct code");
-}
+} //end loop()
 
 bool checkCode() {
     if (Serial.available()>0){
@@ -83,4 +84,19 @@ bool checkCode() {
             return false;
         }
     }
-}
+} //end checkCode()
+
+void fillDataSong(){
+    playlist->songList[0] = new Song (186, "1725");
+    playlist->songList[1] = new Song (172, "1804");
+    playlist->songList[2] = new Song (217, "1936");
+    playlist->songList[3] = new Song (223, "1935");
+    playlist->songList[4] = new Song (170, "1867");
+    playlist->songList[5] = new Song (132, "1875");
+    playlist->songList[6] = new Song (147, "1880");
+    playlist->songList[7] = new Song (170, "1787");
+    playlist->songList[8] = new Song (208, "1756");
+    playlist->songList[9] = new Song (136, "1942");
+    playlist->songList[10] = new Song (137, "1892");
+
+} //end fillDataSong()
