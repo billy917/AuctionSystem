@@ -51,19 +51,11 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 1;  // x -> LaserController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 2; // x -> LaserController
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
 const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
 const uint8_t MESSAGETYPEID_BGM_PLAY = 2;
 const uint8_t MESSAGETYPEID_BGM_STOP = 3;
 const uint8_t MESSAGETYPEID_BGM_NEXT = 4;
 
-
-=======
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
-=======
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
 const int GLOBAL_LASER_MANAGER_ID[] = {0,0,0,1,1,1,2,2,2};
 /*
@@ -127,15 +119,6 @@ Pic 5 - 0x04 0xF6 0x87 0x82 0x1C 0x23 0x80
 
 */
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-#endif
-=======
-=======
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
-=======
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
 /*
 XBee
 0x0013a200, 0x40c04f18 - NFC Manager
@@ -146,13 +129,4 @@ XBee
 
 */
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 #endif
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
-=======
-#endif
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
-=======
-#endif
->>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
