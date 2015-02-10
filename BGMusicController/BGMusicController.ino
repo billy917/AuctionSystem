@@ -1,90 +1,105 @@
 /* 
  * BGMusicController.ino
+ * Receive commands from KEYPAD-LOCK CONTROLLER
 */
 
 #include "Playlist.h"
+#include "Constants.h"
+#include "Wire.h"
 
-// Initialize variables
-int keypad = 0; // for keypad input
-int failCount = 0; // for keeping track number of failed tries
-bool verify = false;
+#define PIN_OFFSET 2
+
+/* Initialize variables */
+uint8_t commandReceive = -1;
+char currentPassword[4];
 
 Playlist *playlist;
 
 void setup() {
+    /* Setting up pins connecting to sound board */
     uint8_t i;
-    for(i=2; i<=12; i++) pinMode(i, INPUT);
-    for(i=2; i<=12; i++) digitalWrite(i, LOW);
+    for(i=0 + PIN_OFFSET; i<=10 + PIN_OFFSET; i++) pinMode(i, INPUT);
+    for(i=0 + PIN_OFFSET; i<=10 + PIN_OFFSET; i++) digitalWrite(i, LOW);
+    
+    /* Setting up I2C Wire */
+    Wire.begin(BGM_I2C_ADDR); // this BGM Controller I2C port
+    Wire.onReceive (Received);
+    Wire.onRequest (Request);
 
-    Serial.begin(9600); // opens serial port, sets data rate to 9600    
-
+    Serial.begin(9600);
+    
+    /* Setting up music playlist */
     playlist = new Playlist();
     fillDataSong();
+    playlist->currentSong->code.toCharArray (currentPassword, 4);
     playlist->info();
     Serial.println ("Ready");
 
-    playlist->playSong();
-    pinMode(playlist->currentSongIndex + 2, OUTPUT);
 } //end setup()
 
 void loop() {
-    while (verify != true) {
-        playlist->status();
-        if (playlist->currentSongLength >=
-            playlist->currentSong->length) {
-            
-            playlist->stopSong();
-            pinMode(playlist->currentSongIndex + 2, INPUT);
+    /* Display current song time */
+    playlist->status();
 
-            playlist->nextSong();
-            pinMode(playlist->currentSongIndex + 2, OUTPUT);
+    /* Manage the different commands received from UNO */
+    if (commandReceive == MESSAGETYPEID_BGM_PLAY_SONG){
+        
+        /* Send current song password to UNO */
+        Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
+        Wire.write (currentPassword);
+        Wire.endTransmission();
 
-        } else {
-            playlist->currentSongLength += 1;
-        }
+        /* Play current song */
+        playlist->playSong();
+        pinMode (playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
+    
+    }else if (commandReceive == MESSAGETYPEID_BGM_STOP_SONG){
+        /* Stop playing current song. */
+        playlist->stopSong();
+        pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
 
-        verify = checkCode(); // check keypad input with song code
-        delay(1000);
+    } else if ((commandReceive == MESSAGETYPEID_BGM_NEXT_SONG) |
+                (playlist->currentSongLength >=
+                playlist->currentSong->length)){
+
+        /* Stop playing current song */
+        playlist->stopSong();
+        pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
+
+        playlist->nextSong();
+
+        /* Get new song password */
+        playlist->currentSong->code.toCharArray (currentPassword, 4);
+
+        /* Send the new song password to controller */
+        Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
+        Wire.write (currentPassword);
+        Wire.endTransmission();
+
+        pinMode(playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
+
+    } else {
+        playlist->currentSongLength += 1;
     }
 
-    Serial.println ("Correct code");
+    /* Reset commandReceive */
+    commandReceive = -1;
+
+    delay(1000);
+
 } //end loop()
 
-bool checkCode() {
-    if (Serial.available()>0){
-        keypad = Serial.parseInt(); // read the incoming byte
-        
-        Serial.print ("I received: ");
-        Serial.println (keypad);
+/* I2C onReceive interrupt */
+void Received (int noBytes){
+    commandReceive = Wire.read();
 
-        if (String(keypad).equals(playlist->currentSong->code)) {
-            playlist->stopSong();
-            pinMode (playlist->currentSongIndex + 2, INPUT);
+} //end Received()
 
-            return true;
+/* I2C onRequest interrupt */
+void Request(){
+    Wire.write (currentPassword);
 
-        }else {
-            failCount += 1;
-            Serial.print ("Wrong Code! The correct code is ");
-            Serial.print (playlist->currentSong->code);
-            Serial.print (" and ");
-            Serial.print (3 - failCount);
-            Serial.println (" tries left.");
-
-            if (failCount >= 3) {
-                failCount = 0;
-                
-                playlist->stopSong();
-                pinMode (playlist->currentSongIndex + 2, INPUT);
-
-                playlist->nextSong();
-                pinMode (playlist->currentSongIndex + 2, OUTPUT);
-
-            }
-            return false;
-        }
-    }
-} //end checkCode()
+} //end Request()
 
 void fillDataSong(){
     playlist->songList[0] = new Song (186, "1725");
