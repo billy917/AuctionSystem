@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /*
  * SafeKeypad.ino
  * Gets input from keypad, transmits to BGM CONTROLLER,
@@ -215,3 +216,19 @@ bool checkPassword(){
         }
 
 } //end checkPassword()
+=======
+#include <Wire.h>
+#include "Constants.h"
+#include <Keypad.h>
+#include "SafeKeyPad.h"
+
+void setup() {
+  // put your setup code here, to run once:
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly: 
+  
+}
+>>>>>>> 582164c00b309aa3c63d619de3857f5b4a857a94
