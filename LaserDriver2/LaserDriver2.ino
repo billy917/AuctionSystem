@@ -39,7 +39,7 @@ XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0);
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
 int laserControllerId = 1;
-LaserController laserController(laserControllerId,false);
+LaserController laserController(laserControllerId, false);
 
 // the setup routine runs once when you press reset:
 void setup() {           
@@ -80,7 +80,7 @@ void handleXBeeMsg(){
     xbee.getResponse().getZBRxResponse(rx);
     nextMode = rx.getData(0);
     xbeeData[0] = nextMode;
-    if(5 == nextMode || 12 == nextMode){
+    if(5 == nextMode || MESSAGETYPEID_LASER_CONTROL == nextMode){
       commandData[0] = rx.getData(1);
       xbeeData[1] = commandData[0];
       commandData[1] = rx.getData(2);

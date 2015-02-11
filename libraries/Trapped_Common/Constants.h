@@ -51,6 +51,9 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 1;  // x -> LaserController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 2; // x -> LaserController
 
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
+
 const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
 const uint8_t MESSAGETYPEID_BGM_PLAY = 2;
 const uint8_t MESSAGETYPEID_BGM_STOP = 3;
