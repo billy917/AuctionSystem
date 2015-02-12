@@ -335,6 +335,7 @@ boolean handleMenuSelection(){
   if(currentMenu == MainMenu){
     if(currentRowSelection == 0){
       currentMenu = ToogleLaser;
+      currentRowSelection = 0;
       updated = true;
     } else if (currentRowSelection == 1){
       currentMenu = DetectSensor;
@@ -346,18 +347,18 @@ boolean handleMenuSelection(){
     } 
   } else if (currentMenu == ToogleLaser){
     bool currState = laserState[currentRowSelection];
-    bool newState = !currState;
-    if(currState = true){
+    if(currState){
       xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_OFF;
+      laserState[currentRowSelection] = false;
     } else {
       xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_ON;
+      laserState[currentRowSelection] = true;
     }
     xbeePayload[0] = MESSAGETYPEID_LASER_CONTROL;
     xbeePayload[2] = currentRowSelection;  
     xbee.send(laser1Tx); 
-    xbee.send(laser2Tx); 
-    xbee.send(laser3Tx); 
-    laserState[currentRowSelection] = newState;
+    //xbee.send(laser2Tx); 
+    //xbee.send(laser3Tx); 
     updated = true;
   }
   return updated;
@@ -366,7 +367,7 @@ boolean handleMenuSelection(){
 boolean handleMenuBack(){
   boolean updated = false;
   if(currentMenu == ToogleLaser || currentMenu == DetectSensor || currentMenu == UnlockShelf){
-    currentRowSelection = 1;
+    currentRowSelection = 0;
     currentMenu = MainMenu; 
     updated = true;
   }
@@ -377,22 +378,22 @@ boolean handleMenuBack(){
 int CheckJoystick()
 {
   // battery
-  /*
+  
   int joystickState = analogRead(3);
   if (joystickState < 50) return Left;
   if (joystickState < 250) return Down;
   if (joystickState < 400) return Press;
   if (joystickState < 600) return Right;
   if (joystickState < 1020) return Up;
-  */
-   
+  
+  /*
   int joystickState = analogRead(3);
   if (joystickState < 50) return Left;
   if (joystickState < 250) return Down;
   if (joystickState < 400) return Press;
   if (joystickState < 550) return Right;
   if (joystickState < 950) return Up;
-  
+  */
   return Neutral;
 }
 

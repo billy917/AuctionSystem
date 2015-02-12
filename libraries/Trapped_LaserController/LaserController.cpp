@@ -69,7 +69,7 @@ void LaserController::_turnOffLocalLaser(int laserId){
 }
 
 void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){	
-	if(3 == dataLength){
+	if(canHandleMessageType(data[0])){
 		if(_isLaserIndexLocal(data[2])){
 			if(MESSAGETYPEID_LASER_SENSOR_ON == data[1]){
 				_turnOnLocalLaser(data[2]);

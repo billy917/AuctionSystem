@@ -13,6 +13,7 @@
 uint8_t commandReceive = -1;
 char currentPassword[4];
 
+
 Playlist *playlist;
 
 void setup() {
@@ -33,6 +34,7 @@ void setup() {
     fillDataSong();
     playlist->currentSong->code.toCharArray (currentPassword, 4);
     playlist->info();
+    playlist->playSong();
     Serial.println ("Ready");
 
 } //end setup()

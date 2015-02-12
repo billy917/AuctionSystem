@@ -46,7 +46,7 @@ void setup() {
 
   Serial.begin(9600);
   
-  // initialize the digital pin as an output.
+  // initialize the digital pin as an output.                                                                                                                                                                                           
   for(int i=0; i<3; i++){
     pinMode(laserPins[i], OUTPUT);
     digitalWrite(laserPins[i], LOW);
@@ -58,6 +58,7 @@ void setup() {
   Wire.begin(1);
   Wire.onReceive(receiveEvent);
   xbee.begin(Serial);   
+  laserController.setXBeeReference(&xbee);
 }
 
 volatile int nextMode = 0;
@@ -83,7 +84,7 @@ void handleXBeeMsg(){
     xbee.getResponse().getZBRxResponse(rx);
     nextMode = rx.getData(0);
     xbeeData[0] = nextMode;
-    if(5 == nextMode || 6 == nextMode){
+    if(5 == nextMode || 6 == nextMode || MESSAGETYPEID_LASER_CONTROL == nextMode){
       commandData[0] = rx.getData(1);
       xbeeData[1] = commandData[0];      
       commandData[1] = rx.getData(2);

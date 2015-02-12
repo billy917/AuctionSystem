@@ -10,6 +10,7 @@ const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 	// 101 - 105 == NFC detectors
 const int SHELF_LOCK_I2C_ADDR = 106;
 const int BGM_I2C_ADDR = 107;
+const int KEYPAD_LOCK_I2C_ADDR = 108;
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -55,12 +56,13 @@ const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
 
 const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
-const uint8_t MESSAGETYPEID_BGM_PLAY = 2;
-const uint8_t MESSAGETYPEID_BGM_STOP = 3;
-const uint8_t MESSAGETYPEID_BGM_NEXT = 4;
+const uint8_t MESSAGETYPEID_BGM_PLAY_SONG = 2;
+const uint8_t MESSAGETYPEID_BGM_STOP_SONG = 3;
+const uint8_t MESSAGETYPEID_BGM_NEXT_SONG = 4;
+
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
-const int GLOBAL_LASER_MANAGER_ID[] = {0,0,0,1,1,1,2,2,2};
+const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 /*
 Laser Control message protocol
 	x -> LaserController
