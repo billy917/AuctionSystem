@@ -7,6 +7,7 @@
 #include "Adafruit_LEDBackpack.h"
 #include "Adafruit_GFX.h"
 #include "pitches.h"
+#include "Constants.h"
 
 #include <Keypad.h>
 #include <Password.h>
@@ -29,11 +30,9 @@ int errorSound = NOTE_B0;
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 Password password = Password( "9999" );
-Password adminPassword = Password( "8888" );
 char passChar[4] = {};
 int passwordLength = 0;
 volatile int mode, nextMode = 1;
-volatile boolean adminMode = false;
 volatile boolean servoMode = false;
 
 void setup() {
@@ -50,44 +49,19 @@ void setup() {
   Wire.begin(1);
 }
 
-int servoIndex = -1;
 void keypadEvent(KeypadEvent eKey){
   if(PRESSED == keypad.getState()){
     Serial.print("Pressed: ");
     Serial.println(eKey);
-    Serial.println(adminMode);
-    if(adminMode) {
-      if(servoMode){
-        switch (eKey){
-          case '*': servoIndex = -1; break; 
-          case '#': servoMode = false;  servoIndex = -1; break; 
-          default: passChar[0]=eKey; updateLED(); passwordLength=1; servoIndex = eKey - '0';
-        } 
-      } else {
-        switch (eKey){
-          case '*': servoIndex = -1; break; 
-          case '#': adminMode=false; resetPassword(); servoIndex = -1; break; 
-          default: passChar[0]=eKey; updateLED(); passwordLength=1; servoMode = true; servoIndex = eKey - '0';
-        }
-      }
-    } else {
-      switch (eKey){
-        case '*': checkPassword(); break;
-        case '#': resetPassword(); break;
-        default: password.append(eKey); adminPassword.append(eKey); passChar[passwordLength]=eKey; updateLED(); pressedKeySound(eKey-'0'); passwordLength++; 
-      }
-    } 
-    
+    switch (eKey){
+      case '*': checkPassword(); break;
+      case '#': resetPassword(); break;
+      default: password.append(eKey); passChar[passwordLength]=eKey; updateLED(); pressedKeySound(eKey-'0'); passwordLength++; 
+    }
+   
     Serial.println(passwordLength);
-    if(adminMode && 2 == passwordLength){
-      nextMode = 5;
-      adminMode = false;
-      resetPassword();
-    } else if(4 == passwordLength){
-      checkAdminPassword();
-      if(!adminMode){
-        checkPassword(); 
-      }
+    if(4 == passwordLength){
+      checkPassword(); 
     }
   }
 }
@@ -134,17 +108,6 @@ void pressedKeySound(int numberPressed){
 void sucessUnlockSound(){}
 void failUnlockSound(){}
 
-void checkAdminPassword(){
-  Serial.println("Check admin");
-  if(adminPassword.evaluate()){
-    Serial.println("admin true");
-    adminMode = true;
-    resetPassword();
-  } else {
-     Serial.println("admin false"); 
-  }
-}
-
 void checkPassword(){
   blinkLED(250,4);
   if (password.evaluate()){
@@ -165,14 +128,12 @@ void checkPassword(){
 
 void resetPassword(){
   password.reset();
-  adminPassword.reset();
   passwordLength = 0;
   resetLED();
 }
 
 void loop() {
   keypad.getKey();
-  
   handleCommands();
 }
 
@@ -181,41 +142,15 @@ void handleCommands(){
     if(nextMode == 1){
       //Turn Off  
       instructModeChange(nextMode);
-    } else if (nextMode == 2){
-      //Arm System
-    } else if (nextMode == 3){
-      //Turn On
-      instructModeChange(nextMode);
-    } else if (nextMode == 5){
-       //Reposition laser
-      //instructRepositionLaser(); 
-    }
+    } 
     mode = nextMode;
   } 
 }
 
 void instructModeChange(int nextMode){
   // send instructions to internal I2C nodes on mode change
-  Wire.beginTransmission(2); //2 == LaserDriver2 addr
+  Wire.beginTransmission(NFC_MANAGER_I2C_ADDR); //2 == LaserDriver2 addr
   Wire.write(mode);
   Wire.endTransmission();
 }
 
-void instructRepositionLaser(int laserIndex, int moveDirectionChar){
-  
-  uint8_t moveDirection = 0;
-  if(moveDirectionChar == '2'){
-    moveDirection = 0;  
-  } else if(moveDirectionChar == '4'){
-    moveDirection = 2;  
-  } else if(moveDirectionChar == '6'){
-    moveDirection = 3;  
-  } else if(moveDirectionChar == '8'){
-    moveDirection = 1;  
-  }
-  xbeePayload[0] = 5;
-  xbeePayload[1] = laserIndex;
-  xbeePayload[2] = moveDirection;
-  
-  //xbee.send(laser1Tx);  
-}

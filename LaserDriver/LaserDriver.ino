@@ -84,7 +84,8 @@ void handleXBeeMsg(){
     xbee.getResponse().getZBRxResponse(rx);
     nextMode = rx.getData(0);
     xbeeData[0] = nextMode;
-    if(5 == nextMode || 6 == nextMode || MESSAGETYPEID_LASER_CONTROL == nextMode){
+    if(5 == nextMode || 6 == nextMode || MESSAGETYPEID_LASER_CONTROL == nextMode
+        || MESSAGETYPEID_LOCK == nextMode){
       commandData[0] = rx.getData(1);
       xbeeData[1] = commandData[0];      
       commandData[1] = rx.getData(2);
@@ -109,26 +110,22 @@ void instructI2CModeChange(int nextMode){
   Wire.endTransmission();
 }
 
-void instructI2CUnlockShelf(){
-  // send instruction to other I2C modules on mode change
-  Wire.beginTransmission(4); //4 == ShelfLock
-  Wire.write(6);
-  Wire.write(1);
+
+void forwardI2CMessage(int i2cAddr){
+  Wire.beginTransmission(i2cAddr); //4 == ShelfLock
+  Wire.write(xbeeData[0]);
+  Wire.write(xbeeData[1]);
+  Wire.write(xbeeData[2]);
   Wire.endTransmission();
 }
 
-void instructI2CLockShelf(){
-  // send instruction to other I2C modules on mode change
-  Wire.beginTransmission(4); //4 == ShelfLock
-  Wire.write(6);
-  Wire.write(0);
-  Wire.endTransmission();
-}
 
 void handleCommands(){
   if(nextMode != 0){
     if(laserController.canHandleMessageType(xbeeData[0])){
       laserController.handleMessage(3, xbeeData);
+    } if(MESSAGETYPEID_LOCK == nextMode){
+      forwardI2CMessage(LOCK_MANAGER_I2C_ADDR);
     } else if('I' == commandSource){
       // only tell other xBee if the nextMode command came from I2C
       instructXBeeModeChange(nextMode); 
@@ -157,17 +154,7 @@ void handleCommands(){
       //laserIndex = ; // possible value: 0, 1, 2
       //movementDirection =  //0 = up, 1 = down, 2 = left, 3 = right
       moveLaser(commandData[0], commandData[1]);
-    } else if (nextMode == 6){
-      //Sensor mode change
-      if(commandData[1]){
-        //correct NFC 
-        instructI2CUnlockShelf();
-      } else {
-        //incorrect NFC 
-        instructI2CLockShelf();
-      }
-    } 
-    
+    }
     nextMode = 0;
     commandSource = ' ';
   } 

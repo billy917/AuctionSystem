@@ -8,7 +8,7 @@
 
 const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 	// 101 - 105 == NFC detectors
-const int SHELF_LOCK_I2C_ADDR = 106;
+const int LOCK_MANAGER_I2C_ADDR = 106;
 const int BGM_I2C_ADDR = 107;
 const int KEYPAD_LOCK_I2C_ADDR = 108;
 
@@ -20,7 +20,7 @@ const int KEYPAD_LOCK_I2C_ADDR = 108;
 const int UID_LENGTH = 7;
 const uint8_t MESSAGETYPEID_NFC = 6; //enum are ints
 const uint8_t MESSAGETYPEID_NFC_MANAGE = 7;
-const uint8_t MESSAGETYPEID_NFC_LOCK = 8;
+const uint8_t MESSAGETYPEID_LOCK = 8;
 const uint8_t MESSAGETYPEID_NFC_TOOL = 9;
 const uint8_t MESSAGETYPEID_LASER_SENSOR = 10;
 const uint8_t MESSAGETYPEID_LASER_CONTROL = 11;
@@ -38,9 +38,14 @@ const uint8_t MESSAGETYPEID_NFC_MANAGE_REQUEST = 4; // PrimaryManager -> Manager
 const uint8_t MESSAGETYPEID_NFC_MANAGE_STATUS = 5; // Manager -> PrimaryManager
 const uint8_t MESSAGETYPEID_NFC_MANAGE_DEBUG = 6; // PrimaryManager -> set DebugMode
 
-const uint8_t MESSAGETYPEID_NFC_LOCK_LOCK = 1; 	// Manager -> Lock
-const uint8_t MESSAGETYPEID_NFC_LOCK_UNLOCK = 2; // Manager -> Unlock
-const uint8_t MESSAGETYPEID_NFC_LOCK_UNLOCK_5SEC = 3; // Manager -> Unlock 5 sec
+const uint8_t MESSAGETYPEID_LOCK_LOCKID_SHELF = 1;
+const uint8_t MESSAGETYPEID_LOCK_LOCKID_INWALL = 2;
+const uint8_t MESSAGETYPEID_LOCK_LOCKID_WHITEDOOR = 3;
+const uint8_t MESSAGETYPEID_LOCK_LOCKID_MAINDOOR = 4;
+
+const uint8_t MESSAGETYPEID_LOCK_LOCK = 1; 	// Manager -> Lock
+const uint8_t MESSAGETYPEID_LOCK_UNLOCK = 2; // Manager -> Unlock
+const uint8_t MESSAGETYPEID_LOCK_UNLOCK_5SEC = 3; // Manager -> Unlock 5 sec
 
 const uint8_t MESSAGETYPEID_NFC_TOOL_REQUEST = 1; // Tool -> PrimaryManager
 const uint8_t MESSAGETYPEID_NFC_TOOL_STATUS = 2; // PrimaryManager -> Tool
@@ -62,7 +67,22 @@ const uint8_t MESSAGETYPEID_BGM_NEXT_SONG = 4;
 
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
+
+const int LOCK_MANAGER_SHELF_PIN = 12;
+const int LOCK_MANAGER_INWALL_PIN = 11;
+const int LOCK_MANAGER_WDOOR_PIN = 10;
+const int LOCK_MANAGER_MDOOR_PIN = 9;
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
+
+
+/*
+Lock Control message protocol
+	x -> LockController
+	[0] messageTypeId (8)
+	[1] lockType (1 = Shelf, 2 = inwall, 3 = white door, 4 = main door)
+	[2] action (1 = lock, 2 = unlock, 3 = unlock for 5sec)
+*/
+
 /*
 Laser Control message protocol
 	x -> LaserController

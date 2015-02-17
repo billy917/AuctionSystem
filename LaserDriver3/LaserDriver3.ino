@@ -35,7 +35,7 @@ uint8_t xbeePayload[3] = { 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
-int laserControllerId = 2;
+int laserControllerId = 1;
 LaserController laserController(laserControllerId, false);
 
 // the setup routine runs once when you press reset:

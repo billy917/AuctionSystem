@@ -6,7 +6,7 @@
 //I2C address - 1  
   
 XBee xbee = XBee();
-volatile uint8_t i2cDataBuffer[9] = {0,0,0,0,0,0,0,0,0};
+volatile uint8_t i2cDataBuffer[NFC_MESSAGE_MAX_SIZE];
 volatile boolean receivedMessage = false;
 // need to store expected UID for each detector
 
