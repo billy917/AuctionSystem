@@ -38,7 +38,7 @@ ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload))
 XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0);
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
-int laserControllerId = 1;
+int laserControllerId = 2;
 LaserController laserController(laserControllerId, false);
 
 // the setup routine runs once when you press reset:
@@ -54,7 +54,7 @@ void setup() {
   
   resetServoPositions();
 
-  Wire.begin(2);
+  Wire.begin(NFC_MANAGER_I2C_ADDR);
   Wire.onReceive(receiveEvent);
   xbee.begin(Serial);   
 }

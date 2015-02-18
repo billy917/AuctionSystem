@@ -92,8 +92,8 @@ void LaserController::_forwardMessageToOtherControllers(uint8_t laserId, uint8_t
 	}
 
 	if(1 == GLOBAL_LASER_MANAGER_ID[laserId]){
-		_xbee->send(_laser2ZBTxRequest);
-	} else {
 		_xbee->send(_laser3ZBTxRequest);
+	} else {
+		_xbee->send(_laser2ZBTxRequest);
 	}
 }
