@@ -11,8 +11,7 @@
 #include "Keypad.h"
 //#include "pitches.h"
 
-char currentPassword[4] = {};
-char password[4] = {};
+char currentPassword[5] = {};
 int fail = 0;
 
 // Setup lock settings
@@ -47,29 +46,39 @@ void setup(){
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
 
+    delay (250);
+
     /* Tell BGM CONTROLLER to start playing the song */
+    Wire.beginTransmission (BGM_I2C_ADDR);
+    Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
+    Wire.endTransmission();
+
     Wire.beginTransmission (BGM_I2C_ADDR);
     Wire.write (MESSAGETYPEID_BGM_PLAY_SONG);
     Wire.endTransmission();
+
+    Serial.println ("Sent PLAY_SONG message.");
     
-    delay (10);
-
-    Serial.print ("Current Password: ");
-    Serial.println (currentPassword);
-
 } //end setup()
 
 void loop(){
 
     /* Get key input from keypad */
-    keypad.getKey():
+    keypad.getKey();
     handleCommands();
 
 } //end loop()
 
 /* I2C onReceive interrupt */
 void Received (int noBytes){
-    ((String)Wire.read()).toCharArray (currentPassword, 4);
+
+    int i;
+    for (i = 0; i < 4; i++) {
+        currentPassword[i] = Wire.read();
+    }
+
+    Serial.print ("Current password is ");
+    Serial.println (currentPassword);
 
 } //end Received()
 
@@ -172,17 +181,22 @@ bool checkPassword(){
     /* Check key input to song password */
         /* If key input IS song password */
 
-        if (password == currentPassword){
+        if (charArrayCompare (currentPassword, password)){
             /* Stop playing song */
             Wire.beginTransmission (BGM_I2C_ADDR);
             Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
             Wire.endTransmission();
 
+            Serial.println ("Correct password!");
+
             return true;
 
         } else {
         /* If key input is NOT song password */
-        /* If fail three times */
+            /* Increment fail counter by 1 */
+            fail += 1;
+
+            /* If fail three times */
             if (fail >= 3){
                 
                 /* Change to next song */
@@ -190,8 +204,7 @@ bool checkPassword(){
                 Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
                 Wire.endTransmission();
 
-                /* Delay for one milisecond to get new song's password */
-                delay (10);
+                //delay (200);
 
                 Serial.print ("New Password: ");
                 Serial.println (currentPassword);
@@ -199,12 +212,24 @@ bool checkPassword(){
                 /* Reset fail counter */
                 fail = 0;
 
-            } else {
-            /* Increment fail counter by 1 */
-                fail += 1;
             }
+            
+            Serial.print (3 - fail);
+            Serial.print (" time(s) left! The password is ");
+            Serial.println (currentPassword);
 
             return false;
         }
 
 } //end checkPassword()
+
+bool charArrayCompare (char one[], char two[]){
+    
+    int i;
+    bool equal = true;
+    for (i = 0; i < 4; i++){
+        (one[i] == two[i])? equal &= true: equal &= false;
+    }
+
+    return equal;
+}

@@ -11,8 +11,7 @@
 
 /* Initialize variables */
 uint8_t commandReceive = -1;
-char currentPassword[4];
-
+char currentPassword[5] = {};
 
 Playlist *playlist;
 
@@ -28,13 +27,19 @@ void setup() {
     Wire.onRequest (Request);
 
     Serial.begin(9600);
-    
+
     /* Setting up music playlist */
     playlist = new Playlist();
     fillDataSong();
-    playlist->currentSong->code.toCharArray (currentPassword, 4);
+    playlist->currentSong->code.toCharArray (currentPassword, 5);
+
+    Serial.print ("Current password: ");
+    Serial.println (currentPassword);
+    
+    /* delay one second for SafeKeyPad */
+    delay(30);
+
     playlist->info();
-    playlist->playSong();
     Serial.println ("Ready");
 
 } //end setup()
@@ -48,8 +53,10 @@ void loop() {
         
         /* Send current song password to UNO */
         Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
-        Wire.write (currentPassword);
+        wireWritePassword();
         Wire.endTransmission();
+
+        Serial.println ("Sent current password.");
 
         /* Play current song */
         playlist->playSong();
@@ -59,6 +66,9 @@ void loop() {
         /* Stop playing current song. */
         playlist->stopSong();
         pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
+
+        /* Reset song index */
+        playlist->currentSongIndex = 0;
 
     } else if ((commandReceive == MESSAGETYPEID_BGM_NEXT_SONG) |
                 (playlist->currentSongLength >=
@@ -71,11 +81,11 @@ void loop() {
         playlist->nextSong();
 
         /* Get new song password */
-        playlist->currentSong->code.toCharArray (currentPassword, 4);
+        playlist->currentSong->code.toCharArray (currentPassword, 5);
 
         /* Send the new song password to controller */
         Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
-        Wire.write (currentPassword);
+        wireWritePassword();
         Wire.endTransmission();
 
         pinMode(playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
@@ -95,25 +105,38 @@ void loop() {
 void Received (int noBytes){
     commandReceive = Wire.read();
 
+    Serial.print ("Received command: ");
+    Serial.println (commandReceive);
+
 } //end Received()
 
 /* I2C onRequest interrupt */
 void Request(){
-    Wire.write (currentPassword);
+    wireWritePassword();
 
 } //end Request()
 
 void fillDataSong(){
-    playlist->songList[0] = new Song (186, "1725");
-    playlist->songList[1] = new Song (172, "1804");
-    playlist->songList[2] = new Song (217, "1936");
+    playlist->songList[0] = new Song (185, "1725");
+    playlist->songList[1] = new Song (176, "1804");
+    playlist->songList[2] = new Song (216, "1936");
     playlist->songList[3] = new Song (223, "1935");
-    playlist->songList[4] = new Song (170, "1867");
-    playlist->songList[5] = new Song (132, "1875");
+    playlist->songList[4] = new Song (169, "1867");
+    playlist->songList[5] = new Song (131, "1875");
     playlist->songList[6] = new Song (147, "1880");
     playlist->songList[7] = new Song (170, "1787");
-    playlist->songList[8] = new Song (208, "1756");
-    playlist->songList[9] = new Song (136, "1942");
-    playlist->songList[10] = new Song (137, "1892");
+    playlist->songList[8] = new Song (207, "1756");
+    playlist->songList[9] = new Song (135, "1942");
+    playlist->songList[10] = new Song (136, "1892");
+    //playlist->songList[11] = new Song (178, "1720");
 
 } //end fillDataSong()
+
+void wireWritePassword(){
+
+    Wire.write (currentPassword[0]);
+    Wire.write (currentPassword[1]);
+    Wire.write (currentPassword[2]);
+    Wire.write (currentPassword[3]);
+
+} //end wireWritePassword()
