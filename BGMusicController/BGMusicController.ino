@@ -51,21 +51,11 @@ void loop() {
     /* Manage the different commands received from UNO */
     if (commandReceive == MESSAGETYPEID_BGM_PLAY_SONG){
         
-        /* Send current song password to UNO */
-        Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
-        wireWritePassword();
-        Wire.endTransmission();
-
-        Serial.println ("Sent current password.");
-
-        /* Play current song */
-        playlist->playSong();
-        pinMode (playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
+        playSong();
     
     }else if (commandReceive == MESSAGETYPEID_BGM_STOP_SONG){
-        /* Stop playing current song. */
-        playlist->stopSong();
-        pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
+        
+        stopSong();
 
         /* Reset song index */
         playlist->currentSongIndex = 0;
@@ -74,24 +64,12 @@ void loop() {
                 (playlist->currentSongLength >=
                 playlist->currentSong->length)){
 
-        /* Stop playing current song */
-        playlist->stopSong();
-        pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
-
-        playlist->nextSong();
-
-        /* Get new song password */
-        playlist->currentSong->code.toCharArray (currentPassword, 5);
-
-        /* Send the new song password to controller */
-        Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
-        wireWritePassword();
-        Wire.endTransmission();
-
-        pinMode(playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
+        nextSong();
 
     } else {
-        playlist->currentSongLength += 1;
+        if (playlist->currentSongLength > 0){
+            playlist->currentSongLength += 1;
+        }
     }
 
     /* Reset commandReceive */
@@ -117,26 +95,63 @@ void Request(){
 } //end Request()
 
 void fillDataSong(){
-    playlist->songList[0] = new Song (185, "1725");
-    playlist->songList[1] = new Song (176, "1804");
-    playlist->songList[2] = new Song (216, "1936");
-    playlist->songList[3] = new Song (223, "1935");
-    playlist->songList[4] = new Song (169, "1867");
+
+    playlist->songList[0] = new Song (136, "1892");
+    playlist->songList[1] = new Song (135, "1942");
+    playlist->songList[2] = new Song (207, "1756");
+    playlist->songList[3] = new Song (170, "1787");
+    playlist->songList[4] = new Song (147, "1880");
     playlist->songList[5] = new Song (131, "1875");
-    playlist->songList[6] = new Song (147, "1880");
-    playlist->songList[7] = new Song (170, "1787");
-    playlist->songList[8] = new Song (207, "1756");
-    playlist->songList[9] = new Song (135, "1942");
-    playlist->songList[10] = new Song (136, "1892");
+    playlist->songList[6] = new Song (169, "1867");
+    playlist->songList[7] = new Song (223, "1935");
+    playlist->songList[8] = new Song (217, "1936");
+    playlist->songList[9] = new Song (176, "1804");
+    playlist->songList[10] = new Song (185, "1725");
     //playlist->songList[11] = new Song (178, "1720");
 
 } //end fillDataSong()
 
 void wireWritePassword(){
 
-    Wire.write (currentPassword[0]);
-    Wire.write (currentPassword[1]);
-    Wire.write (currentPassword[2]);
-    Wire.write (currentPassword[3]);
+    int i;
+    for (i = 0; i < 4; i++){
+        Wire.write (currentPassword[i]);
+    }
 
 } //end wireWritePassword()
+
+void playSong(){
+    /* Send current song password to UNO */
+    Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
+    wireWritePassword();
+    Wire.endTransmission();
+    
+    Serial.println ("Sent current password.");
+
+    /* Play current song */
+    playlist->playSong();
+    pinMode (playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
+    playlist->currentSongLength = 1;
+
+} //end playSong()
+
+void stopSong(){
+    /* Stop playing current song. */
+    playlist->stopSong();
+    pinMode (playlist->currentSongIndex + PIN_OFFSET, INPUT);
+
+} //end stopSong()
+
+void nextSong(){
+    
+    stopSong();
+
+    /* Increment song index */
+    playlist->nextSong();
+
+    /* Get new song password */
+    playlist->currentSong->code.toCharArray (currentPassword, 5);
+
+    playSong();
+
+} //end nextSong()
