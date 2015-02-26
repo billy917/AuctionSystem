@@ -98,7 +98,7 @@ void initLEDs(){
 
 void turnOnRed(int num){
   switch (num){
-    case 3: analogWrite(A0,HIGH);
+    case 3: analogWrite(A0,255);
     case 2: digitalWrite(11,HIGH);
     case 1: digitalWrite(9,HIGH); 
   } 
@@ -117,7 +117,7 @@ void turnOnGreenLEDs(){
   turnOffLEDs();
   digitalWrite(10,HIGH);
   digitalWrite(12,HIGH);
-  analogWrite(A1,HIGH);
+  analogWrite(A1,255);
 }
 
 void keypadEvent(KeypadEvent eKey){
@@ -131,10 +131,13 @@ void keypadEvent(KeypadEvent eKey){
       } 
       
       if(4 == passwordLength){
-        if(checkPassword()){         
+        bool passwordMatch = checkPassword();
+        delay(2000);
+
+        if(passwordMatch){
           locked = false;  
           Serial.println("Unlocked!");
-        } else {          
+        } else {
           clearPassword();
           Serial.println("Failed");
         }
@@ -161,19 +164,32 @@ void clearPassword(){
 
 void updateLED(){
   int length = passwordLength;
+  /*
   if(length == 4){
-   length = 3; 
+   length = 3;
   }
+  */
   
   matrix.clear();
   int j=0;
-  for(int i=3-length;i<4;i++){
+  
+  for (int i=5-length; i<5; i++){
+      int k=i;
+      if(i<3){k--;}
+      matrix.writeDigitNum (k, password[j]-'0',false);
+      j++;
+  }
+  /*for(int i=3-length;i<4;i++){
     int k = i;
     if(i>1){k++;}
     matrix.writeDigitNum(k,password[j]-'0',false);
     j++;
   }
+  */
+ 
+
   matrix.writeDisplay();  
+
   Serial.println(password);
 }
 
@@ -188,6 +204,8 @@ bool checkPassword(){
             Wire.endTransmission();
 
             Serial.println ("Correct password!");
+            
+            turnOnGreenLEDs();
 
             return true;
 
@@ -195,22 +213,24 @@ bool checkPassword(){
         /* If key input is NOT song password */
             /* Increment fail counter by 1 */
             fail += 1;
+            turnOnRed(fail);
 
             /* If fail three times */
             if (fail >= 3){
-                
+
                 /* Change to next song */
                 Wire.beginTransmission (BGM_I2C_ADDR);
                 Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
                 Wire.endTransmission();
 
-                //delay (200);
+                delay (2000);
 
                 Serial.print ("New Password: ");
                 Serial.println (currentPassword);
 
                 /* Reset fail counter */
                 fail = 0;
+                turnOffLEDs();
 
             }
             
