@@ -11,6 +11,8 @@ const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 const int LOCK_MANAGER_I2C_ADDR = 106;
 const int BGM_I2C_ADDR = 107;
 const int KEYPAD_LOCK_I2C_ADDR = 108;
+const int KEYPAD_I2C_ADDR = 109;
+const int CLOCK_I2C_ADDR = 110;
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -25,6 +27,7 @@ const uint8_t MESSAGETYPEID_NFC_TOOL = 9;
 const uint8_t MESSAGETYPEID_LASER_SENSOR = 10;
 const uint8_t MESSAGETYPEID_LASER_CONTROL = 11;
 const uint8_t MESSAGETYPEID_BGM = 12;
+const uint8_t MESSAGETYPEID_CLOCK = 13;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -65,8 +68,16 @@ const uint8_t MESSAGETYPEID_BGM_PLAY_SONG = 2;
 const uint8_t MESSAGETYPEID_BGM_STOP_SONG = 3;
 const uint8_t MESSAGETYPEID_BGM_NEXT_SONG = 4;
 
+const uint8_t MESSAGETYPEID_CLOCK_RESET = 1;
+const uint8_t MESSAGETYPEID_CLOCK_START = 2;
+const uint8_t MESSAGETYPEID_CLOCK_PAUSE = 3;
+const uint8_t MESSAGETYPEID_CLOCK_MODIFY = 4;
+const uint8_t MESSAGETYPEID_CLOCK_MODIFY_ADD = 1;
+const uint8_t MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT = 2;
+
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
+const uint8_t I2C_MESSAGE_MAX_SIZE = 9; // should be same as NFC Message Max Size
 
 const int LOCK_MANAGER_SHELF_PIN = 12;
 const int LOCK_MANAGER_INWALL_PIN = 11;
@@ -74,6 +85,16 @@ const int LOCK_MANAGER_WDOOR_PIN = 10;
 const int LOCK_MANAGER_MDOOR_PIN = 9;
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 
+const int CLOCK_MODE_PAUSE = 1;
+const int CLOCK_MODE_COUNTDOWN = 2;
+
+/*
+Clock Control message protocol
+	[0] messageTypeId (13)
+	[1] detailedMessageType (1 = reset, 2 = start, 3 = pause, 4 = modify time)
+	[2] action for adding/subtract time (1 = add, 2 = subtract)
+	[3] quantity (1)
+*/
 
 /*
 Lock Control message protocol
