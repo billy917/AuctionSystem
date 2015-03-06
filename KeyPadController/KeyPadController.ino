@@ -8,11 +8,14 @@
 #include "Adafruit_GFX.h"
 #include "pitches.h"
 #include "Constants.h"
+#include "Digits.h"
+#include "Clock.h"
 
 #include <Keypad.h>
 #include <Password.h>
 
 Adafruit_7segment matrix = Adafruit_7segment();
+Clock clock(10,11,12);
 
 const byte ROWS = 4; //four rows
 const byte COLS = 3; //three columns
@@ -22,9 +25,9 @@ char keys[ROWS][COLS] = {
 	{'7','8','9'},
 	{'*','0','#'}
 };
-byte rowPins[ROWS] = {5, 6, 7, 8}; //connect to the row pinouts of the keypad
-byte colPins[COLS] = {2, 3, 4}; //connect to the column pinouts of the keypad
-int speakerPin = 9;
+byte rowPins[ROWS] = {6, 7, 8, 9}; //connect to the row pinouts of the keypad
+byte colPins[COLS] = {3, 4, 5}; //connect to the column pinouts of the keypad
+int speakerPin = 2;
 int keySounds[10] = {NOTE_A4, NOTE_AS4, NOTE_B4, NOTE_C4, NOTE_D4, NOTE_DS4, NOTE_E4, NOTE_F4, NOTE_FS4, NOTE_G4};
 int errorSound = NOTE_B0;
 
@@ -46,7 +49,12 @@ void setup() {
   matrix.print(0x0255,HEX);
   matrix.writeDisplay();
   
-  Wire.begin(1);
+  Wire.begin(KEYPAD_I2C_ADDR);
+}
+
+void loop() {
+  keypad.getKey();
+  handleCommands();
 }
 
 void keypadEvent(KeypadEvent eKey){
@@ -130,11 +138,6 @@ void resetPassword(){
   password.reset();
   passwordLength = 0;
   resetLED();
-}
-
-void loop() {
-  keypad.getKey();
-  handleCommands();
 }
 
 void handleCommands(){

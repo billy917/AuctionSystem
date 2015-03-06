@@ -47,6 +47,7 @@ XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); // send comman
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
 volatile boolean laserEnabled = false;
+volatile boolean musicOn = true;
 volatile boolean nfcDetected[1] = {false};
 
 boolean detectedNFC(){
@@ -76,7 +77,7 @@ int currentMenu = MainMenu;
 // 3 - ToggleLaserPattern
 
 int currentRowSelection = 0;
-int maxRows[] = {4, 9, 4, 6};
+int maxRows[] = {5, 9, 4, 6};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -442,6 +443,20 @@ void drawMainMenu(){
   }
   tft.setTextColor(ST7735_WHITE);
   tft.println(")\n");
+  
+  if(4 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.print("5) Toggle Music (");
+  if(musicOn){
+    tft.setTextColor(ST7735_GREEN);
+    tft.print("ON");
+  } else {
+    tft.setTextColor(ST7735_RED);
+    tft.print("OFF");
+  }
+  tft.setTextColor(ST7735_WHITE);
+  tft.println(")\n");
 }
 
 void loop() {
@@ -484,6 +499,20 @@ boolean handleJoystickAction(int joystickState){
   return updated;
 }
 
+void toggleMusic(){
+  bool currState = musicOn;
+    if(currState){
+      xbeePayload[1] = MESSAGETYPEID_BGM_STOP_SONG;
+      musicOn = false;
+    } else {
+      xbeePayload[1] = MESSAGETYPEID_BGM_PLAY_SONG;
+      musicOn = true;
+    }
+    xbeePayload[0] = MESSAGETYPEID_BGM;
+    xbeePayload[2] = 0;
+    xbee.send(laser1Tx); 
+}
+
 boolean handleMenuSelection(){
   boolean updated = false;
   if(currentMenu == MainMenu){
@@ -500,7 +529,10 @@ boolean handleMenuSelection(){
       currentRowSelection = 0;
       drawToggleLaserPattern();      
       updated = true;
-    } 
+    } else if(currentRowSelection == 4){
+      toggleMusic();
+      updated = true; 
+    }
   } else if (currentMenu == ToogleLaser){
     bool currState = laserState[currentRowSelection];
     if(currState){

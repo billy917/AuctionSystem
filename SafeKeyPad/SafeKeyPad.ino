@@ -46,7 +46,7 @@ void setup(){
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
 
-    delay (250);
+    delay (5000);
 
     /* Tell BGM CONTROLLER to start playing the song */
     Wire.beginTransmission (BGM_I2C_ADDR);
@@ -92,13 +92,13 @@ void initLEDs(){
   pinMode(10, OUTPUT); // 1-Green
   pinMode(11, OUTPUT); // 2-Red
   pinMode(12, OUTPUT); // 2-Green
-  pinMode(A0, OUTPUT); // 3-Red
-  pinMode(A1, OUTPUT); // 3-Green
+  pinMode(A2, OUTPUT); // 3-Red
+  pinMode(A3, OUTPUT); // 3-Green
 }
 
 void turnOnRed(int num){
   switch (num){
-    case 3: analogWrite(A0,255);
+    case 3: analogWrite(A2,255);
     case 2: digitalWrite(11,HIGH);
     case 1: digitalWrite(9,HIGH); 
   } 
@@ -109,15 +109,15 @@ void turnOffLEDs(){
   digitalWrite(10, LOW);
   digitalWrite(11, LOW);
   digitalWrite(12, LOW);
-  analogWrite(A0, 0);
-  analogWrite(A1, 0);
+  analogWrite(A2, 0);
+  analogWrite(A3, 0);
 }
 
 void turnOnGreenLEDs(){
   turnOffLEDs();
   digitalWrite(10,HIGH);
   digitalWrite(12,HIGH);
-  analogWrite(A1,255);
+  analogWrite(A3,255);
 }
 
 void keypadEvent(KeypadEvent eKey){

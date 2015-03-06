@@ -85,7 +85,8 @@ void handleXBeeMsg(){
     nextMode = rx.getData(0);
     xbeeData[0] = nextMode;
     if(5 == nextMode || 6 == nextMode || MESSAGETYPEID_LASER_CONTROL == nextMode
-        || MESSAGETYPEID_LOCK == nextMode){
+        || MESSAGETYPEID_LOCK == nextMode
+        || MESSAGETYPEID_BGM == nextMode){
       commandData[0] = rx.getData(1);
       xbeeData[1] = commandData[0];      
       commandData[1] = rx.getData(2);
@@ -103,14 +104,6 @@ void instructXBeeModeChange(int nextMode){
   xbee.send(laser2Tx);
 }
 
-void instructI2CModeChange(int nextMode){
-  // send instruction to other I2C modules on mode change
-  Wire.beginTransmission(4); //4 == ShelfLock
-  Wire.write(nextMode);
-  Wire.endTransmission();
-}
-
-
 void forwardI2CMessage(int i2cAddr){
   Wire.beginTransmission(i2cAddr); //4 == ShelfLock
   Wire.write(xbeeData[0]);
@@ -124,14 +117,16 @@ void handleCommands(){
   if(nextMode != 0){
     if(laserController.canHandleMessageType(xbeeData[0])){
       laserController.handleMessage(3, xbeeData);
-    } if(MESSAGETYPEID_LOCK == nextMode){
+    } else if(MESSAGETYPEID_LOCK == nextMode){
       forwardI2CMessage(LOCK_MANAGER_I2C_ADDR);
-    } else if('I' == commandSource){
+    } else if(MESSAGETYPEID_BGM == nextMode){
+      forwardI2CMessage(MESSAGETYPEID_BGM);
+    }
+    
+    if('I' == commandSource){
       // only tell other xBee if the nextMode command came from I2C
       instructXBeeModeChange(nextMode); 
-    } else if ('X' == commandSource){
-      instructI2CModeChange(nextMode); 
-    }
+    } 
     
     if(nextMode == 1){
       //Turn Off  
