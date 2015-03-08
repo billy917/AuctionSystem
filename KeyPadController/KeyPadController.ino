@@ -10,12 +10,14 @@
 #include "Constants.h"
 #include "Digits.h"
 #include "Clock.h"
+#include "SimpleTimer.h"
 
 #include <Keypad.h>
 #include <Password.h>
 
 Adafruit_7segment matrix = Adafruit_7segment();
 Clock clock(10,11,12);
+SimpleTimer timer;
 
 const byte ROWS = 4; //four rows
 const byte COLS = 3; //three columns
@@ -38,6 +40,11 @@ int passwordLength = 0;
 volatile int mode, nextMode = 1;
 volatile boolean servoMode = false;
 
+
+uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile boolean receivedMessage = false;
+
 void setup() {
   Serial.begin(9600);
   matrix.begin(0x70);  //0x70 is the 7-Segment address
@@ -49,12 +56,58 @@ void setup() {
   matrix.print(0x0255,HEX);
   matrix.writeDisplay();
   
-  Wire.begin(KEYPAD_I2C_ADDR);
+  Wire.begin(CLOCK_I2C_ADDR);
+  Wire.onReceive(receiveI2CEvent);
+  
+  timer.setInterval(1000, oneSecondLater);
+  clock.startClock();
 }
 
 void loop() {
   keypad.getKey();
   handleCommands();
+  if(receivedMessage){
+    copyToI2CLocalBuffer();    
+    clock.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
+    clearI2CLocalBuffer();
+    receivedMessage = false; 
+  }
+  timer.run();
+}
+
+void clearI2CLocalBuffer(){
+  for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+    i2cLocalBuffer[i] = 0;
+  }
+}
+
+void copyToI2CLocalBuffer(){
+  for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+    i2cLocalBuffer[i] = i2cLocalBuffer[i]; 
+  }
+}
+
+void receiveI2CEvent(int howMany){  
+  if(I2C_MESSAGE_MAX_SIZE+1 > howMany){ 
+    for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+      if(i>=howMany){
+        i2cDataBuffer[i] = 0;
+      } else {
+        i2cDataBuffer[i] = Wire.read(); 
+      }
+    }
+    receivedMessage = true; // TODO: need better way to queue incoming requests
+  } else {
+    while(1 < Wire.available()) // loop through all but the last
+    {
+      char c = Wire.read(); // receive byte as a character
+      Serial.print(c);         // print the character
+    }
+  }
+}
+
+void oneSecondLater(){
+    clock.oneSecondLater();
 }
 
 void keypadEvent(KeypadEvent eKey){
@@ -142,7 +195,7 @@ void resetPassword(){
 
 void handleCommands(){
   if(nextMode != mode){
-    if(nextMode == 1){
+    if(nextMode == 1 || nextMode == 3){
       //Turn Off  
       instructModeChange(nextMode);
     } 
