@@ -13,6 +13,7 @@ const int BGM_I2C_ADDR = 107;
 const int KEYPAD_LOCK_I2C_ADDR = 108;
 const int KEYPAD_I2C_ADDR = 109;
 const int CLOCK_I2C_ADDR = 109; //same as keypad on purpose
+const int LASER_SENSOR_I2C_ADDR = 110;
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -120,7 +121,7 @@ LASER Sensor message protocol
 	[2] sensorId
 	[3] sensorState (only for detailedMessageType #2) 
 
-	Manager <-> PrimaryManager (next to clock)
+	Manager <-> PrimaryManager/Clock (next to clock)
 	[0] messageTypeId (10)
 	[1] detailedMessageType (1 = tripped laser)
 	[2] sensorId	
