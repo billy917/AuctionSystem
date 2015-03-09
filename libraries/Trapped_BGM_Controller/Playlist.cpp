@@ -42,7 +42,7 @@ void Playlist::playSong(){
 void Playlist::nextSong() {
     currentSongIndex += 1;
 
-    if (currentSongIndex > TOTAL_SONGS){
+    if (currentSongIndex >= TOTAL_SONGS){
         currentSongIndex = 0;
     }
 

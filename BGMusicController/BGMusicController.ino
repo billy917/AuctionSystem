@@ -104,10 +104,11 @@ void fillDataSong(){
     playlist->songList[5] = new Song (131, "1875");
     playlist->songList[6] = new Song (169, "1867");
     playlist->songList[7] = new Song (223, "1935");
-    playlist->songList[8] = new Song (217, "1936");
+    playlist->songList[8] = new Song (178, "1720");
     playlist->songList[9] = new Song (176, "1804");
     playlist->songList[10] = new Song (185, "1725");
-    //playlist->songList[11] = new Song (178, "1720");
+   
+    //playlist->songList[2] = new Song (217, "1936");
 
 } //end fillDataSong()
 

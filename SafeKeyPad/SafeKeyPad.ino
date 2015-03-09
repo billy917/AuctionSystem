@@ -46,6 +46,8 @@ void setup(){
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
 
+    clearPassword();
+
     delay (5000);
 
     /* Tell BGM CONTROLLER to start playing the song */
