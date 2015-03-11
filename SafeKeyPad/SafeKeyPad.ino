@@ -209,6 +209,12 @@ bool checkPassword(){
             
             turnOnGreenLEDs();
 
+            /* Unlock LOCK_MANAGER */
+            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
+            Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
+            Wire.endTransmission();
+
             return true;
 
         } else {
