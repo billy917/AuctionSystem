@@ -76,7 +76,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			} else {
 				// update local states and only update PrimaryManager when all registered detectors are detecting expected NFCs
 				if (_areAllDetectorDetected()){
-					_notifyPrimaryManager()
+					_notifyPrimaryManager(0, true);
 				}
 			}	
 		}
@@ -107,19 +107,22 @@ void NFCManager::_checkAndUpdateLock(){
 
 	if(shouldBeLocked && !_shelfIsLocked){
 		// lock shelf
-		_sendLockMessage(MESSAGETYPEID_NFC_LOCK_LOCK);
-		_shelfIsLocked = true;
+		//_sendLockMessage(MESSAGETYPEID_NFC_LOCK_LOCK);
+		_sendLockMessage(MESSAGETYPEID_LOCK_LOCK);
+        _shelfIsLocked = true;
 	} else if (!shouldBeLocked && _shelfIsLocked){
 		// unlock shelf
-		_sendLockMessage(MESSAGETYPEID_NFC_LOCK_UNLOCK);
+		//_sendLockMessage(MESSAGETYPEID_NFC_LOCK_UNLOCK);
+        _sendLockMessage(MESSAGETYPEID_LOCK_UNLOCK);
 		_shelfIsLocked = false;
 	}
 }
 
-void NFCManager::_sendLockMessage(bool state){
+void NFCManager::_sendLockMessage(uint8_t state){
 	// send I2C message to lock
-	Wire.beginTransmission(SHELF_LOCK_I2C_ADDR); // transmit to device #100 (NFCDetectorManager
-	Wire.write(MESSAGETYPEID_NFC_LOCK);
+	Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+    Wire.write (MESSAGETYPEID_LOCK);
+    Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
 	Wire.write(state); 
 	Wire.endTransmission();
 }
@@ -135,10 +138,15 @@ void NFCManager::_notifyToolOverallStatus(){
 }
 
 void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected){
-	_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
-	_xBeePayload[1] = _managerId;
-	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
-	_xBeePayload[3] = detectorId;
+//	_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
+    _xBeePayload[0] = LOCK_MANAGER_I2C_ADDR;
+//	_xBeePayload[1] = _managerId;
+    _xBeePayload[1] = MESSAGETYPEID_LOCK;
+//	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
+    _xBeePayload[2] = MESSAGETYPEID_LOCK_LOCKID_SHELF;
+//	_xBeePayload[3] = detectorId;
+    _xBeePayload[3] = MESSAGETYPEID_LOCK_UNLOCK;
+//
 	_xbee_pointer->send(_laser1ZBTxRequest);
 	_xbee_pointer->send(_toolZBTxRequest);
 }

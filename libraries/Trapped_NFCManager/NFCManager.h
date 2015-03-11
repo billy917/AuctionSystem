@@ -43,7 +43,7 @@ class NFCManager
     bool _areAllDetectorDetected();
     void _notifyPrimaryManager(uint8_t detectorId, bool detected);
     void _checkAndUpdateLock();
-    void _sendLockMessage(bool unlock);
+    void _sendLockMessage(uint8_t unlock);
     void _notifyToolOverallStatus();
 };
 
