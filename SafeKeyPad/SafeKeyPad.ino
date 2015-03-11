@@ -211,6 +211,7 @@ bool checkPassword(){
 
             /* Unlock LOCK_MANAGER */
             Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_LOCK);
             Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
             Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
             Wire.endTransmission();

@@ -31,12 +31,13 @@ void setup() {
     /* Setting up music playlist */
     playlist = new Playlist();
     fillDataSong();
+    playlist->currentSong = playlist->songList[0];
     playlist->currentSong->code.toCharArray (currentPassword, 5);
 
     Serial.print ("Current password: ");
     Serial.println (currentPassword);
     
-    /* delay one second for SafeKeyPad */
+    /* delay for SafeKeyPad */
     delay(30);
 
     playlist->info();
@@ -95,18 +96,18 @@ void Request(){
 } //end Request()
 
 void fillDataSong(){
-
-    playlist->songList[0] = new Song (136, "1892");
-    playlist->songList[1] = new Song (135, "1942");
-    playlist->songList[2] = new Song (207, "1756");
-    playlist->songList[3] = new Song (170, "1787");
-    playlist->songList[4] = new Song (147, "1880");
-    playlist->songList[5] = new Song (131, "1875");
-    playlist->songList[6] = new Song (169, "1867");
-    playlist->songList[7] = new Song (223, "1935");
-    playlist->songList[8] = new Song (178, "1720");
+    /* song_index 0 = PIN D2 = Song 10 */
+    playlist->songList[10] = new Song (185, "1725"); // T00
     playlist->songList[9] = new Song (176, "1804");
-    playlist->songList[10] = new Song (185, "1725");
+    playlist->songList[8] = new Song (178, "1720");
+    playlist->songList[7] = new Song (223, "1935");
+    playlist->songList[6] = new Song (169, "1867");
+    playlist->songList[5] = new Song (131, "1875");
+    playlist->songList[4] = new Song (147, "1880");
+    playlist->songList[3] = new Song (170, "1787");
+    playlist->songList[2] = new Song (207, "1756");
+    playlist->songList[1] = new Song (135, "1942");
+    playlist->songList[0] = new Song (136, "1892"); // T10
    
     //playlist->songList[2] = new Song (217, "1936");
 
