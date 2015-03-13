@@ -31,6 +31,7 @@ class NFCDetector
     uint32_t _nfcFirmwareVersion;
     uint8_t _uid[UID_LENGTH]; 
     uint8_t _lastUid[UID_LENGTH];
+    uint8_t _data[32];
 
     void _updateLastUID();
     void _clearLastUID();

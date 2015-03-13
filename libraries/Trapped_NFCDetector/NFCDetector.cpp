@@ -75,13 +75,13 @@ void NFCDetector::detectNFCChanges(){
 	//Check if any NFC tags are detected
 	uint8_t detectedUIDLength = 0;
 	if(nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, _uid, &detectedUIDLength)){
-		uint8_t data[32];	    
-	    if (nfc.mifareultralight_ReadPage (4, data)){
+			    
+	    if (nfc.mifareultralight_ReadPage (4, _data)){
 			if(!_lastDetectedChip){ // previously did not detect chip
-				if(_detectedExpectedChip(data[0],data[31])){
-					_notifyFoundNFCChip(data[0]);
+				if(_detectedExpectedChip(_data[0],_data[31])){
+					_notifyFoundNFCChip(_data[0]);
 					_lastDetectedChip = true;
-				} else if (_detectedToolChip(data[0],data[31])){
+				} else if (_detectedToolChip(_data[0],_data[31])){
 					_notifyFoundToolChip();
 					_lastDetectedChip = true;
 				} else {
@@ -90,10 +90,10 @@ void NFCDetector::detectNFCChanges(){
 			} else { // previously detected a chip
 				if(_isSameAsLastDetectedChip()){
 					Serial.println(F("Is same as last chip"));
-				} else if(_detectedExpectedChip(data[0],data[31])){
-					_notifyFoundNFCChip(data[0]);
+				} else if(_detectedExpectedChip(_data[0],_data[31])){
+					_notifyFoundNFCChip(_data[0]);
 					_lastDetectedChip = true;
-				} else if (_detectedToolChip(data[0],data[31])){
+				} else if (_detectedToolChip(_data[0],_data[31])){
 					_notifyFoundToolChip();
 					_lastDetectedChip = true;
 				}
