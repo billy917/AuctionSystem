@@ -52,13 +52,18 @@ void NFCManager::setLockManagerI2CAdder(int i2cAddr){
 
 void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){	
 	if(MESSAGETYPEID_NFC == data[0]){ // Detector <-> Manager
+
 		if(data[2] == MESSAGETYPEID_NFC_REGISTER){
 			// got a message from detector requesting to register itself
 			if(_numRegisteredDetector < 3){
-				_registerDetector(data[1]);					
+				_registerDetector(data[1]);
 			}
 		} else  if (data[2] == MESSAGETYPEID_NFC_MANAGE_FOUND || data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
 			// got a message from detector, relay it to the lock manager via Laser1	
+            digitalWrite(13, HIGH);
+            delay(1000);
+            digitalWrite(13, LOW);
+
 			bool detected = true;
 			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
 				detected = false;
@@ -84,6 +89,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 		if(MESSAGETYPEID_NFC_MANAGE_FOUND == data[2]){ // Manager telling me (Primary) that their detector detected NFC
 			_managerStates[data[3]] = true;
 			_checkAndUpdateLock();
+            
 		} else if (MESSAGETYPEID_NFC_MANAGE_NOTFOUND == data[2]){ // Manager tell me (Primary) that thier detector no longer detect NFC
 			_managerStates[data[3]] = false;
 			_checkAndUpdateLock();

@@ -14,7 +14,7 @@ int led = 13;
 NFCManager nfcManager(3, false);
 
 void setup() {
-  pinMode(led, OUTPUT);  
+  pinMode(led, OUTPUT);
   Serial.begin(9600);
   Wire.begin(NFC_MANAGER_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);

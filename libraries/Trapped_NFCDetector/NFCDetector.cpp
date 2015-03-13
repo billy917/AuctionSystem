@@ -28,12 +28,12 @@ NFCDetector::NFCDetector(int detectorId, int i2cAddressId){
 	_lastDetectedChip = false;
 
 	_expectedUid[0] = 0x04;
-	_expectedUid[1] = 0x04;
+	_expectedUid[1] = 0x8A;
 	_expectedUid[2] = 0x82;
 	_expectedUid[3] = 0xEA;
 	_expectedUid[4] = 0xC2;
 	_expectedUid[5] = 0x23;
-	_expectedUid[6] = 0x81;
+	_expectedUid[6] = 0x80;
 
 	_expectedToolUid[0] = 0x04;
 	_expectedToolUid[1] = 0x8B;
