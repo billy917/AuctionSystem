@@ -33,6 +33,8 @@ NFCManager::NFCManager(int managerId, bool isPrimary){
 	_xBeePayload[0]=0;
 	_xBeePayload[1]=0;
 	_xBeePayload[2]=0;
+    _xBeePayload[3]=0;
+    _xBeePayload[4]=0;
 
 	_laser1Addr = XBeeAddress64(0x0013a200, 0x40c0edf); //Laser1 xBee 
 	_laser1ZBTxRequest = ZBTxRequest(_laser1Addr, _xBeePayload, sizeof(_xBeePayload));
@@ -64,7 +66,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 				detected = false;
 			}		
 			_updateDetectorStates(data[1], detected);
-			_notifyPrimaryManager(data[1], detected);
+			_notifyPrimaryManager(data[1], detected, data[3]);
 			if(_isPrimary){
 				// any local detector changes should check for potential lock updates
 				_managerStates[data[1]] = detected; // assume data[1] within 1 - 5
@@ -76,7 +78,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			_managerStates[data[3]] = true;
 			_checkAndUpdateLock();
             
-		} else if (MESSAGETYPEID_NFC_MANAGE_NOTFOUND == data[2]){ // Manager tell me (Primary) that thier detector no longer detect NFC
+		} else if (MESSAGETYPEID_NFC_MANAGE_NOTFOUND == data[2]){ // Manager tell me (Primary) that their detector no longer detect NFC
 			_managerStates[data[3]] = false;
 			_checkAndUpdateLock();
 		} 
@@ -122,11 +124,12 @@ void NFCManager::_notifyToolOverallStatus(){
 	_xbee_pointer->send(_toolZBTxRequest);
 }
 
-void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected){
+void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected, uint8_t nfcValue){
 	_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;    
 	_xBeePayload[1] = _managerId;
 	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
 	_xBeePayload[3] = detectorId;
+    _xBeePayload[4] = nfcValue;
   
  	if(!_isPrimary){
 		_xbee_pointer->send(_laser1ZBTxRequest);
@@ -162,9 +165,9 @@ bool NFCManager::_areAllDetectorDetected(){
 	}
 	return true;*/
 	
-	return _managerStates[2] 
-			&& _managerStates[3] 
-			&& _managerStates[4] 
-			&& _managerStates[5];
+	return _managerStates[2];
+			//&& _managerStates[3] 
+			//&& _managerStates[4] 
+			//&& _managerStates[5];
 
 }

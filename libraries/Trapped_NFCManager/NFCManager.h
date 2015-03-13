@@ -41,7 +41,7 @@ class NFCManager
     void _registerDetector(uint8_t detectorId);
     void _updateDetectorStates(uint8_t detectorId, bool detectedExpectedNFC);
     bool _areAllDetectorDetected();
-    void _notifyPrimaryManager(uint8_t detectorId, bool detected);
+    void _notifyPrimaryManager(uint8_t detectorId, bool detected, uint8_t nfcValue);
     void _checkAndUpdateLock();
     void _sendLockMessage(uint8_t unlock);
     void _notifyToolOverallStatus();
