@@ -31,18 +31,16 @@ class NFCDetector
     uint32_t _nfcFirmwareVersion;
     uint8_t _uid[UID_LENGTH]; 
     uint8_t _lastUid[UID_LENGTH];
-    uint8_t _expectedUid[UID_LENGTH];
-    uint8_t _expectedToolUid[UID_LENGTH];
 
     void _updateLastUID();
     void _clearLastUID();
 
     bool _isSameAsLastDetectedChip();
-    bool _detectedExpectedChip();
-    bool _detectedToolChip();
+    bool _detectedExpectedChip(uint8_t firstByte, uint8_t lastByte);
+    bool _detectedToolChip(uint8_t firstByte, uint8_t lastByte);
     
     void _notifyFoundToolChip();
-    void _notifyFoundNFCChip();
+    void _notifyFoundNFCChip(uint8_t firstByte);
     void _notifyCannotFindNFCChip();
 
 
