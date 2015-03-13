@@ -66,7 +66,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 				detected = false;
 			}		
 			_updateDetectorStates(data[1], detected);
-			_notifyPrimaryManager(data[1], detected, data[3]);
+			_notifyPrimaryManager(data[1], detected, data[4]);
 			if(_isPrimary){
 				// any local detector changes should check for potential lock updates
 				_managerStates[data[1]] = detected; // assume data[1] within 1 - 5
@@ -130,8 +130,8 @@ void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected, uint8_
 	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
 	_xBeePayload[3] = detectorId;
     _xBeePayload[4] = nfcValue;
-  
- 	if(!_isPrimary){
+
+    if(!_isPrimary){
 		_xbee_pointer->send(_laser1ZBTxRequest);
 	}
 	_xbee_pointer->send(_toolZBTxRequest);

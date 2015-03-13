@@ -38,6 +38,7 @@ uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 void setup() {           
 
   Serial.begin(9600);
+  Serial.println("High");
   
   // initialize the digital pin as an output.                                                                                                                                                                                           
   for(int i=0; i<3; i++){
@@ -78,6 +79,12 @@ void receiveEvent(int howMany){
     i2cDataBuffer[i] = Wire.read();
   }
   commandSource = 'I';
+  Serial.println(i2cDataBuffer[0]);
+Serial.println(i2cDataBuffer[1]);
+Serial.println(i2cDataBuffer[2]);
+Serial.println(i2cDataBuffer[3]);
+Serial.println (i2cDataBuffer[4]);
+
   receivedI2CMessage = true;
 }
 
