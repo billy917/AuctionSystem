@@ -4,16 +4,20 @@
   Copyright 2014 - Unauthorized users cannot run, copy, distribute, study, change, modify, and/or improve the software.
 */
 #include "Arduino.h"
+#include <SPI.h>
 #include <Wire.h>
 #include "Adafruit_PN532.h"
 #include "NFCDetector.h"
 
-#define SCK  (8)
-#define MOSI (11)
-#define SS   (10)
-#define MISO (9)
+#define PN532_SCK  (8)
+#define PN532_MOSI (11)
+#define PN532_SS   (10)
+#define PN532_MISO (9)
 
-Adafruit_PN532 nfc(SCK, MISO, MOSI, SS);
+#define PN532_IRQ   (2)
+#define PN532_RESET (3) 
+
+Adafruit_PN532 nfc(PN532_SCK, PN532_MISO, PN532_MOSI, PN532_SS);
 
 NFCDetector::NFCDetector(int detectorId, int i2cAddressId){
 	_detectorId = detectorId;
@@ -28,12 +32,12 @@ NFCDetector::NFCDetector(int detectorId, int i2cAddressId){
 	_lastDetectedChip = false;
 
 	_expectedUid[0] = 0x04;
-	_expectedUid[1] = 0x04;
+	_expectedUid[1] = 0xEC;
 	_expectedUid[2] = 0x82;
 	_expectedUid[3] = 0xEA;
 	_expectedUid[4] = 0xC2;
 	_expectedUid[5] = 0x23;
-	_expectedUid[6] = 0x81;
+	_expectedUid[6] = 0x80;
 
 	_expectedToolUid[0] = 0x04;
 	_expectedToolUid[1] = 0x8B;

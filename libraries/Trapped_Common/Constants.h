@@ -133,12 +133,14 @@ NFC message protocol
 	[0] messageTypeId (6)   
 	[1] detectorId
 	[2] parameter (1 = found, 2 = not found, 3 = found tool, 4 = register with Manager)
+	[3] NFC chip value
 
 	Manager <-> Primary Manager
 	[0] messageTypeId (7)
 	[1] managerId
 	[2] parameter (1 = found, 2 = not found, 3 = register with primary Manager, 4 = request status, 5 = status response, 6 = set debug mode)
 	[3] detectorId (for 1 and 2)
+	[4] NFC chip value
 
 	Primary Manager <-> Lock
 	[0] messageTypeId (8)

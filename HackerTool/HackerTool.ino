@@ -48,11 +48,8 @@ ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload))
 
 volatile boolean laserEnabled = false;
 volatile boolean musicOn = true;
-volatile boolean nfcDetected[1] = {false};
-
-boolean detectedNFC(){
-  return nfcDetected[0]; 
-}
+volatile boolean nfcId=-1;
+volatile boolean nfcState = false;
 
 void setup(void) {  
   // Use this initializer if you're using a 1.8" TFT
@@ -77,7 +74,7 @@ int currentMenu = MainMenu;
 // 3 - ToggleLaserPattern
 
 int currentRowSelection = 0;
-int maxRows[] = {5, 9, 4, 6};
+int maxRows[] = {6, 9, 4, 6};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -418,23 +415,25 @@ void drawMainMenu(){
   if(0 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("1)Toogle Lasers\n");
+  tft.println("1)Toogle Lasers");
   
   if(1 == currentRowSelection){
     tft.print("->"); 
   }
-  tft.println("2)Toogle Locks\n");
+  tft.println("2)Toogle Locks");
   
   if(2 == currentRowSelection){
     tft.print("->");
   }
-  tft.print("3)Toogle Laser Pattern("); tft.print(patternIndex); tft.println(")\n");
+  tft.print("3)Toogle Laser Pattern("); tft.print(patternIndex); tft.println(")");
 
   if(3 == currentRowSelection){
     tft.print("->");
   }
-  tft.print("4) NFC detected (");
-  if(detectedNFC()){
+  tft.print("4) NFC DetectorId:");
+  tft.print(nfcId);
+  tft.print("(");
+  if(nfcState){
     tft.setTextColor(ST7735_GREEN);
     tft.print("YES");
   } else {
@@ -442,7 +441,7 @@ void drawMainMenu(){
     tft.print("NO");
   }
   tft.setTextColor(ST7735_WHITE);
-  tft.println(")\n");
+  tft.println(")");
   
   if(4 == currentRowSelection){
     tft.print("->");
@@ -456,7 +455,13 @@ void drawMainMenu(){
     tft.print("OFF");
   }
   tft.setTextColor(ST7735_WHITE);
-  tft.println(")\n");
+  tft.println(")");
+  
+  if(5 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.println("6) Reset Clock");
+  
 }
 
 void loop() {
@@ -532,6 +537,9 @@ boolean handleMenuSelection(){
     } else if(currentRowSelection == 4){
       toggleMusic();
       updated = true; 
+    } else if(currentRowSelection == 5){
+      resetClock();
+      updated = true; 
     }
   } else if (currentMenu == ToogleLaser){
     bool currState = laserState[currentRowSelection];
@@ -566,6 +574,19 @@ boolean handleMenuSelection(){
       updated = true;    
   }
   return updated;
+}
+
+void resetClock(){
+  xbeePayload[0] = MESSAGETYPEID_CLOCK;
+  xbeePayload[1] = MESSAGETYPEID_CLOCK_RESET;
+  xbeePayload[2] = 0;  
+  xbee.send(laser2Tx);
+  
+  delay(1000);
+  xbeePayload[0] = MESSAGETYPEID_CLOCK;
+  xbeePayload[1] = MESSAGETYPEID_CLOCK_START;
+  xbeePayload[2] = 0;  
+  xbee.send(laser2Tx);
 }
 
 boolean handleMenuBack(){
@@ -647,9 +668,9 @@ boolean handleXBeeMsg(){
   xbee.readPacket();
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
-    if(6 ==  rx.getData(0)){
-      //detectorId = rx.getData(1);
-      nfcDetected[0] = rx.getData(2);
+    if(MESSAGETYPEID_NFC_MANAGE ==  rx.getData(0)){
+      nfcId = rx.getData(3);
+      nfcState = MESSAGETYPEID_NFC_MANAGE_FOUND == rx.getData(2) ? true:false;
       return true;
     }
   }   

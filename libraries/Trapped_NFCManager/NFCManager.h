@@ -25,7 +25,7 @@ class NFCManager
     int _registeredDetectorIds[3];
     bool _inDebugMode;
     bool _registeredDetectorStates[3];
-    bool _managerStates[5];
+    bool _managerStates[6];
     uint8_t _xBeePayload[NFC_MESSAGE_MAX_SIZE];
     uint8_t _detectorIdIndexMap;
     bool _shelfIsLocked;
