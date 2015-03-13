@@ -165,9 +165,9 @@ bool NFCManager::_areAllDetectorDetected(){
 	}
 	return true;*/
 	
-	return _managerStates[2];
-			//&& _managerStates[3] 
-			//&& _managerStates[4] 
-			//&& _managerStates[5];
+	return _managerStates[2]
+			&& _managerStates[3] 
+			&& _managerStates[4] 
+			&& _managerStates[5];
 
 }
