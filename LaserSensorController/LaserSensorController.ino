@@ -10,6 +10,7 @@ volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile boolean receivedMessage = false;
 
 void setup() {
+  Serial.begin(9600);
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
     
@@ -17,9 +18,15 @@ void setup() {
   attachInterrupt(0, pin2Interrupted, FALLING);
   attachInterrupt(1, pin3Interrupted, FALLING);
   attachInterrupt(4, pin19Interrupted, FALLING);
+  
+  laserSensorController.setSensorPin(1, 2, TSL2561_ADDR_0);
+  delay(1000);
+
+  laserSensorController.calibrateSensorBySensorId(1);
 }
 
 void pin2Interrupted(){
+  Serial.println("Pin 2 Interrupted");
   laserSensorController.pinInterrupted(2);
 }
 

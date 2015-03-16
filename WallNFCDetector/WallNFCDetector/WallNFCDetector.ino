@@ -4,8 +4,8 @@
 #include <NFCDetector.h>
 #include "Constants.h"
 
-#define NFC_DETECTOR_ID 2
-#define I2C_ADDR 102
+#define NFC_DETECTOR_ID 3
+#define I2C_ADDR 103
 // I2C Message 9 bytes - (MessageTypeId, DetectorId, Parameter)
 
 NFCDetector detector(NFC_DETECTOR_ID, I2C_ADDR);

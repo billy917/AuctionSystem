@@ -61,25 +61,24 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			}
 		} else  if (data[2] == MESSAGETYPEID_NFC_MANAGE_FOUND || data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
 			// got a message from detector, relay it to primary NFCManager via Laser1	
-			bool detected = true;
+			int detectedValue = data[3];
 			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
-				detected = false;
-			}		
-			_updateDetectorStates(data[1], detected);
-			_notifyPrimaryManager(data[1], detected, data[4]);
+				detectedValue = 0;
+			}				
+			_notifyPrimaryManager(data[1], detectedValue != 0, detectedValue);
 			if(_isPrimary){
 				// any local detector changes should check for potential lock updates
-				_managerStates[data[1]] = detected; // assume data[1] within 1 - 5
+				_managerStates[data[1]] = detectedValue; // assume data[1] within 1 - 5
 				_checkAndUpdateLock();
-			}
+			} 
 		}
 	} else if (MESSAGETYPEID_NFC_MANAGE == data[0]){ // Manager <-> Primary Manager
 		if(MESSAGETYPEID_NFC_MANAGE_FOUND == data[2]){ // Manager telling me (Primary) that their detector detected NFC
-			_managerStates[data[3]] = true;
+			_managerStates[data[3]] = data[4];
 			_checkAndUpdateLock();
             
 		} else if (MESSAGETYPEID_NFC_MANAGE_NOTFOUND == data[2]){ // Manager tell me (Primary) that their detector no longer detect NFC
-			_managerStates[data[3]] = false;
+			_managerStates[data[3]] = 0;
 			_checkAndUpdateLock();
 		} 
 	} else if (MESSAGETYPEID_NFC_TOOL == data[0]){ // Primary Manager <-> Tool
@@ -118,6 +117,7 @@ void NFCManager::_notifyToolOverallStatus(){
 	//Sends Tool a XBee message with a status of each detector
 	_xBeePayload[0] = MESSAGETYPEID_NFC_TOOL;
 	_xBeePayload[1] = MESSAGETYPEID_NFC_TOOL_STATUS;
+	_xBeePayload[2] = 5; //number of detectors
 	for(int i=1; i<=5; i++){
 		_xBeePayload[i+2] = _managerStates[i];
 	}
@@ -165,9 +165,6 @@ bool NFCManager::_areAllDetectorDetected(){
 	}
 	return true;*/
 	
-	return _managerStates[2]
-			&& _managerStates[3] 
-			&& _managerStates[4] 
-			&& _managerStates[5];
-
+	return _managerStates[2] != 0 
+			&& _managerStates[3] != 0;
 }

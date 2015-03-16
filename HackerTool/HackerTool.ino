@@ -29,6 +29,7 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 #define ToogleLaser 1
 #define ToggleLock 2
 #define ToggleLaserPattern 3
+#define NFCDetector 4
 
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -48,8 +49,7 @@ ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload))
 
 volatile boolean laserEnabled = false;
 volatile boolean musicOn = true;
-volatile boolean nfcId=-1;
-volatile boolean nfcState = false;
+volatile uint8_t nfcState[6] = {0,0,0,0,0,0};
 
 void setup(void) {  
   // Use this initializer if you're using a 1.8" TFT
@@ -72,9 +72,10 @@ int currentMenu = MainMenu;
 // 1 - ToogleLaser
 // 2 - ToggleLock
 // 3 - ToggleLaserPattern
+// 4 - NFCDetectors
 
 int currentRowSelection = 0;
-int maxRows[] = {6, 9, 4, 6};
+int maxRows[] = {6, 9, 4, 6, 1};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -91,7 +92,22 @@ void drawMenu(){
     case ToggleLaserPattern:
       drawToggleLaserPattern();
       break;
+    case NFCDetector:
+      drawNFCDetector();
   }
+}
+
+void drawNFCDetector(){
+  tft.setTextColor(ST7735_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(10,0);
+  tft.println("\nNFC Detectors\n");
+  
+  tft.setTextSize(1); 
+  tft.println("-> Refresh");
+  for(int i=1;i<=5;i++){
+    tft.print("Detector"); tft.print(i); tft.print(") "); tft.println(nfcState[i]);
+  }  
 }
 
 void drawToggleLaserPattern(){
@@ -425,24 +441,13 @@ void drawMainMenu(){
   if(2 == currentRowSelection){
     tft.print("->");
   }
-  tft.print("3)Toogle Laser Pattern("); tft.print(patternIndex); tft.println(")");
+  tft.println("3)Toogle Laser Pattern");
 
   if(3 == currentRowSelection){
     tft.print("->");
   }
-  tft.print("4) NFC DetectorId:");
-  tft.print(nfcId);
-  tft.print("(");
-  if(nfcState){
-    tft.setTextColor(ST7735_GREEN);
-    tft.print("YES");
-  } else {
-    tft.setTextColor(ST7735_RED);
-    tft.print("NO");
-  }
-  tft.setTextColor(ST7735_WHITE);
-  tft.println(")");
-  
+  tft.println("4) NFC Detectors");
+   
   if(4 == currentRowSelection){
     tft.print("->");
   }
@@ -534,6 +539,11 @@ boolean handleMenuSelection(){
       currentRowSelection = 0;
       drawToggleLaserPattern();      
       updated = true;
+    } else if(currentRowSelection == 3){
+      currentMenu = NFCDetector;
+      currentRowSelection = 0;
+      drawNFCDetector();
+      updated = true;
     } else if(currentRowSelection == 4){
       toggleMusic();
       updated = true; 
@@ -570,10 +580,19 @@ boolean handleMenuSelection(){
     xbee.send(laser1Tx); 
     updated = true;
   } else if (currentMenu == ToggleLaserPattern){
-      handleToggleLaserPattern();
-      updated = true;    
+    handleToggleLaserPattern();
+    updated = true;    
+  } else if (currentMenu == NFCDetector){
+    requestNewNFCData(); 
+    updated = true;
   }
   return updated;
+}
+
+void requestNewNFCData(){
+  xbeePayload[0] = MESSAGETYPEID_NFC_TOOL;
+  xbeePayload[1] = MESSAGETYPEID_NFC_TOOL_REQUEST;
+  xbee.send(laser1Tx);
 }
 
 void resetClock(){
@@ -591,7 +610,7 @@ void resetClock(){
 
 boolean handleMenuBack(){
   boolean updated = false;
-  if(currentMenu == ToogleLaser || currentMenu == ToggleLock || currentMenu == ToggleLaserPattern){
+  if(currentMenu == ToogleLaser || currentMenu == ToggleLock || currentMenu == ToggleLaserPattern || currentMenu == NFCDetector){
     currentRowSelection = 0;
     currentMenu = MainMenu; 
     updated = true;
@@ -669,8 +688,16 @@ boolean handleXBeeMsg(){
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
     if(MESSAGETYPEID_NFC_MANAGE ==  rx.getData(0)){
-      nfcId = rx.getData(3);
-      nfcState = MESSAGETYPEID_NFC_MANAGE_FOUND == rx.getData(2) ? true:false;
+      bool nfcId = rx.getData(3);
+      bool nfcDetected = MESSAGETYPEID_NFC_MANAGE_FOUND == rx.getData(2) ? true:false;
+      uint8_t nfcValue = nfcDetected?rx.getData(4):0;
+      nfcState[nfcId] = nfcValue;
+      return true;
+    } else if (MESSAGETYPEID_NFC_TOOL ==  rx.getData(0)
+                && MESSAGETYPEID_NFC_TOOL_STATUS == rx.getData(1)){
+      for(int i=1;i<= rx.getData(2);i++){
+        nfcState[i] = rx.getData(2+i);
+      }
       return true;
     }
   }   

@@ -26,7 +26,7 @@ void LaserSensorController::setSensorPin(int sensorId, int pin, uint8_t i2cAddre
 	_sensorPins[_numRegisteredSensors] = pin;
 	_sensorI2CAddresses[_numRegisteredSensors] = i2cAddress;
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
-	_sensors[_numRegisteredSensors]->begin();
+	_sensors[_numRegisteredSensors]->begin(i2cAddress);
 	unsigned int ms;
 	_sensors[_numRegisteredSensors]->setTiming(0,0,ms);
 	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
@@ -75,6 +75,7 @@ int LaserSensorController::_getSensorIndexById(int sensorId){
 void LaserSensorController::calibrateSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){
+		Serial.print("Calibrating SensorId:");Serial.println(sensorId);
 		SFE_TSL2561* sensor = _sensors[sensorIndex];
 		if(NULL != sensor){
 			calibrateSensor(sensor);
@@ -87,6 +88,9 @@ void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 		unsigned int data0, data1;
 		sensor->getData(data0,data1);
 		int threshold = data0/2;
+		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-");
+		Serial.print(data1);Serial.print("-");
+		Serial.println(threshold);
 		sensor->setInterruptThreshold(threshold,10000);
 	}
 }

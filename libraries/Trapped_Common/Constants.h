@@ -150,7 +150,7 @@ NFC message protocol
 	[0] messageTypeId (9)
 	[1] parameter (1 = request status, 2 = status response, 3 = set debug mode)
 	[2] data (populated for messageType 2)
-			uint8_t numDetectors, [uint8_t detectorId, uint8_t state]  - state:{0,1}
+			uint8_t numDetectors, [uint8_t state] 
 
 	Max Size of 9 uint8_t
 
