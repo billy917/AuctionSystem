@@ -85,7 +85,7 @@ void loop() {
     for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
       localBuffer[i] = i2cDataBuffer[i];
     }
-    handleMessage();;
+    handleMessage();
     receivedI2CMessage = false; 
   }
 }
@@ -107,12 +107,12 @@ void handleXBeeMsg(){
     if(5 == xBeeDataBuffer[0] 
         || 6 == xBeeDataBuffer[0] 
         || MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0]
-        || MESSAGETYPEID_CLOCK == xBeeDataBuffer[0]
         || MESSAGETYPEID_LOCK == xBeeDataBuffer[0]
         || MESSAGETYPEID_BGM == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
-    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]){
+    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]
+              || MESSAGETYPEID_CLOCK == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
       xBeeDataBuffer[3] = rx.getData(3);
@@ -127,7 +127,7 @@ void instructXBeeModeChange(int messageTypeId){
   // send instruction to other xBee on mode change
   xbeePayload[0] = messageTypeId;
   xbeePayload[1] = 0;
-  xbeePayload[2] = 0;  
+  xbeePayload[2] = 0;
   xbee.send(laser1Tx);  
   xbee.send(laser3Tx);
 }
@@ -175,6 +175,7 @@ void forwardI2CMessage(int i2cAddr){
   Wire.write(localBuffer[0]);
   Wire.write(localBuffer[1]);
   Wire.write(localBuffer[2]);
+  Wire.write(localBuffer[3]);
   Wire.endTransmission();
 }
 

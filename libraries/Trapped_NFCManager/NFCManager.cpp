@@ -59,7 +59,7 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			if(_numRegisteredDetector < 3){
 				_registerDetector(data[1]);
 			}
-		} else  if (data[2] == MESSAGETYPEID_NFC_MANAGE_FOUND || data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
+		} else  if (data[2] == MESSAGETYPEID_NFC_FOUNDEXPECTED || data[2] == MESSAGETYPEID_NFC_NOTFOUND){
 			// got a message from detector, relay it to primary NFCManager via Laser1	
 			int detectedValue = data[3];
 			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){

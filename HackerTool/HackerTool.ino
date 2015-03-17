@@ -39,7 +39,7 @@ uint8_t commandData[] = {0,0};
 int patternIndex = 0;
 bool laserState[9] = {true,true,true,true,true,true,true,true,true};
 bool lockState[4] = {true, false, false, false};
-uint8_t xbeePayload[3] = { 0, 0, 0 };
+uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
 XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); // send commands to LaserDriver2
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf); // send commands to LaserDriver2
@@ -101,7 +101,7 @@ void drawNFCDetector(){
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
   tft.setCursor(10,0);
-  tft.println("\nNFC Detectors\n");
+  tft.println("\nNFC Detectors");
   
   tft.setTextSize(1); 
   tft.println("-> Refresh");
@@ -431,17 +431,17 @@ void drawMainMenu(){
   if(0 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("1)Toogle Lasers");
+  tft.println("1) Toogle Lasers");
   
   if(1 == currentRowSelection){
     tft.print("->"); 
   }
-  tft.println("2)Toogle Locks");
+  tft.println("2) Toogle Locks");
   
   if(2 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("3)Toogle Laser Pattern");
+  tft.println("3) Toogle Laser Pattern");
 
   if(3 == currentRowSelection){
     tft.print("->");
@@ -598,14 +598,8 @@ void requestNewNFCData(){
 void resetClock(){
   xbeePayload[0] = MESSAGETYPEID_CLOCK;
   xbeePayload[1] = MESSAGETYPEID_CLOCK_RESET;
-  xbeePayload[2] = 0;  
-  xbee.send(laser2Tx);
-  
-  delay(1000);
-  xbeePayload[0] = MESSAGETYPEID_CLOCK;
-  xbeePayload[1] = MESSAGETYPEID_CLOCK_START;
-  xbeePayload[2] = 0;  
-  xbee.send(laser2Tx);
+  xbee.send(laser2Tx);  
+
 }
 
 boolean handleMenuBack(){
@@ -688,7 +682,7 @@ boolean handleXBeeMsg(){
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
     xbee.getResponse().getZBRxResponse(rx);
     if(MESSAGETYPEID_NFC_MANAGE ==  rx.getData(0)){
-      bool nfcId = rx.getData(3);
+      int nfcId = rx.getData(3);
       bool nfcDetected = MESSAGETYPEID_NFC_MANAGE_FOUND == rx.getData(2) ? true:false;
       uint8_t nfcValue = nfcDetected?rx.getData(4):0;
       nfcState[nfcId] = nfcValue;
