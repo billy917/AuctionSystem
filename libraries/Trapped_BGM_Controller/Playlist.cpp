@@ -37,6 +37,7 @@ void Playlist::playSong(){
     Serial.print ("Playing Song # ");
     Serial.println (currentSongIndex);
 
+    currentSongLength = 1;
 }
 
 void Playlist::nextSong() {
@@ -56,5 +57,18 @@ void Playlist::nextSong() {
 void Playlist::stopSong(){
     Serial.print ("Stopped playing # ");
     Serial.println (currentSongIndex);
+
+    //currentSongIndex = 0; // If enabled, will break BGM_CONTROLLER
+    currentSongLength = 0;
     
+}
+
+void Playlist::update(){
+    if (currentSongLength > 0) {
+        currentSongLength++;
+    }
+}
+
+bool Playlist::hasExceedSongLength(){
+    return (currentSongLength >= currentSong->length);
 }

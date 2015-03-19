@@ -10,8 +10,11 @@
 #define PIN_OFFSET 2
 
 /* Initialize variables */
-uint8_t commandReceive = -1;
+uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile bool receivedI2CMessage = false;
 char currentPassword[5] = {};
+
+bool isPlaying = false;
 
 Playlist *playlist;
 
@@ -48,50 +51,83 @@ void setup() {
 void loop() {
     /* Display current song time */
     playlist->status();
-
-    /* Manage the different commands received from UNO */
-    if (commandReceive == MESSAGETYPEID_BGM_PLAY_SONG){
-        
-        playSong();
     
-    }else if (commandReceive == MESSAGETYPEID_BGM_STOP_SONG){
-        
-        stopSong();
-
-        /* Reset song index */
-        playlist->currentSongIndex = 0;
-
-    } else if ((commandReceive == MESSAGETYPEID_BGM_NEXT_SONG) |
-                (playlist->currentSongLength >=
-                playlist->currentSong->length)){
-
+    if (playlist->hasExceedSongLength()){
+        Serial.println ("Exceed song length");
         nextSong();
+        isPlaying = true;
+    } 
+    
+    if (receivedI2CMessage){
+        Serial.println ("Has received i2c message");
 
-    } else {
-        if (playlist->currentSongLength > 0){
-            playlist->currentSongLength += 1;
+        if (i2cDataBuffer[0] == MESSAGETYPEID_BGM){
+            /* Manage the different commands received from UNO */
+            if (i2cDataBuffer[1] == MESSAGETYPEID_BGM_PLAY_SONG){
+                Serial.println ("MSGID: PLAY_SONG");
+
+                playSong();
+                isPlaying = true;
+
+            } else if (i2cDataBuffer[1] == MESSAGETYPEID_BGM_STOP_SONG){
+                Serial.println ("MSGID: STOP_SONG");
+
+                stopSong();
+                isPlaying = false;
+
+            } else if (i2cDataBuffer[1] == MESSAGETYPEID_BGM_NEXT_SONG){
+                Serial.println ("MSGID: NEXT_SONG");
+
+                nextSong();
+                isPlaying = true;
+
+            } else if (i2cDataBuffer[1] == MESSAGETYPEID_BGM_UPDATE){
+                Serial.println ("MSGID: UPDATE");
+                playlist->currentSongIndex = 0;
+
+                Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
+                Wire.write (MESSAGETYPEID_KEYPAD_LOCK);
+                Wire.write (MESSAGETYPEID_KEYPAD_LOCK_RESET);
+                Wire.endTransmission();
+
+                playSong();
+                isPlaying = true;
+
+            } else {}
         }
+
+        /* Reset receivedI2CMessage */
+        Serial.println ("Reset I2C state");
+        receivedI2CMessage = false;
+
+        clearI2CBuffer();
+        
+    } 
+    
+    if (isPlaying){
+        playlist->update();
     }
-
-    /* Reset commandReceive */
-    commandReceive = -1;
-
+    
     delay(1000);
 
 } //end loop()
 
 /* I2C onReceive interrupt */
 void Received (int noBytes){
-    commandReceive = Wire.read();
+    for (int i=0; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
+        i2cDataBuffer[i] = Wire.read();
+        //Serial.println(i2cDataBuffer[i]);
+    }
 
-    Serial.print ("Received command: ");
-    Serial.println (commandReceive);
+    receivedI2CMessage = true;
+    //Serial.print ("Received command: ");
+    //Serial.println (receivedI2CMessage);
 
 } //end Received()
 
 /* I2C onRequest interrupt */
 void Request(){
-    wireWritePassword();
+    //wireWritePassword();
 
 } //end Request()
 
@@ -115,6 +151,9 @@ void fillDataSong(){
 
 void wireWritePassword(){
 
+    Wire.write (MESSAGETYPEID_KEYPAD_LOCK);
+    Wire.write (MESSAGETYPEID_KEYPAD_LOCK_GET_PASSWORD);
+
     int i;
     for (i = 0; i < 4; i++){
         Wire.write (currentPassword[i]);
@@ -122,18 +161,24 @@ void wireWritePassword(){
 
 } //end wireWritePassword()
 
+void clearI2CBuffer(){
+    for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
+        i2cDataBuffer[i] = 0;
+    }
+}
+
 void playSong(){
-    /* Send current song password to UNO */
+    /* Send current song password to RX */
     Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
     wireWritePassword();
     Wire.endTransmission();
     
-    Serial.println ("Sent current password.");
+    Serial.print ("Sent current password: ");
+    Serial.println (currentPassword);
 
     /* Play current song */
     playlist->playSong();
     pinMode (playlist->currentSongIndex + PIN_OFFSET, OUTPUT);
-    playlist->currentSongLength = 1;
 
 } //end playSong()
 

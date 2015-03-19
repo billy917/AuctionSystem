@@ -1,6 +1,7 @@
 /*
  * Playlist.h
  * a looped playlist containing a fixed amount of songs
+ * NOTE: When playing is stopped, the song index does not reset
 */
 
 #ifndef Playlist_h
@@ -24,6 +25,8 @@ class Playlist{
         void playSong();
         void nextSong();
         void stopSong();
+        void update();
+        bool hasExceedSongLength();
 
     protected:
         void init();

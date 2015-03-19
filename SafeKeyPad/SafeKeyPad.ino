@@ -11,7 +11,11 @@
 #include "Keypad.h"
 //#include "pitches.h"
 
-char currentPassword[5] = {};
+/* Initialize variables */
+uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile bool receivedI2CMessage = false;
+
+char songPassword[5] = {};
 int fail = 0;
 
 // Setup lock settings
@@ -42,7 +46,7 @@ void setup(){
     keypad.addEventListener (keypadEvent);
     keypad.setDebounceTime(20);
     initLEDs();
-    
+
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
 
@@ -52,42 +56,73 @@ void setup(){
 
     /* Tell BGM CONTROLLER to start playing the song */
     Wire.beginTransmission (BGM_I2C_ADDR);
+    Wire.write (MESSAGETYPEID_BGM);
     Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
     Wire.endTransmission();
 
+    delay (500);
+
     Wire.beginTransmission (BGM_I2C_ADDR);
+    Wire.write (MESSAGETYPEID_BGM);
     Wire.write (MESSAGETYPEID_BGM_PLAY_SONG);
     Wire.endTransmission();
 
     Serial.println ("Sent PLAY_SONG message.");
-    
+
 } //end setup()
 
 void loop(){
 
     /* Get key input from keypad */
     keypad.getKey();
-    handleCommands();
+    if (receivedI2CMessage) handleCommands();
 
 } //end loop()
 
 /* I2C onReceive interrupt */
 void Received (int noBytes){
 
-    int i;
-    for (i = 0; i < 4; i++) {
-        currentPassword[i] = Wire.read();
+    for (int i=0; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
+        i2cDataBuffer[i] = Wire.read();
+        //Serial.println(i2cDataBuffer[i]);
     }
 
-    Serial.print ("Current password is ");
-    Serial.println (currentPassword);
+    receivedI2CMessage = true;
+    //Serial.print ("Received command: ");
+    //Serial.println (receivedI2CMessage);
 
 } //end Received()
 
 /* I2C onRequest interrupt */
 void Request(){}
 
-void handleCommands(){}
+void handleCommands(){
+    if (i2cDataBuffer[0] == MESSAGETYPEID_KEYPAD_LOCK){
+        /* Received reset command */
+        if (i2cDataBuffer[1] == MESSAGETYPEID_KEYPAD_LOCK_RESET){
+
+            resetAll();
+
+        } else if (i2cDataBuffer[1] ==
+            MESSAGETYPEID_KEYPAD_LOCK_GET_PASSWORD){
+
+            /* Get song password */
+            int i;
+            for (i = 0; i < 4; i++) {
+                songPassword[i] = i2cDataBuffer[i+2];
+            }
+
+            Serial.print ("Current password is ");
+            Serial.println (songPassword);
+
+        } else {}
+
+    }
+
+    /* Reset receivedi2cmessage */
+    receivedI2CMessage = false;
+    clearI2CBuffer();
+}
 
 void initLEDs(){
   pinMode(9, OUTPUT); // 1-Red
@@ -102,8 +137,8 @@ void turnOnRed(int num){
   switch (num){
     case 3: analogWrite(A2,255);
     case 2: digitalWrite(11,HIGH);
-    case 1: digitalWrite(9,HIGH); 
-  } 
+    case 1: digitalWrite(9,HIGH);
+  }
 }
 
 void turnOffLEDs(){
@@ -122,22 +157,28 @@ void turnOnGreenLEDs(){
   analogWrite(A3,255);
 }
 
+void clearI2CBuffer(){
+    for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
+        i2cDataBuffer[i] = 0;
+    }
+}
+
 void keypadEvent(KeypadEvent eKey){
   if(PRESSED == keypad.getState()){
     if(locked){
       Serial.print("Pressed: "); Serial.println(eKey);
       switch (eKey){
-        case '*': 
-        case '#': passwordLength = 0; break; 
-        default: password[passwordLength]=eKey; passwordLength++; updateLED(); 
-      } 
-      
+        case '*':
+        case '#': clearPassword(); break;
+        default: password[passwordLength]=eKey; passwordLength++; updateLED();
+      }
+
       if(4 == passwordLength){
         bool passwordMatch = checkPassword();
         delay(2000);
 
         if(passwordMatch){
-          locked = false;  
+          locked = false;
           Serial.println("Unlocked!");
         } else {
           clearPassword();
@@ -148,14 +189,14 @@ void keypadEvent(KeypadEvent eKey){
       if ('*' == eKey || '#' == eKey){
         locked = true;
         clearPassword();
-        Serial.println("Lock!"); 
-      }     
+        Serial.println("Lock!");
+      }
     }
   }
 }
 
 void clearPassword(){
-  passwordLength = 0; 
+  passwordLength = 0;
   password[0] = '-';
   password[1] = '-';
   password[2] = '-';
@@ -166,47 +207,36 @@ void clearPassword(){
 
 void updateLED(){
   int length = passwordLength;
-  /*
-  if(length == 4){
-   length = 3;
-  }
-  */
-  
+
   matrix.clear();
   int j=0;
-  
+
   for (int i=5-length; i<5; i++){
       int k=i;
       if(i<3){k--;}
       matrix.writeDigitNum (k, password[j]-'0',false);
       j++;
   }
-  /*for(int i=3-length;i<4;i++){
-    int k = i;
-    if(i>1){k++;}
-    matrix.writeDigitNum(k,password[j]-'0',false);
-    j++;
-  }
-  */
- 
 
-  matrix.writeDisplay();  
+  matrix.writeDisplay();
 
   Serial.println(password);
+
 }
 
 bool checkPassword(){
     /* Check key input to song password */
         /* If key input IS song password */
 
-        if (charArrayCompare (currentPassword, password)){
+        if (charArrayCompare (songPassword, password)){
             /* Stop playing song */
             Wire.beginTransmission (BGM_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_BGM);
             Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
             Wire.endTransmission();
 
             Serial.println ("Correct password!");
-            
+
             turnOnGreenLEDs();
 
             /* Unlock LOCK_MANAGER */
@@ -229,31 +259,56 @@ bool checkPassword(){
 
                 /* Change to next song */
                 Wire.beginTransmission (BGM_I2C_ADDR);
+                Wire.write (MESSAGETYPEID_BGM);
                 Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
                 Wire.endTransmission();
 
                 delay (2000);
 
                 Serial.print ("New Password: ");
-                Serial.println (currentPassword);
+                Serial.println (songPassword);
 
                 /* Reset fail counter */
                 fail = 0;
                 turnOffLEDs();
 
             }
-            
+
             Serial.print (3 - fail);
             Serial.print (" time(s) left! The password is ");
-            Serial.println (currentPassword);
+            Serial.println (songPassword);
 
             return false;
         }
 
 } //end checkPassword()
 
+/* Reset to initial settings */
+void resetAll(){
+    delay(200);
+
+    /* Clear song password */
+    songPassword[0] = '-';
+    songPassword[1] = '-';
+    songPassword[2] = '-';
+    songPassword[3] = '-';
+    songPassword[4] = '-';
+
+    /* Clear fail count */
+    fail = 0;
+
+    /* Clear matrix */
+    clearPassword();
+
+    /* Clear LED */
+    turnOffLEDs();
+
+    /* Lock safe */
+    locked = true;
+}
+
 bool charArrayCompare (char one[], char two[]){
-    
+
     int i;
     bool equal = true;
     for (i = 0; i < 4; i++){

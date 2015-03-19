@@ -75,7 +75,7 @@ int currentMenu = MainMenu;
 // 4 - NFCDetectors
 
 int currentRowSelection = 0;
-int maxRows[] = {6, 9, 4, 6, 1};
+int maxRows[] = {7, 9, 4, 6, 1};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -465,7 +465,12 @@ void drawMainMenu(){
   if(5 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("6) Reset Clock");
+  tft.println("6) Reset Safe Keypad");
+  
+  if(6 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.println("7) Reset Clock");
   
 }
 
@@ -523,6 +528,17 @@ void toggleMusic(){
     xbee.send(laser1Tx); 
 }
 
+void resetSafeKeyPad(){
+    //xbeePayload[0] = MESSAGETYPEID_KEYPAD_LOCK;
+    //xbeePayload[1] = MESSAGETYPEID_KEYPAD_LOCK_RESET;
+
+    xbeePayload[0] = MESSAGETYPEID_BGM;
+    xbeePayload[1] = MESSAGETYPEID_BGM_UPDATE;
+    xbeePayload[2] = 0;
+    xbee.send(laser1Tx);
+    
+}
+
 boolean handleMenuSelection(){
   boolean updated = false;
   if(currentMenu == MainMenu){
@@ -548,6 +564,9 @@ boolean handleMenuSelection(){
       toggleMusic();
       updated = true; 
     } else if(currentRowSelection == 5){
+      resetSafeKeyPad();
+      updated = true;
+    } else if(currentRowSelection == 6){
       resetClock();
       updated = true; 
     }
@@ -689,6 +708,11 @@ boolean handleXBeeMsg(){
       return true;
     } else if (MESSAGETYPEID_NFC_TOOL ==  rx.getData(0)
                 && MESSAGETYPEID_NFC_TOOL_STATUS == rx.getData(1)){
+      /* Clear local memory */
+      for(int i=1;i<= rx.getData(2);i++){
+        nfcState[i] = 0;
+      }
+    
       for(int i=1;i<= rx.getData(2);i++){
         nfcState[i] = rx.getData(2+i);
       }

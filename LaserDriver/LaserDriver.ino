@@ -130,11 +130,19 @@ void forwardI2CMessage(int i2cAddr){
 void handleMessage(){
   if(laserController.canHandleMessageType(localBuffer[0])){
       laserController.handleMessage(3, localBuffer);
-  } else if(MESSAGETYPEID_LOCK == localBuffer[0]){
+  } 
+  
+  if(MESSAGETYPEID_LOCK == localBuffer[0]){
     forwardI2CMessage(LOCK_MANAGER_I2C_ADDR);
+
   } else if(MESSAGETYPEID_BGM == localBuffer[0]){
-    forwardI2CMessage(MESSAGETYPEID_BGM);
-  }
+    forwardI2CMessage(BGM_I2C_ADDR);
+
+  } else if (MESSAGETYPEID_KEYPAD_LOCK == localBuffer[0]){
+    forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
+
+  } else {}
+
   nfcManager.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);
   
   if('I' == commandSource){
