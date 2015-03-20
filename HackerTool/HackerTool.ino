@@ -618,7 +618,16 @@ void resetClock(){
   xbeePayload[0] = MESSAGETYPEID_CLOCK;
   xbeePayload[1] = MESSAGETYPEID_CLOCK_RESET;
   xbee.send(laser2Tx);  
+ 
+  xbeePayload[0] = MESSAGETYPEID_CLOCK;
+  xbeePayload[1] = MESSAGETYPEID_CLOCK_PAUSE;
+  xbee.send(laser2Tx);
 
+  delay (1500);
+
+  xbeePayload[0] = MESSAGETYPEID_CLOCK;
+  xbeePayload[1] = MESSAGETYPEID_CLOCK_START;
+  xbee.send(laser2Tx);
 }
 
 boolean handleMenuBack(){
