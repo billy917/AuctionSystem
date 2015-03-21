@@ -1,6 +1,3 @@
-
-
-
 /*
   NFCManager.cpp - Library for NFC Manager module.
   Created by Billy Wong

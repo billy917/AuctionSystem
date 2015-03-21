@@ -1,4 +1,4 @@
-/* 
+/*
  * BGMusicController.ino
  * Receive commands from KEYPAD-LOCK CONTROLLER
 */
@@ -23,7 +23,7 @@ void setup() {
     uint8_t i;
     for(i=0 + PIN_OFFSET; i<=10 + PIN_OFFSET; i++) pinMode(i, INPUT);
     for(i=0 + PIN_OFFSET; i<=10 + PIN_OFFSET; i++) digitalWrite(i, LOW);
-    
+
     /* Setting up I2C Wire */
     Wire.begin(BGM_I2C_ADDR); // this BGM Controller I2C port
     Wire.onReceive (Received);
@@ -39,7 +39,7 @@ void setup() {
 
     Serial.print ("Current password: ");
     Serial.println (currentPassword);
-    
+
     /* delay for SafeKeyPad */
     delay(30);
 
@@ -51,13 +51,13 @@ void setup() {
 void loop() {
     /* Display current song time */
     playlist->status();
-    
+
     if (playlist->hasExceedSongLength()){
         Serial.println ("Exceed song length");
         nextSong();
         isPlaying = true;
-    } 
-    
+    }
+
     if (receivedI2CMessage){
         Serial.println ("Has received i2c message");
 
@@ -94,23 +94,35 @@ void loop() {
                 isPlaying = true;
 
             } else {}
-        }
+
+        } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
+            forwardI2CMessage (KEYPAD_LOCK_I2C_ADDR);
+
+        } else {}
 
         /* Reset receivedI2CMessage */
         Serial.println ("Reset I2C state");
         receivedI2CMessage = false;
 
         clearI2CBuffer();
-        
-    } 
-    
+
+    }
+
     if (isPlaying){
         playlist->update();
     }
-    
+
     delay(1000);
 
 } //end loop()
+
+void forwardI2CMessage (uint8_t i2cAddr){
+    Wire.beginTransmission (i2cAddr);
+    for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
+        Wire.write (i2cDataBuffer[i]);
+    }
+    Wire.endTransmission();
+}
 
 /* I2C onReceive interrupt */
 void Received (int noBytes){
@@ -134,17 +146,17 @@ void Request(){
 void fillDataSong(){
     /* song_index 0 = PIN D2 = Song 10 */
     playlist->songList[10] = new Song (185, "1725"); // T00
-    playlist->songList[9] = new Song (176, "1804");
+    playlist->songList[9] = new Song (171, "1804");
     playlist->songList[8] = new Song (178, "1720");
     playlist->songList[7] = new Song (223, "1935");
     playlist->songList[6] = new Song (169, "1867");
-    playlist->songList[5] = new Song (131, "1875");
+    playlist->songList[5] = new Song (132, "1875");
     playlist->songList[4] = new Song (147, "1880");
     playlist->songList[3] = new Song (170, "1787");
     playlist->songList[2] = new Song (207, "1756");
     playlist->songList[1] = new Song (135, "1942");
-    playlist->songList[0] = new Song (136, "1892"); // T10
-   
+    playlist->songList[0] = new Song (137, "1892"); // T10
+
     //playlist->songList[2] = new Song (217, "1936");
 
 } //end fillDataSong()
@@ -172,7 +184,7 @@ void playSong(){
     Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
     wireWritePassword();
     Wire.endTransmission();
-    
+
     Serial.print ("Sent current password: ");
     Serial.println (currentPassword);
 
@@ -190,7 +202,7 @@ void stopSong(){
 } //end stopSong()
 
 void nextSong(){
-    
+
     stopSong();
 
     /* Increment song index */

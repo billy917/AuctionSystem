@@ -9,11 +9,14 @@
 #include "Adafruit_GFX.h"
 #include "Constants.h"
 #include "Keypad.h"
+#include "NFCLock.h"
 //#include "pitches.h"
 
 /* Initialize variables */
 uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
+
+NFCLock nfcLock = new NFCLock();
 
 char songPassword[5] = {};
 int fail = 0;
@@ -117,7 +120,10 @@ void handleCommands(){
 
         } else {}
 
-    }
+    } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
+        nfcLock.handleI2CMessage (i2cDataBuffer);
+
+    } else {}
 
     /* Reset receivedi2cmessage */
     receivedI2CMessage = false;
