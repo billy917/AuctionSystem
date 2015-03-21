@@ -17,7 +17,7 @@ XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
 
-uint8_t xbeePayload[3] = { 0, 0, 0 };
+uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
 XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
 XBeeAddress64 hackerAddr = XBeeAddress64(0x0013a200, 0x00000000);
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
@@ -69,7 +69,7 @@ void loop() {
     for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
       localBuffer[i] = i2cDataBuffer[i];
     }
-    handleMessage();;
+    handleMessage();
     receivedI2CMessage = false; 
   }
 }
@@ -79,12 +79,6 @@ void receiveEvent(int howMany){
     i2cDataBuffer[i] = Wire.read();
   }
   commandSource = 'I';
-  Serial.println(i2cDataBuffer[0]);
-Serial.println(i2cDataBuffer[1]);
-Serial.println(i2cDataBuffer[2]);
-Serial.println(i2cDataBuffer[3]);
-Serial.println (i2cDataBuffer[4]);
-
   receivedI2CMessage = true;
 }
 
@@ -109,6 +103,15 @@ void handleXBeeMsg(){
     commandSource = 'X';
     receivedXBeeMessage = true;
   }   
+}
+
+
+void forwardXBeeMessage(){
+  xbeePayload[0] = localBuffer[0];
+  xbeePayload[1] = localBuffer[1];
+  xbeePayload[2] = localBuffer[2];
+  xbeePayload[3] = localBuffer[3];  
+  xbee.send(laser2Tx);
 }
 
 void instructXBeeModeChange(int messageTypeId){
@@ -141,7 +144,9 @@ void handleMessage(){
   } else if (MESSAGETYPEID_KEYPAD_LOCK == localBuffer[0]){
     forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
 
-  } else {}
+  } else if (MESSAGETYPEID_CLOCK == localBuffer[0]){
+    forwardXBeeMessage();
+  }
 
   nfcManager.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);
   
