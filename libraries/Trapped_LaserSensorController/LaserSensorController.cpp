@@ -29,21 +29,24 @@ void LaserSensorController::setSensorPin(int sensorId, int pin, uint8_t i2cAddre
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
 	_sensors[_numRegisteredSensors]->begin(i2cAddress);
 	_sensors[_numRegisteredSensors]->setTiming(0,0);	
-	Serial.print("Set interrupt control:");Serial.println(_sensors[_numRegisteredSensors]->setInterruptControl(1,1));	
+	//Serial.print("Set interrupt control:");Serial.println(_sensors[_numRegisteredSensors]->setInterruptControl(1,1));	
 	_sensors[_numRegisteredSensors]->clearInterrupt();
 	_sensors[_numRegisteredSensors]->setPowerUp();
-	calibrateSensor(_sensors[_numRegisteredSensors]);
-	_sensorEnabled[_numRegisteredSensors] = true;
 	_numRegisteredSensors++;
+
+	calibrateSensorBySensorId(sensorId);
+	enableSensorBySensorId(sensorId);		
 }
 
 void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 	if(dataLength > 0 && MESSAGETYPEID_LASER_SENSOR == data[0]){
-		//TODO: handle message
-
-		// calibrate sensor
-		// disable/enable
-		// get reading
+		if(MESSAGETYPEID_LASER_SENSOR_ON == data[1]){			
+			enableSensorBySensorId(data[2]);
+		} else if(MESSAGETYPEID_LASER_SENSOR_OFF == data[1]){
+			disableSensorBySensorId(data[2]);
+		} else if(MESSAGETYPEID_LASER_SENSOR_CALIBRATE == data[1]){		
+			calibrateSensorBySensorId(data[2]);			
+		}
 	}
 }
 
@@ -73,10 +76,25 @@ int LaserSensorController::_getSensorIndexById(int sensorId){
 	return -1;
 }
 
+void LaserSensorController::enableSensorBySensorId(int sensorId){
+	int sensorIndex = _getSensorIndexById(sensorId);
+	if(-1 < sensorIndex){
+		calibrateSensorBySensorId(sensorId);
+		_sensorEnabled[sensorIndex] = true;
+	}
+}
+
+void LaserSensorController::disableSensorBySensorId(int sensorId){
+	int sensorIndex = _getSensorIndexById(sensorId);
+	if(-1 < sensorIndex){
+		_sensorEnabled[sensorIndex] = false;
+	}
+}
+
 void LaserSensorController::calibrateSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){
-		Serial.print("Calibrating SensorId:");Serial.println(sensorId);
+		//Serial.print("Calibrating SensorId:");Serial.println(sensorId);
 		SFE_TSL2561* sensor = _sensors[sensorIndex];
 		if(NULL != sensor){
 			calibrateSensor(sensor);
@@ -89,17 +107,17 @@ void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 		unsigned int data0, data1;
 		sensor->getData(data0,data1);
 		int threshold1 = data0/3;
-		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
-		Serial.print(data1);Serial.print("-"); Serial.println(threshold1);
+		//Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
+		//Serial.print(data1);Serial.print("-"); Serial.println(threshold1);
 
 		delay(1000);
 		sensor->getData(data0,data1);
 		int threshold2 = data0/3;
-		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
-		Serial.print(data1);Serial.print("-"); Serial.println(threshold2);
+		//Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
+		//Serial.print(data1);Serial.print("-"); Serial.println(threshold2);
 
 		int threshold = (threshold1 + threshold2)/2;
-		Serial.print("Set threshold:");Serial.println(sensor->setInterruptThreshold(threshold,threshold*1000));
+		//Serial.print("Set threshold:");Serial.println(sensor->setInterruptThreshold(threshold,threshold*1000));
 	}
 }
 
@@ -120,15 +138,15 @@ void LaserSensorController::trippedWire(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(sensorIndex > -1){
 		_sensors[sensorIndex]->clearInterrupt();
+		if(_sensorEnabled[sensorIndex]){
+			unsigned long currTime = millis();
+			//Serial.print("SensorId:"); Serial.print(sensorId); 
+			//Serial.print(" tripped @ "); Serial.print(currTime);
 
-		unsigned long currTime = millis();
-		Serial.print("SensorId:"); Serial.print(sensorId); 
-		Serial.print(" tripped @ "); Serial.print(currTime);
-
-		if(_lastTrippedTime == 0 || currTime - _lastTrippedTime > 1000){
-			Serial.print(" <--");
-			_lastTrippedTime = currTime;	
-			if(_sensorEnabled[sensorIndex]){
+			if(_lastTrippedTime == 0 || currTime - _lastTrippedTime > 1000){
+				//Serial.print(" <--");
+				_lastTrippedTime = currTime;	
+			
 				byte i2cAddress = 0;
 				if(_isPrimary){
 					i2cAddress = CLOCK_I2C_ADDR;
@@ -143,6 +161,6 @@ void LaserSensorController::trippedWire(int sensorId){
 				Wire.endTransmission();
 			}
 		}
-		Serial.println("");
+		//Serial.println("");
 	}
 }

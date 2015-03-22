@@ -59,8 +59,9 @@ const uint8_t MESSAGETYPEID_NFC_TOOL_DEBUG = 3; // Tool -> PrimaryManager set De
 const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 
-const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 1;  // x -> LaserController
-const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 2; // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
@@ -79,7 +80,6 @@ const uint8_t MESSAGETYPEID_CLOCK_PAUSE = 3;
 const uint8_t MESSAGETYPEID_CLOCK_MODIFY = 4;
 const uint8_t MESSAGETYPEID_CLOCK_MODIFY_ADD = 1;
 const uint8_t MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT = 2;
-
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
 const uint8_t I2C_MESSAGE_MAX_SIZE = 9; // should be same as NFC Message Max Size
@@ -119,16 +119,16 @@ Laser Control message protocol
 
 /*
 LASER Sensor message protocol
-	Manager <-> Tool
+	LaserSensorController <-> Tool
 	[0] messageTypeId (10)
 	[1] detailedMessageType (1 = enable debug, 2 = request status, 3 = status response, 4 = trip event)
 	[2] sensorId
 	[3] sensorState (only for detailedMessageType #2) 
 
-	Manager <-> PrimaryManager/Clock (next to clock)
+	LaserSensorController <- LaserController 
 	[0] messageTypeId (10)
-	[1] detailedMessageType (1 = tripped laser)
-	[2] sensorId	
+	[1] detailedMessageType (5 = ON, 6 = OFF, 7 = request to calibrate)
+	[2] sensorId
 */
 
 /*

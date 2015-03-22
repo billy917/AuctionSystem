@@ -22,6 +22,8 @@ class LaserSensorController
 
     void calibrateSensorBySensorId(int sensorId);
     void calibrateSensor(SFE_TSL2561* sensor);
+    void enableSensorBySensorId(int sensorId);
+    void disableSensorBySensorId(int sensorId);
     void trippedWire(int sensorId);
 
   private:

@@ -27,16 +27,19 @@ void setup() {
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
     
-  attachInterrupt(0, pin2Interrupted, FALLING);
-  //attachInterrupt(1, pin3Interrupted, FALLING);
-  //attachInterrupt(4, pin19Interrupted, FALLING);
+  attachInterrupt(1, pin3Interrupted, FALLING);
+  //attachInterrupt(0, pin2Interrupted, FALLING);
+  attachInterrupt(4, pin19Interrupted, FALLING);
   
-  laserSensorController.setSensorPin(1, 2, TSL2561_ADDR
-  u);
+  laserSensorController.setSensorPin(1, 3, TSL2561_ADDR_0);
   laserSensorController.calibrateSensorBySensorId(1);
   
-  //laserSensorController.setSensorPin(2, 3, TSL2561_ADDR_0);
+  //laserSensorController.setSensorPin(2, 2, TSL2561_ADDR);
   //laserSensorController.calibrateSensorBySensorId(2);
+  
+  laserSensorController.setSensorPin(3, 19, TSL2561_ADDR_1);
+  laserSensorController.calibrateSensorBySensorId(3);
+
 }
 
 void loop() {

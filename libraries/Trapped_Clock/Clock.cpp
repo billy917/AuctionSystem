@@ -26,7 +26,11 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
       if(MESSAGETYPEID_CLOCK_MODIFY_ADD == data[2]){
         minutes += data[3];
       } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[2]){
-        minutes -= data[3];
+        if(minutes > 0){
+          minutes -= data[3];
+        } else {
+          seconds = 0;
+        }
       }
     }
   }
@@ -40,13 +44,16 @@ void Clock::oneSecondLater(){
       if(-1 == minutes){
         minutes = 0;
         seconds = 0;
-        clockMode = CLOCK_MODE_PAUSE;
       } else {
         seconds = 59;
       }
     }
+
     if(CLOCK_MODE_COUNTDOWN == clockMode){
       _updateClockDisplay();
+    }
+    if(minutes <= 0  && seconds <= 0){
+      clockMode = CLOCK_MODE_PAUSE;
     }
   }
 }
