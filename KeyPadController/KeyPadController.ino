@@ -69,16 +69,9 @@ void loop() {
   if(receivedMessage){
     copyToI2CLocalBuffer();    
     clock.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
-    clearI2CLocalBuffer();
     receivedMessage = false; 
   }
   timer.run();
-}
-
-void clearI2CLocalBuffer(){
-  for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-    i2cLocalBuffer[i] = 0;
-  }
 }
 
 void copyToI2CLocalBuffer(){
@@ -91,6 +84,7 @@ void receiveI2CEvent(int howMany){
   for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
     i2cDataBuffer[i] = Wire.read();
   }
+  receivedMessage = true;
 }
 
 void oneSecondLater(){

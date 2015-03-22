@@ -111,11 +111,16 @@ void handleXBeeMsg(){
         || MESSAGETYPEID_BGM == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
-    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]
-              || MESSAGETYPEID_CLOCK == xBeeDataBuffer[0]){
+    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
       xBeeDataBuffer[3] = rx.getData(3);
+    } else if (MESSAGETYPEID_CLOCK == xBeeDataBuffer[0]){
+      xBeeDataBuffer[1] = rx.getData(1);
+      xBeeDataBuffer[2] = rx.getData(2);
+      if(MESSAGETYPEID_CLOCK_MODIFY == xBeeDataBuffer[1]){
+        xBeeDataBuffer[3] = rx.getData(3);
+      }
     }
     
     commandSource = 'X';
@@ -135,7 +140,8 @@ void instructXBeeModeChange(int messageTypeId){
 void handleMessage(){
   if(laserController.canHandleMessageType(localBuffer[0])){
       laserController.handleMessage(3, localBuffer);
-  } else if(MESSAGETYPEID_CLOCK == localBuffer[0]){
+  }
+  if(MESSAGETYPEID_CLOCK == localBuffer[0]){
     forwardI2CMessage(CLOCK_I2C_ADDR);
   } 
   nfcManager.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);

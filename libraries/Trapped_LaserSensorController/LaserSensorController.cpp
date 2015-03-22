@@ -13,6 +13,7 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 	_isPrimary = isPrimary;
 	_controllerId = controllerId; 
 	_numRegisteredSensors = 0;
+	_lastTrippedTime = 0;
 	//This controller is meant to be used on a Mega where pin D2(0), D3(1), D19(4) are used for interrupts
 	
 	for (int i=0; i<3; i++){
@@ -27,9 +28,9 @@ void LaserSensorController::setSensorPin(int sensorId, int pin, uint8_t i2cAddre
 	_sensorI2CAddresses[_numRegisteredSensors] = i2cAddress;
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
 	_sensors[_numRegisteredSensors]->begin(i2cAddress);
-	unsigned int ms;
-	_sensors[_numRegisteredSensors]->setTiming(0,0,ms);
-	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
+	_sensors[_numRegisteredSensors]->setTiming(0,0);	
+	Serial.print("Set interrupt control:");Serial.println(_sensors[_numRegisteredSensors]->setInterruptControl(1,1));	
+	_sensors[_numRegisteredSensors]->clearInterrupt();
 	_sensors[_numRegisteredSensors]->setPowerUp();
 	calibrateSensor(_sensors[_numRegisteredSensors]);
 	_sensorEnabled[_numRegisteredSensors] = true;
@@ -87,30 +88,61 @@ void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 	if(NULL != sensor){
 		unsigned int data0, data1;
 		sensor->getData(data0,data1);
-		int threshold = data0/2;
-		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-");
-		Serial.print(data1);Serial.print("-");
-		Serial.println(threshold);
-		sensor->setInterruptThreshold(threshold,10000);
+		int threshold1 = data0/3;
+		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
+		Serial.print(data1);Serial.print("-"); Serial.println(threshold1);
+
+		delay(1000);
+		sensor->getData(data0,data1);
+		int threshold2 = data0/3;
+		Serial.print("Sensor values:");Serial.print(data0);Serial.print("-"); 
+		Serial.print(data1);Serial.print("-"); Serial.println(threshold2);
+
+		int threshold = (threshold1 + threshold2)/2;
+		Serial.print("Set threshold:");Serial.println(sensor->setInterruptThreshold(threshold,threshold*1000));
 	}
+}
+
+unsigned int LaserSensorController::getReadings(int sensorId){
+	int sensorIndex = _getSensorIndexById(sensorId);
+	if(-1 < sensorIndex){		
+		SFE_TSL2561* sensor = _sensors[sensorIndex];
+		if(NULL != sensor){
+			unsigned int data0, data1;
+			sensor->getData(data0,data1);
+			return data0;
+		}
+	}
+	return 0;
 }
 
 void LaserSensorController::trippedWire(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(sensorIndex > -1){
-		if(_sensorEnabled[sensorIndex]){
-			byte i2cAddress = 0;
-			if(_isPrimary){
-				i2cAddress = CLOCK_I2C_ADDR;
-			} else {
-				i2cAddress = NFC_MANAGER_I2C_ADDR;
+		_sensors[sensorIndex]->clearInterrupt();
+
+		unsigned long currTime = millis();
+		Serial.print("SensorId:"); Serial.print(sensorId); 
+		Serial.print(" tripped @ "); Serial.print(currTime);
+
+		if(_lastTrippedTime == 0 || currTime - _lastTrippedTime > 1000){
+			Serial.print(" <--");
+			_lastTrippedTime = currTime;	
+			if(_sensorEnabled[sensorIndex]){
+				byte i2cAddress = 0;
+				if(_isPrimary){
+					i2cAddress = CLOCK_I2C_ADDR;
+				} else {
+					i2cAddress = NFC_MANAGER_I2C_ADDR;
+				}
+				Wire.beginTransmission(i2cAddress); // transmit to device #100 (NFCDetectorManager
+				Wire.write(MESSAGETYPEID_CLOCK);
+				Wire.write(MESSAGETYPEID_CLOCK_MODIFY); 
+				Wire.write(MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT);
+				Wire.write(1);
+				Wire.endTransmission();
 			}
-			Wire.beginTransmission(i2cAddress); // transmit to device #100 (NFCDetectorManager
-			Wire.write(MESSAGETYPEID_CLOCK);
-			Wire.write(MESSAGETYPEID_CLOCK_MODIFY); 
-			Wire.write(MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT);
-			Wire.write(_sensorTimeTick[sensorIndex]);
-			Wire.endTransmission();
 		}
+		Serial.println("");
 	}
 }

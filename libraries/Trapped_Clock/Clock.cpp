@@ -22,7 +22,7 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
       clockMode = CLOCK_MODE_COUNTDOWN;
     } else if (MESSAGETYPEID_CLOCK_PAUSE == data[1]){
       clockMode = CLOCK_MODE_PAUSE;
-    } else if (dataLength > 3 && MESSAGETYPEID_CLOCK_MODIFY == data[1]){
+    } else if (MESSAGETYPEID_CLOCK_MODIFY == data[1]){
       if(MESSAGETYPEID_CLOCK_MODIFY_ADD == data[2]){
         minutes += data[3];
       } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[2]){
