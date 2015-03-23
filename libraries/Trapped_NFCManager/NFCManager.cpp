@@ -33,7 +33,7 @@ NFCManager::NFCManager(int managerId, bool isPrimary){
     _xBeePayload[3]=0;
     _xBeePayload[4]=0;
 
-	_laser1Addr = XBeeAddress64(0x0013a200, 0x40c0edf); //Laser1 xBee 
+	_laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf); //Laser1 xBee 
 	_laser1ZBTxRequest = ZBTxRequest(_laser1Addr, _xBeePayload, sizeof(_xBeePayload));
 
 	_toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66); //Tool xBee 
@@ -122,16 +122,26 @@ void NFCManager::_notifyToolOverallStatus(){
 }
 
 void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected, uint8_t nfcValue){
-	_xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;    
-	_xBeePayload[1] = _managerId;
-	_xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
-	_xBeePayload[3] = detectorId;
-    _xBeePayload[4] = nfcValue;
+	
 
     if(!_isPrimary){
-		_xbee_pointer->send(_laser1ZBTxRequest);
-	}
-	_xbee_pointer->send(_toolZBTxRequest);
+	    _xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;    
+        _xBeePayload[1] = _managerId;
+        _xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
+        _xBeePayload[3] = detectorId;
+        _xBeePayload[4] = nfcValue;_xbee_pointer->send(_laser1ZBTxRequest);
+
+	} else if (_isPrimary){
+        Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
+        Wire.write (MESSAGETYPEID_NFC_MANAGE);
+        Wire.write (_managerId);
+        Wire.write (detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND);
+        Wire.write (detectorId);
+        Wire.write (nfcValue);
+        Wire.endTransmission();
+    }
+	
+    _xbee_pointer->send(_toolZBTxRequest);
 }
 
 void NFCManager::_registerDetector(uint8_t detectorId){

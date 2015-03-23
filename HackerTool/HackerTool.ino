@@ -529,12 +529,21 @@ void toggleMusic(){
 }
 
 void resetSafeKeyPad(){
-    //xbeePayload[0] = MESSAGETYPEID_KEYPAD_LOCK;
-    //xbeePayload[1] = MESSAGETYPEID_KEYPAD_LOCK_RESET;
+    xbeePayload[0] = MESSAGETYPEID_KEYPAD_LOCK;
+    xbeePayload[1] = MESSAGETYPEID_KEYPAD_LOCK_RESET;
 
-    xbeePayload[0] = MESSAGETYPEID_BGM;
-    xbeePayload[1] = MESSAGETYPEID_BGM_UPDATE;
+    //xbeePayload[0] = MESSAGETYPEID_BGM;
+    //xbeePayload[1] = MESSAGETYPEID_BGM_UPDATE;
     xbeePayload[2] = 0;
+    xbee.send(laser1Tx);
+
+    delay (1500);
+
+    xbeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
+    xbeePayload[1] = 0;
+    xbeePayload[2] = MESSAGETYPEID_NFC_MANAGE_FOUND;
+    xbeePayload[3] = 1;
+    xbeePayload[4] = 5;
     xbee.send(laser1Tx);
     
 }

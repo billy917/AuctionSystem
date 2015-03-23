@@ -10,7 +10,7 @@ const int NFC_MANAGER_I2C_ADDR = 100; // NFCManager, Laser2, Laser1
 	// 101 - 105 == NFC detectors
 const int LOCK_MANAGER_I2C_ADDR = 106;
 const int BGM_I2C_ADDR = 107;
-const int KEYPAD_LOCK_I2C_ADDR = 108;
+const int KEYPAD_LOCK_I2C_ADDR = 108; //SafeKeypad
 const int KEYPAD_I2C_ADDR = 109;
 const int CLOCK_I2C_ADDR = 109; //same as keypad on purpose
 const int LASER_SENSOR_I2C_ADDR = 110;
@@ -29,7 +29,7 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR = 10;
 const uint8_t MESSAGETYPEID_LASER_CONTROL = 11;
 const uint8_t MESSAGETYPEID_BGM = 12;
 const uint8_t MESSAGETYPEID_CLOCK = 13;
-const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14;
+const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14; //SafeKeyPad
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;

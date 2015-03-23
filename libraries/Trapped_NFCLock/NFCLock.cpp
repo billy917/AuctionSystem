@@ -17,8 +17,7 @@ NFCLock::NFCLock(){
 
     _messageID, _managerID, _detected, _detectorID, _nfcValue = 0;
 
-    lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
-    t = new Timer();
+    //t = new Timer();
 
     _counter = 30;
 
@@ -26,10 +25,10 @@ NFCLock::NFCLock(){
     _clearPattern();
     _clearEquation();
 
-    _initLCD();
 }
 
-void NFCLock::_initLCD(){
+void NFCLock::initLCD(){
+    lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
 
@@ -45,18 +44,12 @@ void NFCLock::_initLCD(){
 
 } //end _initLCD
 
-void NFCLock::_populateLocalBuffer(uint8_t data[]){
+void NFCLock::handleI2CMessage (uint8_t data[]){
     _messageID = data[0];
     _managerID = data[1];
     _detected = data[2];
     _detectorID = data[3];
     _nfcValue = data[4];
-
-} //end _populateLocalBuffer
-
-void NFCLock::handleI2CMessage (uint8_t data[]){
-    _populateLocalBuffer (data);
-
     hasReceivedMessage = true;
 
     if (_messageID == MESSAGETYPEID_NFC_MANAGE){
@@ -67,14 +60,13 @@ void NFCLock::handleI2CMessage (uint8_t data[]){
 } //end handleI2CMessage
 
 void NFCLock::_manageNFC(){
-    if (_managerID == MESSAGETYPEID_NFC_MANAGE_FOUND){
+    if (_detected == MESSAGETYPEID_NFC_MANAGE_FOUND){
         detectorNFCValue[_detectorID] = _nfcValue;
 
-    } else if (_managerID == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
+    } else if (_detected == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
         detectorNFCValue[_detectorID] = 0;
 
     }
-
         _updateNFCDetectorLCD (_detectorID);
 
 } //end _manageNFC
@@ -144,7 +136,7 @@ void NFCLock::_clearI2CBuffer(){
 
 /* Pattern changed */
 void NFCLock::notifyPatternChanged(){
-    t->stop (countdownEvent);
+    //t->stop (countdownEvent);
     currentPatternName = nextPatternName;
     nextPatternName = pattern[++currentPatternIndex];
 

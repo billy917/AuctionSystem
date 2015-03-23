@@ -26,6 +26,7 @@ class NFCLock{
         uint8_t currentPatternIndex;
 
         /* LCD methods */
+        void initLCD();
         void notifyPatternChanged();
         void changeEquation();
         void displayString(int col, int row, char message[]);
@@ -35,7 +36,7 @@ class NFCLock{
         void updateCounter();
 
         /* Countdown timer */
-        Timer *t;
+        //Timer *t;
         int countdownEvent;
 
     private:
@@ -47,8 +48,6 @@ class NFCLock{
 
         int _counter;
 
-        void _initLCD();
-        void _populateLocalBuffer(uint8_t data[]);
         void _manageNFC();
         void _updatePatternLCD();
         void _updateCounterLCD();

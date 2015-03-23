@@ -88,16 +88,19 @@ void handleXBeeMsg(){
     xbee.getResponse().getZBRxResponse(rx);
         
     xBeeDataBuffer[0] = rx.getData(0);    
-    if(5 == xBeeDataBuffer[0] || 6 == xBeeDataBuffer[0] || MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0]
-        || MESSAGETYPEID_LOCK == xBeeDataBuffer[0]
-        || MESSAGETYPEID_BGM == xBeeDataBuffer[0]){
+    if(5 == xBeeDataBuffer[0] ||
+        6 == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_LOCK == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_BGM == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_KEYPAD_LOCK == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
     } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
       xBeeDataBuffer[3] = rx.getData(3);
-      xBeeDataBuffer[4] = rx.getData(3);
+      xBeeDataBuffer[4] = rx.getData(4);
     }
     
     commandSource = 'X';
@@ -127,6 +130,8 @@ void forwardI2CMessage(int i2cAddr){
   Wire.write(localBuffer[0]);
   Wire.write(localBuffer[1]);
   Wire.write(localBuffer[2]);
+  Wire.write(localBuffer[3]);
+  Wire.write(localBuffer[4]);
   Wire.endTransmission();
 }
 
@@ -140,10 +145,10 @@ void handleMessage(){
 
   } else if(MESSAGETYPEID_BGM == localBuffer[0]){
     forwardI2CMessage(BGM_I2C_ADDR);
-
   } else if (MESSAGETYPEID_KEYPAD_LOCK == localBuffer[0]){
     forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
-
+  } else if (MESSAGETYPEID_NFC_MANAGE == localBuffer[0]){
+    forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
   } else if (MESSAGETYPEID_CLOCK == localBuffer[0]){
     forwardXBeeMessage();
   }
