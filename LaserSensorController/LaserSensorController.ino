@@ -3,53 +3,73 @@
 #include "Constants.h"
 #include "LaserSensorController.h"
 
-int sensorControllerId = 2;
+int sensorControllerId = 0;
 LaserSensorController laserSensorController(sensorControllerId, false);
 uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile boolean receivedMessage = false;
+
+volatile boolean pin2Interrupt, pin3Interrupt, pin19Interrupt = false;
+void pin2Interrupted(){
+  pin2Interrupt = true;
+}
+
+void pin3Interrupted(){
+  pin3Interrupt = true;
+}
+
+void pin19Interrupted(){
+  pin19Interrupt = true;
+}
 
 void setup() {
   Serial.begin(9600);
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
     
-  delay(500);
-  attachInterrupt(0, pin2Interrupted, FALLING);
   attachInterrupt(1, pin3Interrupted, FALLING);
+  //attachInterrupt(0, pin2Interrupted, FALLING);
   attachInterrupt(4, pin19Interrupted, FALLING);
   
-  laserSensorController.setSensorPin(1, 2, TSL2561_ADDR_0);
-  delay(1000);
-
+  laserSensorController.setSensorPin(1, 3, TSL2561_ADDR_0);
   laserSensorController.calibrateSensorBySensorId(1);
-}
+  
+  //laserSensorController.setSensorPin(2, 2, TSL2561_ADDR);
+  //laserSensorController.calibrateSensorBySensorId(2);
+  
+  laserSensorController.setSensorPin(3, 19, TSL2561_ADDR_1);
+  laserSensorController.calibrateSensorBySensorId(3);
 
-void pin2Interrupted(){
-  Serial.println("Pin 2 Interrupted");
-  laserSensorController.pinInterrupted(2);
-}
-
-void pin3Interrupted(){
-  laserSensorController.pinInterrupted(3);
-}
-
-void pin19Interrupted(){
-  laserSensorController.pinInterrupted(19);
 }
 
 void loop() {
   if(receivedMessage){
+    noInterrupts();
     copyToI2CLocalBuffer();    
-    laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
-    clearI2CLocalBuffer();
     receivedMessage = false; 
+    interrupts();   
+    laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
   }
-}
 
-void clearI2CLocalBuffer(){
-  for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-    i2cLocalBuffer[i] = 0;
+  if(pin2Interrupt){
+    noInterrupts();
+    pin2Interrupt = false; 
+    interrupts();
+    laserSensorController.pinInterrupted(2);
+  }
+  
+  if(pin3Interrupt){
+    noInterrupts();
+    pin3Interrupt = false; 
+    interrupts();
+    laserSensorController.pinInterrupted(3);
+  }
+  
+  if(pin19Interrupt){
+    noInterrupts();
+    pin19Interrupt = false; 
+    interrupts();
+    laserSensorController.pinInterrupted(19);
   }
 }
 

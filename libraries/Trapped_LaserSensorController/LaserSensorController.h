@@ -17,16 +17,20 @@ class LaserSensorController
     LaserSensorController(int controllerId, bool isPrimary); 
     void handleMessage(uint8_t dataLength, uint8_t data[]);
     void setSensorPin(int sensorId, int pin, uint8_t i2cAddress);
+    unsigned int getReadings(int sensorId);
     void pinInterrupted(int pin);
 
     void calibrateSensorBySensorId(int sensorId);
     void calibrateSensor(SFE_TSL2561* sensor);
+    void enableSensorBySensorId(int sensorId);
+    void disableSensorBySensorId(int sensorId);
     void trippedWire(int sensorId);
 
   private:
     bool _isPrimary;
     int _controllerId;
     int _numRegisteredSensors;
+    unsigned long _lastTrippedTime;
     byte _sensorI2CAddresses[3];
     int _sensorIds[3];
     int _sensorPins[3];
@@ -36,7 +40,6 @@ class LaserSensorController
 
     int _getSensorIndexByPin(int sensorPin);
     int _getSensorIndexById(int sensorId);
-
 
 };
 
