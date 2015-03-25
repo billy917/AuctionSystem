@@ -29,7 +29,8 @@ void LaserSensorController::setSensorPin(int sensorId, int pin, uint8_t i2cAddre
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
 	_sensors[_numRegisteredSensors]->begin(i2cAddress);
 	_sensors[_numRegisteredSensors]->setTiming(0,0);	
-	//Serial.print("Set interrupt control:");Serial.println(_sensors[_numRegisteredSensors]->setInterruptControl(1,1));	
+	//Serial.print("Set interrupt control:");Serial.println();	
+	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
 	_sensors[_numRegisteredSensors]->clearInterrupt();
 	_sensors[_numRegisteredSensors]->setPowerUp();
 	_numRegisteredSensors++;
@@ -117,7 +118,7 @@ void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 		//Serial.print(data1);Serial.print("-"); Serial.println(threshold2);
 
 		int threshold = (threshold1 + threshold2)/2;
-		//Serial.print("Set threshold:");Serial.println(sensor->setInterruptThreshold(threshold,threshold*1000));
+		sensor->setInterruptThreshold(threshold,threshold*1000);		
 	}
 }
 
