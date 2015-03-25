@@ -29,7 +29,11 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 #define ToogleLaser 1
 #define ToggleLock 2
 #define ToggleLaserPattern 3
-#define NFCDetector 4
+#define CalibrateLaserSensor 4
+#define NFCDetector 5
+#define ToggleMusic 6
+#define ResetSafeKeypad 7
+#define ResetClock 8
 
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
@@ -72,10 +76,14 @@ int currentMenu = MainMenu;
 // 1 - ToogleLaser
 // 2 - ToggleLock
 // 3 - ToggleLaserPattern
-// 4 - NFCDetectors
+// 4 - CalibrateLaserSensor
+// 5 - NFCDetectors
+// 6 - ToggleMusic
+// 7 - ResetSafeKeypad
+// 8 - ResetClock
 
 int currentRowSelection = 0;
-int maxRows[] = {7, 9, 4, 6, 1};
+int maxRows[] = {8, 9, 4, 6, 1, 9};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -94,6 +102,9 @@ void drawMenu(){
       break;
     case NFCDetector:
       drawNFCDetector();
+      break;
+    case CalibrateLaserSensor:
+      drawCalibrateLaserSensor();
   }
 }
 
@@ -421,6 +432,23 @@ void drawToggleLock(){
   tft.print(")\n");
 }
 
+void drawCalibrateLaserSensor(){
+  tft.setTextColor(ST7735_WHITE);
+  tft.setTextSize(2);
+  tft.setCursor(10,0);
+  tft.println("\nCalibrate Laser Sensors\n");
+  
+  tft.setTextSize(1); 
+  if (0 == currentRowSelection){
+      tft.print("->");
+  }
+  tft.println("Calibrate All Sensors");
+  for(int i=1;i<=5;i++){
+    if (i == currentRowSelection) tft.print("->");
+    tft.print("Calibrate Laser Sensor "); tft.println(i);
+  }
+}
+
 void drawMainMenu(){
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
@@ -446,12 +474,17 @@ void drawMainMenu(){
   if(3 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("4) NFC Detectors");
-   
+  tft.println("4) Calibrate Laser Sensors");
+  
   if(4 == currentRowSelection){
     tft.print("->");
   }
-  tft.print("5) Toggle Music (");
+  tft.println("5) NFC Detectors");
+   
+  if(5 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.print("6) Toggle Music (");
   if(musicOn){
     tft.setTextColor(ST7735_GREEN);
     tft.print("ON");
@@ -462,15 +495,15 @@ void drawMainMenu(){
   tft.setTextColor(ST7735_WHITE);
   tft.println(")");
   
-  if(5 == currentRowSelection){
-    tft.print("->");
-  }
-  tft.println("6) Reset Safe Keypad");
-  
   if(6 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("7) Reset Clock");
+  tft.println("7) Reset Safe Keypad");
+  
+  if(7 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.println("8) Reset Clock");
   
 }
 
@@ -512,6 +545,25 @@ boolean handleJoystickAction(int joystickState){
       updated = handleMenuSelection();
   }
   return updated;
+}
+
+void handleCalibrateLaserSensor(){
+    if(0 == currentRowSelection){
+        for (int i=0; i<5; i++){
+            calibrateLaserSensor(i);
+            delay (250);
+        }
+    } else {
+        
+        calibrateLaserSensor (currentRowSelection);
+    }
+}
+
+void calibrateLaserSensor (uint8_t laserSensorId){
+    xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+    xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_CALIBRATE;
+    xbeePayload[2] = laserSensorId;
+    xbee.send (laser2Tx);
 }
 
 void toggleMusic(){
@@ -564,55 +616,63 @@ boolean handleMenuSelection(){
       currentRowSelection = 0;
       drawToggleLaserPattern();      
       updated = true;
-    } else if(currentRowSelection == 3){
+    } else if (currentRowSelection == 3){
+        currentMenu = CalibrateLaserSensor;
+        currentRowSelection = 0;
+        drawCalibrateLaserSensor();
+        updated = true;
+    } else if(currentRowSelection == 4){
       currentMenu = NFCDetector;
       currentRowSelection = 0;
       drawNFCDetector();
       updated = true;
-    } else if(currentRowSelection == 4){
+    } else if(currentRowSelection == 5){
       toggleMusic();
       updated = true; 
-    } else if(currentRowSelection == 5){
+    } else if(currentRowSelection == 6){
       resetSafeKeyPad();
       updated = true;
-    } else if(currentRowSelection == 6){
+    } else if(currentRowSelection == 7){
       resetClock();
       updated = true; 
     }
   } else if (currentMenu == ToogleLaser){
-    bool currState = laserState[currentRowSelection];
-    if(currState){
-      xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_OFF;
-      laserState[currentRowSelection] = false;
-    } else {
-      xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_ON;
-      laserState[currentRowSelection] = true;
-    }
-    xbeePayload[0] = MESSAGETYPEID_LASER_CONTROL;
-    xbeePayload[2] = currentRowSelection;  
-    xbee.send(laser1Tx); 
-    //xbee.send(laser2Tx); 
-    //xbee.send(laser3Tx); 
-    updated = true;
+      bool currState = laserState[currentRowSelection];
+      if(currState){
+        xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_OFF;
+        laserState[currentRowSelection] = false;
+      } else {
+        xbeePayload[1] = MESSAGETYPEID_LASER_CONTROL_ON;
+        laserState[currentRowSelection] = true;
+      }
+      xbeePayload[0] = MESSAGETYPEID_LASER_CONTROL;
+      xbeePayload[2] = currentRowSelection;  
+      xbee.send(laser1Tx); 
+      //xbee.send(laser2Tx); 
+      //xbee.send(laser3Tx); 
+      updated = true;
   } else if (currentMenu == ToggleLock){
-    bool currState = lockState[currentRowSelection];
-    if(currState){
-      xbeePayload[2] = MESSAGETYPEID_LOCK_UNLOCK;
-      lockState[currentRowSelection] = false;
-    } else {
-      xbeePayload[2] = MESSAGETYPEID_LOCK_LOCK;
-      lockState[currentRowSelection] = true;
-    }
-    xbeePayload[0] = MESSAGETYPEID_LOCK;
-    xbeePayload[1] = currentRowSelection + 1;
-    xbee.send(laser1Tx); 
-    updated = true;
+      bool currState = lockState[currentRowSelection];
+      if(currState){
+        xbeePayload[2] = MESSAGETYPEID_LOCK_UNLOCK;
+        lockState[currentRowSelection] = false;
+      } else {
+        xbeePayload[2] = MESSAGETYPEID_LOCK_LOCK;
+        lockState[currentRowSelection] = true;
+      }
+      xbeePayload[0] = MESSAGETYPEID_LOCK;
+      xbeePayload[1] = currentRowSelection + 1;
+      xbee.send(laser1Tx); 
+      updated = true;
   } else if (currentMenu == ToggleLaserPattern){
-    handleToggleLaserPattern();
-    updated = true;    
+      handleToggleLaserPattern();
+      updated = true;    
+  } else if (currentMenu == CalibrateLaserSensor){
+      handleCalibrateLaserSensor();
+      updated=true;
   } else if (currentMenu == NFCDetector){
-    requestNewNFCData(); 
-    updated = true;
+      requestNewNFCData(); 
+      updated = true;
   }
   return updated;
 }
@@ -641,7 +701,11 @@ void resetClock(){
 
 boolean handleMenuBack(){
   boolean updated = false;
-  if(currentMenu == ToogleLaser || currentMenu == ToggleLock || currentMenu == ToggleLaserPattern || currentMenu == NFCDetector){
+  if(currentMenu == ToogleLaser || 
+      currentMenu == ToggleLock || 
+      currentMenu == ToggleLaserPattern || 
+      currentMenu == CalibrateLaserSensor ||
+      currentMenu == NFCDetector){
     currentRowSelection = 0;
     currentMenu = MainMenu; 
     updated = true;

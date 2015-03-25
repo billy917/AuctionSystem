@@ -14,6 +14,8 @@ const int KEYPAD_LOCK_I2C_ADDR = 108; //SafeKeypad
 const int KEYPAD_I2C_ADDR = 109;
 const int CLOCK_I2C_ADDR = 109; //same as keypad on purpose
 const int LASER_SENSOR_I2C_ADDR = 110;
+const int TRIP_LASER_I2C_ADDR = 111;
+/* NOTE: SKIP I2C_ADDR 112, see below */
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -30,6 +32,7 @@ const uint8_t MESSAGETYPEID_LASER_CONTROL = 11;
 const uint8_t MESSAGETYPEID_BGM = 12;
 const uint8_t MESSAGETYPEID_CLOCK = 13;
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14; //SafeKeyPad
+const uint8_t MESSAGETYPEID_TRIP_LASER = 15;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -73,6 +76,10 @@ const uint8_t MESSAGETYPEID_BGM_NEXT_SONG = 4;
 
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK_RESET = 1; // SafeKeyPad
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK_GET_PASSWORD = 2;
+
+const uint8_t MESSAGETYPEID_TRIP_LASER_ON = 1;
+const uint8_t MESSAGETYPEID_TRIP_LASER_OFF = 2;
+const uint8_t MESSAGETYPEID_TRIP_LASER_BEEP = 3;
 
 const uint8_t MESSAGETYPEID_CLOCK_RESET = 1;
 const uint8_t MESSAGETYPEID_CLOCK_START = 2;
@@ -158,6 +165,24 @@ NFC message protocol
 
 	Max Size of 9 uint8_t
 
+*/
+
+/*
+BGM Controller message protocol
+    BGM Controller <- SafeKeyPad
+    [0] messageTypeId (12)
+    [1] parameter (1 = update, 2 = play song, 3 = stop song, 4 = next song)
+
+    BGM Controller -> SafeKeyPad
+    [0] messageTypeId (14)
+    [1] parameter (2 = get password)
+    [2] password[0]
+    [3] password[1]
+    [4] password[2]
+    [5] password[3]
+*/
+
+/*
 */
 
 /*
