@@ -91,7 +91,7 @@ void handleXBeeMsg(){
     if(5 == xBeeDataBuffer[0] ||
         6 == xBeeDataBuffer[0] ||
         MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0] ||
-        MESSAGETYPEID_LOCK == xBeeDataBuffer[0] ||
+        //MESSAGETYPEID_LOCK == xBeeDataBuffer[0] ||
         MESSAGETYPEID_BGM == xBeeDataBuffer[0] ||
         MESSAGETYPEID_KEYPAD_LOCK == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);

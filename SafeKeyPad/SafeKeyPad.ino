@@ -9,14 +9,22 @@
 #include "Adafruit_GFX.h"
 #include "Constants.h"
 #include "Keypad.h"
+#include "LiquidCrystal_I2C.h"
+#include "Timer.h"
 #include "NFCLock.h"
 //#include "pitches.h"
+
+#define MAX_COUNTER_VALUE 10 //in seconds
 
 /* Initialize variables */
 uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
 
-NFCLock nfcLock = new NFCLock();
+NFCLock nfcLock;
+
+Timer t;
+int countdownEvent;
+int counter = MAX_COUNTER_VALUE;
 
 char songPassword[5] = {};
 int fail = 0;
@@ -42,20 +50,32 @@ bool locked = true;
 
 void setup(){
     Serial.begin (9600);
-    Wire.begin (KEYPAD_LOCK_I2C_ADDR); // this Keypad-Lock Controller I2C port
+
+    Serial.println ("Initializing NFC_Lock...");
+    nfcLock.setCounter (counter);
+    nfcLock.initLCD();
+    Serial.println ("----NFC_Lock initialize complete");
+    
+    delay (200);
+
+    Serial.println ("Begin Wire setup...");
+    Wire.begin (KEYPAD_LOCK_I2C_ADDR);
     Wire.onReceive (Received);
     Wire.onRequest (Request);
+    Serial.println ("----Wire setup complete");
 
+    delay (250);
+
+    Serial.println ("Initializing SafeKeyPad...");
     keypad.addEventListener (keypadEvent);
     keypad.setDebounceTime(20);
     initLEDs();
-
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
-
     clearPassword();
+    Serial.println ("----SafeKeyPad initialize complete");
 
-    delay (5000);
+    delay (200);
 
     /* Tell BGM CONTROLLER to start playing the song */
     Wire.beginTransmission (BGM_I2C_ADDR);
@@ -63,14 +83,18 @@ void setup(){
     Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
     Wire.endTransmission();
 
-    delay (500);
+    delay (5000);
 
     Wire.beginTransmission (BGM_I2C_ADDR);
     Wire.write (MESSAGETYPEID_BGM);
     Wire.write (MESSAGETYPEID_BGM_PLAY_SONG);
     Wire.endTransmission();
+    Serial.println ("Sent PLAY_SONG message");
 
-    Serial.println ("Sent PLAY_SONG message.");
+    delay (250);
+
+    Serial.println ("Begin LCD countdown event");
+    countdownEvent = t.every (1000, updateCounter);
 
 } //end setup()
 
@@ -79,6 +103,7 @@ void loop(){
     /* Get key input from keypad */
     keypad.getKey();
     if (receivedI2CMessage) handleCommands();
+    t.update();
 
 } //end loop()
 
@@ -87,12 +112,9 @@ void Received (int noBytes){
 
     for (int i=0; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
         i2cDataBuffer[i] = Wire.read();
-        //Serial.println(i2cDataBuffer[i]);
     }
 
     receivedI2CMessage = true;
-    //Serial.print ("Received command: ");
-    //Serial.println (receivedI2CMessage);
 
 } //end Received()
 
@@ -122,6 +144,34 @@ void handleCommands(){
 
     } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
         nfcLock.handleI2CMessage (i2cDataBuffer);
+
+        /*
+            if notifyPatternChanged;
+                t.stop (countdownEvent);
+                nfcLock.notifyPatternChanged();
+                countdownEvent = t.every (1000, updateCounter);
+
+            if requestEquationChange;
+                nfcLock.changeEquation():
+        */
+
+        if (nfcLock.checkEquation()) {
+            /* Unlock SHELF_LOCK */
+            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_LOCK);
+            Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
+            Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
+            Wire.endTransmission();
+
+        } else {
+            /* Lock SHELF_LOCK */
+            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_LOCK);
+            Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
+            Wire.write (MESSAGETYPEID_LOCK_LOCK);
+            Wire.endTransmission();
+
+        }
 
     } else {}
 
@@ -181,7 +231,7 @@ void keypadEvent(KeypadEvent eKey){
 
       if(4 == passwordLength){
         bool passwordMatch = checkPassword();
-        delay(2000);
+        delay (2000);
 
         if(passwordMatch){
           locked = false;
@@ -191,7 +241,7 @@ void keypadEvent(KeypadEvent eKey){
           Serial.println("Failed");
         }
       }
-    } else {
+      
       if ('*' == eKey || '#' == eKey){
         locked = true;
         clearPassword();
@@ -269,7 +319,7 @@ bool checkPassword(){
                 Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
                 Wire.endTransmission();
 
-                delay (2000);
+                delay (100);
 
                 Serial.print ("New Password: ");
                 Serial.println (songPassword);
@@ -288,6 +338,22 @@ bool checkPassword(){
         }
 
 } //end checkPassword()
+
+void updateCounter(){
+    counter -= 1;
+    if (counter < 0) {
+        t.stop (countdownEvent);
+        counter = MAX_COUNTER_VALUE;
+
+        nfcLock.notifyPatternChanged();
+        nfcLock.changeEquation();
+
+        t.every (1000, updateCounter);
+    }
+
+    nfcLock.setCounter (counter);
+    nfcLock.displayCounterLCD();
+}
 
 /* Reset to initial settings */
 void resetAll(){

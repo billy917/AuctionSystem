@@ -123,14 +123,14 @@ void NFCManager::_notifyToolOverallStatus(){
 
 void NFCManager::_notifyPrimaryManager(uint8_t detectorId, bool detected, uint8_t nfcValue){
 	
+    _xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;
+    _xBeePayload[1] = _managerId;
+    _xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
+    _xBeePayload[3] = detectorId;
+    _xBeePayload[4] = nfcValue;
 
     if(!_isPrimary){
-	    _xBeePayload[0] = MESSAGETYPEID_NFC_MANAGE;    
-        _xBeePayload[1] = _managerId;
-        _xBeePayload[2] = detected ? MESSAGETYPEID_NFC_MANAGE_FOUND : MESSAGETYPEID_NFC_MANAGE_NOTFOUND;
-        _xBeePayload[3] = detectorId;
-        _xBeePayload[4] = nfcValue;_xbee_pointer->send(_laser1ZBTxRequest);
-
+        _xbee_pointer->send(_laser1ZBTxRequest);
 	} else if (_isPrimary){
         Wire.beginTransmission (KEYPAD_LOCK_I2C_ADDR);
         Wire.write (MESSAGETYPEID_NFC_MANAGE);
@@ -172,6 +172,10 @@ bool NFCManager::_areAllDetectorDetected(){
 	}
 	return true;*/
 	
-	return _managerStates[2] != 0 
-			&& _managerStates[3] != 0;
+	/* 2nd Revision */
+    //return _managerStates[2] != 0 
+	//		&& _managerStates[3] != 0;
+    //
+
+    return false;
 }
