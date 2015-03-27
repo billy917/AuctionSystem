@@ -28,6 +28,7 @@ class NFCLock{
 
         /* LCD methods */
         void initLCD();
+        void displayAllLCD();
 
         void displayString (int col, int row, char message[]);
         void displayString (int col, int row, char message);
@@ -68,7 +69,6 @@ class NFCLock{
         void _clearPattern();
         void _clearEquation();
         void _clearI2CBuffer();
-        void _clearLCD();
 };
 
 #endif
