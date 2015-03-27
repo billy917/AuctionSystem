@@ -26,6 +26,8 @@ void NFCLock::initLCD(){
     lcd->init();
     lcd->backlight();
     lcd->noAutoscroll();
+    lcd->noCursor();
+    lcd->noBlink();
 
     currentPatternName = pattern[0];
     nextPatternIndex = 1;
