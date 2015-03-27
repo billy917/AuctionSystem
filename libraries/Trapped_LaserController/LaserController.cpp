@@ -55,6 +55,20 @@ bool LaserController::_isLaserIndexLocal(int laserId){
 	return false;
 }
 
+void LaserController::turnOnAllLaser(){
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOnLocalLaser(_localLaserIds[i]);
+		_turnOnSensor(_localLaserIds[i]);				
+	}
+}
+
+void LaserController::turnOffAllLaser(){
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOffLocalLaser(_localLaserIds[i]);
+		_turnOffSensor(_localLaserIds[i]);
+	}
+}
+
 void LaserController::_turnOnLocalLaser(int laserId){
 	for(int i=0; i<_numRegisteredLasers; i++){
 		if(laserId == _localLaserIds[i]){
@@ -70,6 +84,7 @@ void LaserController::_turnOffLocalLaser(int laserId){
 			digitalWrite(_laserPins[i], LOW);
 			_laserStates[i] = false;
 		}
+		delay(500);
 	}
 }
 
@@ -77,7 +92,7 @@ void LaserController::_switchSensorState(int laserId, bool on){
 	int sensorId = GLOBAL_LASER_ID[laserId-1];
 	int sensorManagerId = GLOBAL_SENSOR_MANAGER_ID[laserId-1];
 	int laserManagerId = GLOBAL_LASER_MANAGER_ID[laserId-1];
-	if(sensorManagerId == laserManagerId){
+	if(sensorManagerId == laserManagerId && sensorManagerId != 1){
 		// same i2c bus, fwd command via i2c
 		Wire.beginTransmission(LASER_SENSOR_I2C_ADDR); // transmit to device #100 (NFCDetectorManager
 		Wire.write(MESSAGETYPEID_LASER_SENSOR);
@@ -86,13 +101,13 @@ void LaserController::_switchSensorState(int laserId, bool on){
 		} else {
 			Wire.write(MESSAGETYPEID_LASER_SENSOR_OFF); 
 		}
-		Wire.write(laserId);
+		Wire.write(GLOBAL_SENSOR_ID[laserId-1]);
 		Wire.endTransmission();
 	} else {
 		// on different i2c bus, fwd comand via xBee	
 		_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
 		_xBeePayload[1] = on?MESSAGETYPEID_LASER_SENSOR_ON:MESSAGETYPEID_LASER_SENSOR_OFF;
-		_xBeePayload[2] = laserId;
+		_xBeePayload[2] = GLOBAL_SENSOR_ID[laserId-1];
 
 		if(0 == sensorManagerId){		
 			_xbee->send(_laser1ZBTxRequest);
@@ -105,11 +120,11 @@ void LaserController::_switchSensorState(int laserId, bool on){
 }
 
 void LaserController::_turnOffSensor(int laserId){
-	_switchSensorState(laserId,true);
+	_switchSensorState(laserId,false);
 }
 
 void LaserController::_turnOnSensor(int laserId){
-	_switchSensorState(laserId,false);
+	_switchSensorState(laserId,true);
 }
 
 
@@ -140,7 +155,7 @@ void LaserController::_forwardMessageToOtherControllers(uint8_t laserId, uint8_t
 
 	if(1 == GLOBAL_LASER_MANAGER_ID[laserId-1]){
 		_xbee->send(_laser3ZBTxRequest);
-	} else {
+	} else if (2 == GLOBAL_LASER_MANAGER_ID[laserId-1]) {
 		_xbee->send(_laser2ZBTxRequest);
 	}
 }

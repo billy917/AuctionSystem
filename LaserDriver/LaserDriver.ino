@@ -143,7 +143,6 @@ void handleMessage(){
   
   if(MESSAGETYPEID_LOCK == localBuffer[0]){
     forwardI2CMessage(LOCK_MANAGER_I2C_ADDR);
-
   } else if(MESSAGETYPEID_BGM == localBuffer[0]){
     forwardI2CMessage(BGM_I2C_ADDR);
   } else if (MESSAGETYPEID_KEYPAD_LOCK == localBuffer[0]){
@@ -164,96 +163,12 @@ void handleMessage(){
   } 
   
   if(localBuffer[0] == 1){
-    //Turn Off  
-    disableLaserWire(0); 
-    disableLaserWire(1);
-    disableLaserWire(2);
-  } else if (localBuffer[0] == 2){
-    //Arm System
+    //Turn Off
+    laserController.turnOffAllLaser();
   } else if (localBuffer[0] == 3){
     //Turn On
-    enableLaserWire(0);
-    enableLaserWire(1);
-    enableLaserWire(2);
-  } else if(localBuffer[0] == 4){
-    //Disable half laser 
-    disableLaserWire(0); 
-    disableLaserWire(1);
+    laserController.turnOnAllLaser();
   } 
   commandSource = ' ';
-
-}
-
-void enableLaserWire(int index){
-  /**
-  Use case: turning on laserwire 
-  Turns on laser, set servo location, and calibrate light sensor average readings + set sensor threadshold
-  **/
-  _turnOnLaser(index);
-  _calibrateLightSensor(index);
-  _turnOnLightSensor(index);
-}
-
-void pauseLaserWire(int index){
-  /**
-  Use case: pausing game
-  Ignore sensor trigger and turn off laser
-  **/  
-  _turnOffLightSensor(index);
-  _turnOffLaser(index);
-}
-
-void resumeLaserWire(int index){
-   /**
-   Use case: resuming game
-   Turn on laser and reenable sensor trigger
-   **/
-   _turnOnLaser(index);
-   _calibrateLightSensor(index);
-   _turnOnLightSensor(index);
-}
-
-void disableLaserWire(int index){
-  /**
-  Use case: turn off game
-  Turns off sensor trigger, turns laser off, and set servo back to init position
-  **/
-  _turnOffLightSensor(index);
-  _turnOffLaser(index);
-}
-
-void _turnOnLaser(int index){
-  /**
-  Turn laser power on
-  **/
-  digitalWrite(laserPins[index], HIGH);
-}
-
-void _turnOffLaser(int index){
-  /**
-  Turn laser power off
-  **/
-  digitalWrite(laserPins[index], LOW);
-}
-
-void _calibrateLightSensor(int index){
-  /**
-  Take current light sensor reading and create a threadshold for light sensor
-  **/ 
-  ////// TO BE IMPLEMENTED //////
-}
-
-void _turnOnLightSensor(int index){
-  /**
-  Turn on light sensor, which would raise an event if sensor value is greater than predefined threashold
-  **/  
-  //////// TO BE IMPLEMENTED //////
-}
-
-void _turnOffLightSensor(int index){
-  /**
-  Turn off light sensor, which would ignore sensor value if it is greater than predefined threashold
-  **/  
-  /////// TO BE IMPLEMENTED //////
 }
 

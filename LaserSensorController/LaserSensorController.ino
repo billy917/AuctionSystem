@@ -7,7 +7,7 @@ int sensorControllerId = 0;
 LaserSensorController laserSensorController(sensorControllerId, false);
 uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
-volatile boolean receivedMessage = false;
+volatile boolean receivedI2CMessage = false;
 
 volatile boolean pin2Interrupt, pin3Interrupt, pin19Interrupt = false;
 void pin2Interrupted(){
@@ -43,12 +43,12 @@ void setup() {
 }
 
 void loop() {
-  if(receivedMessage){
+  if(receivedI2CMessage){
     noInterrupts();
     copyToI2CLocalBuffer();    
-    receivedMessage = false; 
+    receivedI2CMessage = false; 
     interrupts();   
-    laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
+    handleMessage();
   }
 
   if(pin2Interrupt){
@@ -73,27 +73,19 @@ void loop() {
   }
 }
 
+void handleMessage(){
+  laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
+}
+
 void copyToI2CLocalBuffer(){
   for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-    i2cLocalBuffer[i] = i2cLocalBuffer[i]; 
+    i2cLocalBuffer[i] = i2cDataBuffer[i]; 
   }
 }
 
-void receiveI2CEvent(int howMany){  
-  if(I2C_MESSAGE_MAX_SIZE+1 > howMany){ 
-    for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-      if(i>=howMany){
-        i2cDataBuffer[i] = 0;
-      } else {
-        i2cDataBuffer[i] = Wire.read(); 
-      }
-    }
-    receivedMessage = true; // TODO: need better way to queue incoming requests
-  } else {
-    while(1 < Wire.available()) // loop through all but the last
-    {
-      char c = Wire.read(); // receive byte as a character
-      Serial.print(c);         // print the character
-    }
+void receiveI2CEvent(int howMany){    
+  for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+    i2cDataBuffer[i] = Wire.read();
   }
+  receivedI2CMessage = true;
 }

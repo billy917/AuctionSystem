@@ -75,25 +75,13 @@ void loop() {
 
 void copyToI2CLocalBuffer(){
   for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-    i2cLocalBuffer[i] = i2cLocalBuffer[i]; 
+    i2cLocalBuffer[i] = i2cDataBuffer[i]; 
   }
 }
 
-void receiveI2CEvent(int howMany){  
-  if(I2C_MESSAGE_MAX_SIZE+1 > howMany){ 
-    for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-      if(i>=howMany){
-        i2cDataBuffer[i] = 0;
-      } else {
-        i2cDataBuffer[i] = Wire.read(); 
-      }
-    }
-    receivedMessage = true; // TODO: need better way to queue incoming requests
-  } else {
-    while(1 < Wire.available()) // loop through all but the last
-    {
-      char c = Wire.read(); // receive byte as a character
-      Serial.print(c);         // print the character
-    }
+void receiveI2CEvent(int howMany){    
+  for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+    i2cDataBuffer[i] = Wire.read();
   }
+  receivedI2CMessage = true;
 }

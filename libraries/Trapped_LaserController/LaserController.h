@@ -18,6 +18,8 @@ class LaserController
     void setXBeeReference(XBee* xbee_pointer);
     void handleMessage(uint8_t dataLength, uint8_t data[]);
     void setLaserPin(int laserId, int pin);
+    void turnOnAllLaser();
+    void turnOffAllLaser();
 
   private:
     bool _isPrimary;
