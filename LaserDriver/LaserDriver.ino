@@ -41,10 +41,10 @@ void setup() {
   Serial.println("High");
   
   // initialize the digital pin as an output.                                                                                                                                                                                           
-  for(int i=0; i<3; i++){
-    pinMode(laserPins[i], OUTPUT);
-    digitalWrite(laserPins[i], LOW);
-    laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i]);    
+  for(int i=1; i<=3; i++){
+    pinMode(laserPins[i-1], OUTPUT);
+    digitalWrite(laserPins[i-1], LOW);
+    laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i-1]);    
   }
 
   Wire.begin(NFC_MANAGER_I2C_ADDR);
@@ -91,7 +91,8 @@ void handleXBeeMsg(){
     if(5 == xBeeDataBuffer[0] ||
         6 == xBeeDataBuffer[0] ||
         MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0] ||
-        //MESSAGETYPEID_LOCK == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_LASER_SENSOR == xBeeDataBuffer[0] ||
+        MESSAGETYPEID_LOCK == xBeeDataBuffer[0] ||
         MESSAGETYPEID_BGM == xBeeDataBuffer[0] ||
         MESSAGETYPEID_KEYPAD_LOCK == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
@@ -149,6 +150,8 @@ void handleMessage(){
     forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
   } else if (MESSAGETYPEID_NFC_MANAGE == localBuffer[0]){
     forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
+  } else if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
+    forwardI2CMessage(LASER_SENSOR_I2C_ADDR);
   } else if (MESSAGETYPEID_CLOCK == localBuffer[0]){
     forwardXBeeMessage();
   }

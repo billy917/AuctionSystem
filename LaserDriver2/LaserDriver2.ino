@@ -54,10 +54,10 @@ void setup() {
   Serial.begin(9600);
  
   // initialize the digital pin as an output.
-  for(int i=0; i<3; i++){
-    pinMode(laserPins[i], OUTPUT);
-    digitalWrite(laserPins[i],LOW);
-    laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i]);
+  for(int i=1; i<=3; i++){
+    pinMode(laserPins[i-1], OUTPUT);
+    digitalWrite(laserPins[i-1],LOW);
+    laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i-1]);
   }
   
   resetServoPositions();
@@ -107,6 +107,7 @@ void handleXBeeMsg(){
     if(5 == xBeeDataBuffer[0] 
         || 6 == xBeeDataBuffer[0] 
         || MESSAGETYPEID_LASER_CONTROL == xBeeDataBuffer[0]
+        || MESSAGETYPEID_LASER_SENSOR == xBeeDataBuffer[0]
         || MESSAGETYPEID_LOCK == xBeeDataBuffer[0]
         || MESSAGETYPEID_BGM == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
@@ -143,7 +144,9 @@ void handleMessage(){
   }
   if(MESSAGETYPEID_CLOCK == localBuffer[0]){
     forwardI2CMessage(CLOCK_I2C_ADDR);
-  } 
+  } else if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
+    forwardI2CMessage(LASER_SENSOR_I2C_ADDR);
+  }
   nfcManager.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);
   
   if(localBuffer[0] == 1){

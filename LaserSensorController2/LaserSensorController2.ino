@@ -3,7 +3,7 @@
 #include "Constants.h"
 #include "LaserSensorController.h"
 
-int sensorControllerId = 0;
+int sensorControllerId = 1;
 LaserSensorController laserSensorController(sensorControllerId, false);
 uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
@@ -31,14 +31,14 @@ void setup() {
   //attachInterrupt(0, pin2Interrupted, FALLING);
   attachInterrupt(4, pin19Interrupted, FALLING);
   
-  laserSensorController.setSensorPin(1, 3, TSL2561_ADDR_0);
-  laserSensorController.calibrateSensorBySensorId(1);
+  laserSensorController.setSensorPin(4, 3, TSL2561_ADDR_0);
+  laserSensorController.calibrateSensorBySensorId(4);
   
-  //laserSensorController.setSensorPin(2, 2, TSL2561_ADDR);
-  //laserSensorController.calibrateSensorBySensorId(2);
+  //laserSensorController.setSensorPin(5, 2, TSL2561_ADDR);
+  //laserSensorController.calibrateSensorBySensorId(5);
   
-  laserSensorController.setSensorPin(3, 19, TSL2561_ADDR_1);
-  laserSensorController.calibrateSensorBySensorId(3);
+  laserSensorController.setSensorPin(6, 19, TSL2561_ADDR_1);
+  laserSensorController.calibrateSensorBySensorId(6);
 
 }
 

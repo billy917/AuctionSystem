@@ -95,7 +95,10 @@ const int LOCK_MANAGER_SHELF_PIN = 12;
 const int LOCK_MANAGER_INWALL_PIN = 11;
 const int LOCK_MANAGER_WDOOR_PIN = 10;
 const int LOCK_MANAGER_MDOOR_PIN = 9;
+const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
+const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
+const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
 
 const int CLOCK_MODE_PAUSE = 1;
 const int CLOCK_MODE_COUNTDOWN = 2;
@@ -134,7 +137,7 @@ LASER Sensor message protocol
 
 	LaserSensorController <- LaserController 
 	[0] messageTypeId (10)
-	[1] detailedMessageType (5 = ON, 6 = OFF, 7 = request to calibrate)
+	[1] detailedMessageType (5 = Calibrate & ON, 6 = OFF, 7 = request to calibrate)
 	[2] sensorId
 */
 
