@@ -14,7 +14,7 @@
 #include "NFCLock.h"
 //#include "pitches.h"
 
-#define MAX_COUNTER_VALUE 10 //in seconds
+const int MAX_COUNTER_VALUE = 10; //in seconds
 
 /* Initialize variables */
 uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
@@ -25,6 +25,7 @@ NFCLock nfcLock;
 Timer t;
 int countdownEvent;
 int counter = MAX_COUNTER_VALUE;
+volatile bool counterFlag = false;
 
 char songPassword[5] = {};
 int fail = 0;
@@ -47,6 +48,8 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char password[4] = {'-','-','-','-'};
 int passwordLength = 0;
 bool locked = true;
+int delayKeyPressEvent;
+volatile bool delayKeyPress = false;
 
 void setup(){
     Serial.begin (9600);
@@ -94,15 +97,16 @@ void setup(){
     delay (250);
 
     Serial.println ("Begin LCD countdown event");
-    countdownEvent = t.every (1000, updateCounter);
+    countdownEvent = t.every (1000, updateCounterFlag);
 
 } //end setup()
 
 void loop(){
 
     /* Get key input from keypad */
-    keypad.getKey();
+    if (!delayKeyPress) keypad.getKey();
     if (receivedI2CMessage) handleCommands();
+    if (counterFlag) updateCounter();
     t.update();
 
 } //end loop()
@@ -178,7 +182,7 @@ void handleCommands(){
     /* Reset receivedi2cmessage */
     receivedI2CMessage = false;
     clearI2CBuffer();
-}
+} //end handleCommands()
 
 void initLEDs(){
   pinMode(9, OUTPUT); // 1-Red
@@ -230,15 +234,71 @@ void keypadEvent(KeypadEvent eKey){
       }
 
       if(4 == passwordLength){
-        bool passwordMatch = checkPassword();
-        delay (2000);
+        
+        delayKeyPress = true;
 
-        if(passwordMatch){
+        /* If key input IS song password */
+        if(checkPassword()){
+          Serial.println ("Correct password!");
+
+          /* Stop playing song */
+          Wire.beginTransmission (BGM_I2C_ADDR);
+          Wire.write (MESSAGETYPEID_BGM);
+          Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
+          Wire.endTransmission();
+
+          turnOnGreenLEDs();
+
+          /* Stop LCD counter */
+          t.stop (countdownEvent);
+          //nfcLock.lcd->clear();
+          //nfcLock.displayString (1,0, "Unlocked!");
+
+          /* Unlock LOCK_MANAGER */
+          Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+          Wire.write (MESSAGETYPEID_LOCK);
+          Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
+          Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
+          Wire.endTransmission();
+          
           locked = false;
+
           Serial.println("Unlocked!");
+
+        /* If key input is NOT song password */
         } else {
-          clearPassword();
           Serial.println("Failed");
+
+          delayKeyPressEvent = t.after (2000, canKeyPress);
+          
+          /* Increment fail counter by 1 */
+          fail += 1;
+          turnOnRed(fail);
+
+          /* If fail three times */
+          if (fail >= 3){
+
+            /* Change to next song */
+            Wire.beginTransmission (BGM_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_BGM);
+            Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
+            Wire.endTransmission();
+
+            delay (100);
+
+            Serial.print ("New Password: ");
+            Serial.println (songPassword);
+
+            /* Reset fail counter */
+            fail = 0;
+            turnOffLEDs();
+
+          }
+
+          Serial.print (3 - fail);
+          Serial.print (" time(s) left! The password is ");
+          Serial.println (songPassword);
+          
         }
       }
       
@@ -280,79 +340,45 @@ void updateLED(){
 
 }
 
+/* Check key input to song password */
 bool checkPassword(){
-    /* Check key input to song password */
-        /* If key input IS song password */
-
-        if (charArrayCompare (songPassword, password)){
-            /* Stop playing song */
-            Wire.beginTransmission (BGM_I2C_ADDR);
-            Wire.write (MESSAGETYPEID_BGM);
-            Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
-            Wire.endTransmission();
-
-            Serial.println ("Correct password!");
-
-            turnOnGreenLEDs();
-
-            /* Unlock LOCK_MANAGER */
-            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
-            Wire.write (MESSAGETYPEID_LOCK);
-            Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
-            Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
-            Wire.endTransmission();
-
-            return true;
-
-        } else {
-        /* If key input is NOT song password */
-            /* Increment fail counter by 1 */
-            fail += 1;
-            turnOnRed(fail);
-
-            /* If fail three times */
-            if (fail >= 3){
-
-                /* Change to next song */
-                Wire.beginTransmission (BGM_I2C_ADDR);
-                Wire.write (MESSAGETYPEID_BGM);
-                Wire.write (MESSAGETYPEID_BGM_NEXT_SONG);
-                Wire.endTransmission();
-
-                delay (100);
-
-                Serial.print ("New Password: ");
-                Serial.println (songPassword);
-
-                /* Reset fail counter */
-                fail = 0;
-                turnOffLEDs();
-
-            }
-
-            Serial.print (3 - fail);
-            Serial.print (" time(s) left! The password is ");
-            Serial.println (songPassword);
-
-            return false;
-        }
-
+    return (charArrayCompare (songPassword, password));
 } //end checkPassword()
 
+void canKeyPress(){
+    clearPassword();
+    delayKeyPress = false;
+    t.stop (delayKeyPressEvent);
+}
+
+void updateCounterFlag(){
+    counterFlag = true;
+}
+
 void updateCounter(){
-    counter -= 1;
-    if (counter < 0) {
-        t.stop (countdownEvent);
+    counter = counter - 1;
+
+    if (counter <= 0) {
+        //t.stop (countdownEvent);
+
         counter = MAX_COUNTER_VALUE;
 
         nfcLock.notifyPatternChanged();
-        nfcLock.changeEquation();
+        //nfcLock.changeEquation();
 
-        t.every (1000, updateCounter);
+
+        //countdownEvent = t.every (1000, updateCounter);
+
     }
 
-    nfcLock.setCounter (counter);
-    nfcLock.displayCounterLCD();
+    nfcLock.setCounter(counter);
+    nfcLock.displayAllLCD();
+
+    //Serial.println ("Debug: updateCounter()");
+    //Serial.print ("Counter: ");
+    //Serial.println (counter);
+
+    counterFlag = false;
 }
 
 /* Reset to initial settings */

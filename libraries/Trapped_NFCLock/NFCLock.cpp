@@ -25,14 +25,17 @@ void NFCLock::initLCD(){
     lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
+    lcd->noAutoscroll();
+    lcd->noCursor();
+    lcd->noBlink();
 
-    currentPatternName = pattern [0];
+    currentPatternName = pattern[0];
     nextPatternIndex = 1;
-    nextPatternName = pattern [nextPatternIndex];
+    nextPatternName = pattern[nextPatternIndex];
 
     currentEquationIndex = 0;
 
-    _clearLCD();
+    lcd->clear();
 
     displayPatternLCD();
     displayCounterLCD();
@@ -87,6 +90,15 @@ bool NFCLock::checkEquation(){
 
 } //end checkEquation
 
+void NFCLock::displayAllLCD(){
+    lcd->clear();
+
+    displayPatternLCD();
+    displayCounterLCD();
+    displayEquationLCD();
+    
+}
+
 void NFCLock::displayPatternLCD(){
 
     displayString (0,0, "Pattern:");
@@ -96,34 +108,37 @@ void NFCLock::displayPatternLCD(){
 }
 
 void NFCLock::displayCounterLCD (){
-    // Cannot just display _counter,
-    //  when it gets down to single digit, the lcd will
-    //  display it as the first digit like '9' instead of
-    //  '09'
+    /* 
+     Cannot just display _counter,
+     when it gets down to single digit, the lcd will
+     display it as the first position like '9_' instead of
+     '09'
+    */
     if (_counter < 10) {
-        displayString (18,0,0);
+        displayString (18,0, 0);
         displayString (19,0, _counter);
 
     }else {
         displayString (18,0, _counter); 
     }
 
-    Serial.println ("Debug: displayCounter()");
-    Serial.print ("Counter: ");
-    Serial.println (_counter);
+    //Serial.println ("Debug: displayCounter()");
+    //Serial.print ("Counter: ");
+    //Serial.println (_counter);
 }
 
 void NFCLock::displayEquationLCD(){
+
     for (int i=0; i < 4; i++){
         int position = _equationPosition[i];
         char message = equation[currentEquationIndex][i];
         
         
-        Serial.println ("Debug: displayEquationLCD()");
-        Serial.print ("Equation Position: ");
-        Serial.print (position);
-        Serial.print (", Message: ");
-        Serial.println (message);
+        //Serial.println ("Debug: displayEquationLCD()");
+        //Serial.print ("Equation Position: ");
+        //Serial.print (position);
+        //Serial.print (", Message: ");
+        //Serial.println (message);
         
 
         displayString (position, 3, message);
@@ -138,14 +153,14 @@ void NFCLock::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
     uint8_t _nfcValue = detectorNFCValue[NFCDetectorID];
     uint8_t _nfcPosition = _detectorNFCPosition[NFCDetectorID];
     
-    Serial.println ("Debug: _updateNFCDetectorLCD()");
-    Serial.print ("NFC_DetectorID Position: ");
-    Serial.print (_nfcPosition);
-    Serial.print (", NFC_Value: ");
-    Serial.println (_nfcValue);
+    //Serial.println ("Debug: _updateNFCDetectorLCD()");
+    //Serial.print ("NFC_DetectorID Position: ");
+    //Serial.print (_nfcPosition);
+    //Serial.print (", NFC_Value: ");
+    //Serial.println (_nfcValue);
     
 
-    if (_nfcValue == 0) displayString (_nfcPosition, 3, "?");
+    if (_nfcValue == 0) displayString (_nfcPosition, 3, '?');
     else displayString (_nfcPosition, 3, _nfcValue);
 
 } //end _updateNFCDetectorLCD
@@ -166,14 +181,6 @@ void NFCLock::_clearEquation(){
     }
 } //end _clearEquation
 
-void NFCLock::_clearLCD(){
-    for (int i=0; i < 4; i++){
-        for (int j=0; j<20; j++){
-            displayString (j,i," ");
-        }
-    }
-}
-
 /* Pattern changed */
 void NFCLock::notifyPatternChanged(){
     currentPatternName = nextPatternName;
@@ -182,7 +189,12 @@ void NFCLock::notifyPatternChanged(){
 
     nextPatternName = pattern[nextPatternIndex];
 
-    displayPatternLCD();
+    // Send I2CMessage to notify LaserDriver
+    //Wire.beginTransmission ();
+
+    //displayPatternLCD();
+
+    displayAllLCD();
 
 } //end patternChanged()
 
@@ -191,7 +203,8 @@ void NFCLock::changeEquation(){
     currentEquationIndex += 1;
     if (currentEquationIndex > 4) currentEquationIndex = 0;
 
-    displayEquationLCD();
+    //displayEquationLCD();
+    displayAllLCD();
 
 } //end changeEquation()
 
