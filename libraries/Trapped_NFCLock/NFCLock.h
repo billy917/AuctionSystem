@@ -8,23 +8,30 @@
 
 class NFCLock{
 
+    #define NUM_PATTERN 5
+    #define NUM_EQUATION 3
+    #define NUM_EQUATION_POSITION 4
+    #define NUM_NFC_DETECTOR 5
+
     public:
         NFCLock();
-        uint8_t detectorNFCValue[5];
-        uint8_t desiredNFCValue[5][5];
+        uint8_t detectorNFCValue[NUM_NFC_DETECTOR];
+        uint8_t desiredNFCValue[NUM_PATTERN][NUM_NFC_DETECTOR];
         
         volatile bool hasReceivedMessage;
         void handleI2CMessage (uint8_t data[]);
         bool checkEquation();
+        int equationOne(), equationTwo(), equationThree();
 
         /* LCD variables */
         LiquidCrystal_I2C *lcd;
-        char equation[5][4];
-        char pattern[5];
+        char equation[NUM_EQUATION][NUM_EQUATION_POSITION];
+        char pattern[NUM_PATTERN];
         char currentPatternName;
         char nextPatternName;
         int nextPatternIndex;
         int currentEquationIndex;
+        int desiredEquationValue[NUM_EQUATION];
 
         /* LCD methods */
         void initLCD();
@@ -51,8 +58,8 @@ class NFCLock{
         uint8_t _detected;
         uint8_t _detectorID;
         uint8_t _nfcValue;
-        int _detectorNFCPosition[5];
-        int _equationPosition[4];
+        int _detectorNFCPosition[NUM_NFC_DETECTOR];
+        int _equationPosition[NUM_EQUATION_POSITION];
 
         int _counter;
 
