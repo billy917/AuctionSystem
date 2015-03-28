@@ -3,16 +3,15 @@
   
 */
 
-#include "FXPlaylist.h"
 #include "Arduino.h"
 #include "Constants.h"
 #include "Wire.h"
 
-#define PIN_OFFSET 2
+#define PIN_OFFSET 3
 #define NUM_TRACK 9
 
 /* Initialize Variables */
-uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
 
 int trackList[NUM_TRACK];
@@ -29,9 +28,9 @@ void setup(){
     }
 
     /* Setting up I2C Wire */
-    //Wire.begin(SOUNDFX_I2C_ADDR);
-    //Wire.onReceive (Received);
-    //Wire.onRequest (Request);
+    Wire.begin(SOUNDFX_I2C_ADDR);
+    Wire.onReceive (Received);
+    Wire.onRequest (Request);
 
     Serial.begin(9600);
 
@@ -46,28 +45,27 @@ void loop(){
     if (receivedI2CMessage){
         Serial.println ("Has received i2c message");
 
-
         if (i2cDataBuffer[0] == MESSAGETYPEID_CLOCK){
-            if (i2cDataBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY){
-                if (i2cDataBuffer[2] ==
-                    MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
+            if (i2cDataBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
                     
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
-                    int pin = trackList[i2cDataBuffer[4]];
-                    pinMode (pin + PIN_OFFSET, OUTPUT);
+                    int pin = trackList[i2cDataBuffer[3]] + PIN_OFFSET;
+                    Serial.print ("Playing pin: ");
+                    Serial.println (pin);
+                    pinMode (pin, OUTPUT);
 
-                    delay (1500);
+                    delay (1000);
 
-                    pinMode (pin + PIN_OFFSET, INPUT);
-                }
+                    pinMode (pin, INPUT);
                 
             }
         }
-    
+        receivedI2CMessage = false;
+        clearI2CBuffer();
     }
-    
+
 }
 
 /* I2C onReceive interrupt */
