@@ -15,7 +15,6 @@ const int KEYPAD_I2C_ADDR = 109;
 const int CLOCK_I2C_ADDR = 109; //same as keypad on purpose
 const int LASER_SENSOR_I2C_ADDR = 110;
 const int TRIP_LASER_I2C_ADDR = 111;
-const int SOUNDFX_I2C_ADDR = 113;
 /* NOTE: SKIP I2C_ADDR 112, see below */
 const int SOUNDFX_I2C_ADDR = 113;
 

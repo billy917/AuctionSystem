@@ -6,6 +6,7 @@
 #include "Arduino.h"
 #include "Constants.h"
 #include "Wire.h"
+#include "Timer.h"
 
 #define PIN_OFFSET 3
 #define NUM_TRACK 9
@@ -15,6 +16,11 @@ volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
 
 int trackList[NUM_TRACK];
+
+Timer t;
+int playEvent;
+
+int pin;
 
 void setup(){
     /* Setting up pins connecting to sound board */
@@ -51,14 +57,13 @@ void loop(){
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
-                    int pin = trackList[i2cDataBuffer[3]] + PIN_OFFSET;
+                    pin = trackList[i2cDataBuffer[3]] + PIN_OFFSET;
                     Serial.print ("Playing pin: ");
                     Serial.println (pin);
+
                     pinMode (pin, OUTPUT);
 
-                    delay (1000);
-
-                    pinMode (pin, INPUT);
+                    t.after (1000, stopTrack);
                 
             }
         }
@@ -92,4 +97,8 @@ void clearI2CBuffer(){
     for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
         i2cDataBuffer[i] = 0;
     }
+}
+
+void stopTrack(){
+    pinMode (pin, INPUT);
 }
