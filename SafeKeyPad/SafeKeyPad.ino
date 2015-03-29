@@ -149,16 +149,7 @@ void handleCommands(){
     } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
         nfcLock.handleI2CMessage (i2cDataBuffer);
 
-        /*
-            if notifyPatternChanged;
-                t.stop (countdownEvent);
-                nfcLock.notifyPatternChanged();
-                countdownEvent = t.every (1000, updateCounter);
-
-            if requestEquationChange;
-                nfcLock.changeEquation():
-        */
-
+        /* Whenever NFC_DETECTOR state changes */
         if (nfcLock.checkEquation()) {
             /* Unlock SHELF_LOCK */
             Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
@@ -175,6 +166,17 @@ void handleCommands(){
             Wire.write (MESSAGETYPEID_LOCK_LOCK);
             Wire.endTransmission();
 
+        }
+
+    } else if (i2cDataBuffer[0] == MESSAGETYPEID_LCD) {
+        
+        if (i2cDataBuffer[1] == MESSAGETYPEID_LCD_CHANGE_PATTERN){
+            t.stop (countdownEvent);
+            nfcLock.notifyPatternChanged();
+            countdownEvent = t.every (1000, updateCounter);
+
+        } else if (i2cDataBuffer[1] == MESSAGETYPEID_LCD_CHANGE_EQUATION){
+            nfcLock.changeEquation();
         }
 
     } else {}
@@ -359,7 +361,7 @@ void updateCounter(){
     counter = counter - 1;
 
     if (counter <= 0) {
-        //t.stop (countdownEvent);
+        t.stop (countdownEvent);
 
         counter = MAX_COUNTER_VALUE;
 
@@ -367,7 +369,7 @@ void updateCounter(){
         //nfcLock.changeEquation();
 
 
-        //countdownEvent = t.every (1000, updateCounter);
+        countdownEvent = t.every (1000, updateCounter);
 
     }
 

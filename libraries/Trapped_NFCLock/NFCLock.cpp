@@ -27,9 +27,9 @@ void NFCLock::initLCD(){
     lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
-    lcd->noAutoscroll();
+    //lcd->noAutoscroll();
     lcd->noCursor();
-    lcd->noBlink();
+    //lcd->noBlink();
 
     currentPatternName = pattern[0];
     nextPatternIndex = 1;
@@ -113,7 +113,8 @@ void NFCLock::displayAllLCD(){
     displayPatternLCD();
     displayCounterLCD();
     displayEquationLCD();
-    
+   
+    lcd->noBlink();
 }
 
 void NFCLock::displayPatternLCD(){
@@ -306,13 +307,13 @@ void NFCLock::_loadPatternData(){
 } //end _loadPatternData()
 
 void NFCLock::_loadEquationData(){
-    desiredEquationValue [0] = 12;
+    desiredEquationValue [0] = 11;
     equation[0][0] = '/';
     equation[0][1] = '+';
     equation[0][2] = '-';
     equation[0][3] = '+';
 
-    desiredEquationValue[1] = 1;
+    desiredEquationValue[1] = 2;
     equation[1][0] = '/';
     equation[1][1] = '+';
     equation[1][2] = '/';

@@ -16,6 +16,7 @@ const int CLOCK_I2C_ADDR = 109; //same as keypad on purpose
 const int LASER_SENSOR_I2C_ADDR = 110;
 const int TRIP_LASER_I2C_ADDR = 111;
 /* NOTE: SKIP I2C_ADDR 112, see below */
+const int SOUNDFX_I2C_ADDR = 113;
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112
@@ -33,6 +34,7 @@ const uint8_t MESSAGETYPEID_BGM = 12;
 const uint8_t MESSAGETYPEID_CLOCK = 13;
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14; //SafeKeyPad
 const uint8_t MESSAGETYPEID_TRIP_LASER = 15;
+const uint8_t MESSAGETYPEID_LCD = 16;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -76,6 +78,9 @@ const uint8_t MESSAGETYPEID_BGM_NEXT_SONG = 4;
 
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK_RESET = 1; // SafeKeyPad
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK_GET_PASSWORD = 2;
+
+const uint8_t MESSAGETYPEID_LCD_CHANGE_EQUATION = 1;
+const uint8_t MESSAGETYPEID_LCD_CHANGE_PATTERN = 2;
 
 const uint8_t MESSAGETYPEID_TRIP_LASER_ON = 1;
 const uint8_t MESSAGETYPEID_TRIP_LASER_OFF = 2;
@@ -183,6 +188,15 @@ BGM Controller message protocol
 */
 
 /*
+SafeKeyPad Controller message protocol
+    x -> SafeKeyPad
+    [0] messageTypeId (14)
+    [1] parameter (1 = reset keypad, 2 = get password from BGM)
+    
+    SafeKeyPad -> LCD Controller
+    [0] messageTypeId (16)
+    [1] parameter (1 = request change equation, 
+        2 = notify pattern changed)
 */
 
 /*
@@ -194,7 +208,6 @@ Pic 2 - 0x04 0xEC 0x82 0xEA 0xC2 0x23 0x80
 Pic 3 - 0x04 0x04 0x82 0xEA 0xC2 0x23 0x81
 Pic 4 - 0x04 0xA2 0x82 0xEA 0xC2 0x23 0x80
 Pic 5 - 0x04 0xF6 0x87 0x82 0x1C 0x23 0x80
-
 */
 
 /*
