@@ -18,6 +18,8 @@ class LaserController
     void setXBeeReference(XBee* xbee_pointer);
     void handleMessage(uint8_t dataLength, uint8_t data[]);
     void setLaserPin(int laserId, int pin);
+    void turnOnAllLaser();
+    void turnOffAllLaser();
 
   private:
     bool _isPrimary;
@@ -28,14 +30,21 @@ class LaserController
     int _laserStates[3];
     uint8_t _xBeePayload[3];
     XBee* _xbee;
+    XBeeAddress64 _laser1Addr;
+    ZBTxRequest _laser1ZBTxRequest;
     XBeeAddress64 _laser2Addr;
     ZBTxRequest _laser2ZBTxRequest;
     XBeeAddress64 _laser3Addr;
     ZBTxRequest _laser3ZBTxRequest;
+    XBeeAddress64 _nfcManagerAddr;
+    ZBTxRequest _nfcManagerZBTxRequest;
 
     bool _isLaserIndexLocal(int laserId);
     void _turnOnLocalLaser(int laserId);
     void _turnOffLocalLaser(int laserId);
+    void _turnOnSensor(int laserId);
+    void _turnOffSensor(int laserId);
+    void _switchSensorState(int laserId, bool on);
     void _forwardMessageToOtherControllers(uint8_t laserId, uint8_t dataLength, uint8_t data[]);
 };
 

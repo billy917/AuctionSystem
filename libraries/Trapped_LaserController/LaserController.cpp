@@ -7,6 +7,7 @@
 #include "Arduino.h"
 #include <LaserController.h>
 #include <Constants.h>
+#include <Wire.h>
 #include <XBee.h>
 
 
@@ -22,13 +23,17 @@ LaserController::LaserController(int controllerId, bool isPrimary){
 		_laserStates[i] = false;
 	}
 
-	if(_isPrimary){
-		_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
-		_laser2ZBTxRequest = ZBTxRequest(_laser2Addr, _xBeePayload, sizeof(_xBeePayload));
+	_laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf); //Laser1 xBee 
+	_laser1ZBTxRequest = ZBTxRequest(_laser1Addr, _xBeePayload, sizeof(_xBeePayload));
 
-		_laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); //Laser3 xBee 
-		_laser3ZBTxRequest = ZBTxRequest(_laser3Addr, _xBeePayload, sizeof(_xBeePayload));
-	}
+	_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
+	_laser2ZBTxRequest = ZBTxRequest(_laser2Addr, _xBeePayload, sizeof(_xBeePayload));
+
+	_laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); //Laser3 xBee 
+	_laser3ZBTxRequest = ZBTxRequest(_laser3Addr, _xBeePayload, sizeof(_xBeePayload));
+
+	_nfcManagerAddr = XBeeAddress64(0x0013a200, 0x40c04f18); //NFCManager xBee 
+	_nfcManagerZBTxRequest = ZBTxRequest(_nfcManagerAddr, _xBeePayload, sizeof(_xBeePayload));
 }
 
 bool LaserController::canHandleMessageType(uint8_t messageTypeId){
@@ -50,6 +55,20 @@ bool LaserController::_isLaserIndexLocal(int laserId){
 	return false;
 }
 
+void LaserController::turnOnAllLaser(){
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOnLocalLaser(_localLaserIds[i]);
+		_turnOnSensor(_localLaserIds[i]);				
+	}
+}
+
+void LaserController::turnOffAllLaser(){
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOffLocalLaser(_localLaserIds[i]);
+		_turnOffSensor(_localLaserIds[i]);
+	}
+}
+
 void LaserController::_turnOnLocalLaser(int laserId){
 	for(int i=0; i<_numRegisteredLasers; i++){
 		if(laserId == _localLaserIds[i]){
@@ -65,15 +84,58 @@ void LaserController::_turnOffLocalLaser(int laserId){
 			digitalWrite(_laserPins[i], LOW);
 			_laserStates[i] = false;
 		}
+		delay(500);
 	}
 }
+
+void LaserController::_switchSensorState(int laserId, bool on){
+	int sensorId = GLOBAL_LASER_ID[laserId-1];
+	int sensorManagerId = GLOBAL_SENSOR_MANAGER_ID[laserId-1];
+	int laserManagerId = GLOBAL_LASER_MANAGER_ID[laserId-1];
+	if(sensorManagerId == laserManagerId && sensorManagerId != 1){
+		// same i2c bus, fwd command via i2c
+		Wire.beginTransmission(LASER_SENSOR_I2C_ADDR); // transmit to device #100 (NFCDetectorManager
+		Wire.write(MESSAGETYPEID_LASER_SENSOR);
+		if(on){
+			Wire.write(MESSAGETYPEID_LASER_SENSOR_ON); 
+		} else {
+			Wire.write(MESSAGETYPEID_LASER_SENSOR_OFF); 
+		}
+		Wire.write(GLOBAL_SENSOR_ID[laserId-1]);
+		Wire.endTransmission();
+	} else {
+		// on different i2c bus, fwd comand via xBee	
+		_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+		_xBeePayload[1] = on?MESSAGETYPEID_LASER_SENSOR_ON:MESSAGETYPEID_LASER_SENSOR_OFF;
+		_xBeePayload[2] = GLOBAL_SENSOR_ID[laserId-1];
+
+		if(0 == sensorManagerId){		
+			_xbee->send(_laser1ZBTxRequest);
+		} else if (1 == sensorManagerId){
+			_xbee->send(_nfcManagerZBTxRequest);
+		} else if (2 == sensorManagerId){
+			_xbee->send(_laser2ZBTxRequest);
+		}
+	}
+}
+
+void LaserController::_turnOffSensor(int laserId){
+	_switchSensorState(laserId,false);
+}
+
+void LaserController::_turnOnSensor(int laserId){
+	_switchSensorState(laserId,true);
+}
+
 
 void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){	
 	if(canHandleMessageType(data[0])){
 		if(_isLaserIndexLocal(data[2])){
 			if(MESSAGETYPEID_LASER_CONTROL_ON == data[1]){
 				_turnOnLocalLaser(data[2]);
+				_turnOnSensor(data[2]);
 			} else if (MESSAGETYPEID_LASER_CONTROL_OFF == data[1]){
+				_turnOffSensor(data[2]);
 				_turnOffLocalLaser(data[2]);
 			}
 		} else if(_isPrimary) {
@@ -91,9 +153,9 @@ void LaserController::_forwardMessageToOtherControllers(uint8_t laserId, uint8_t
 		_xBeePayload[i] = data[i];
 	}
 
-	if(1 == GLOBAL_LASER_MANAGER_ID[laserId]){
+	if(1 == GLOBAL_LASER_MANAGER_ID[laserId-1]){
 		_xbee->send(_laser3ZBTxRequest);
-	} else {
+	} else if (2 == GLOBAL_LASER_MANAGER_ID[laserId-1]) {
 		_xbee->send(_laser2ZBTxRequest);
 	}
 }

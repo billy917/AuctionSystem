@@ -6,8 +6,14 @@
 //I2C address - 1  
   
 XBee xbee = XBee();
+ZBRxResponse rx = ZBRxResponse();
+
 volatile uint8_t i2cDataBuffer[NFC_MESSAGE_MAX_SIZE];
-volatile boolean receivedMessage = false;
+volatile uint8_t xBeeDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile boolean receivedI2CMessage = false;
+volatile bool receivedXBeeMessage = false;
+
+uint8_t localBuffer[NFC_MESSAGE_MAX_SIZE];
 // need to store expected UID for each detector
 
 int led = 13;
@@ -31,7 +37,7 @@ void receiveI2CEvent(int howMany){
         i2cDataBuffer[i] = Wire.read(); 
       }
     }
-    receivedMessage = true; // TODO: need better way to queue incoming requests
+    receivedI2CMessage = true; // TODO: need better way to queue incoming requests
   } else {
     while(1 < Wire.available()) // loop through all but the last
     {
@@ -41,23 +47,56 @@ void receiveI2CEvent(int howMany){
   }
 }
 
-void loop() {
-  if(receivedMessage){
-    uint8_t data[NFC_MESSAGE_MAX_SIZE] = {};
-    for(int i=0;i<NFC_MESSAGE_MAX_SIZE;i++){
-      data[i] = i2cDataBuffer[i]; 
-    }  
-    nfcManager.handleI2CMessage(9, data);
+void handleXBeeMsg(){
+  xbee.readPacket();
+  if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    xbee.getResponse().getZBRxResponse(rx);
+        
+    xBeeDataBuffer[0] = rx.getData(0);    
+    if( MESSAGETYPEID_LASER_SENSOR == xBeeDataBuffer[0]){
+      xBeeDataBuffer[1] = rx.getData(1);
+      xBeeDataBuffer[2] = rx.getData(2);
+    }
 
-    clearI2CBuffer();
-    receivedMessage = false; 
+    receivedXBeeMessage = true;
+  }   
+}
+
+void loop() {
+  handleXBeeMsg();
+  if(receivedXBeeMessage){
+    for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
+      localBuffer[i] = xBeeDataBuffer[i];
+    }
+    handleMessage();
+    receivedXBeeMessage = false; 
+  }
+  
+  if(receivedI2CMessage){
+    for(int i=0;i<NFC_MESSAGE_MAX_SIZE;i++){
+      localBuffer[i] = i2cDataBuffer[i]; 
+    }  
+    handleMessage();
+    receivedI2CMessage = false; 
   }
 }
 
-void clearI2CBuffer(){
-  for(int i=0; i<UID_LENGTH; i++){
-    i2cDataBuffer[i] = 0;
+void handleMessage(){
+  if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
+    forwardI2CMessage(LASER_SENSOR_I2C_ADDR);
+  } else {
+    nfcManager.handleI2CMessage(9, localBuffer);
   }
+}
+
+void forwardI2CMessage(int i2cAddr){
+  Wire.beginTransmission(i2cAddr); 
+  Wire.write(localBuffer[0]);
+  Wire.write(localBuffer[1]);
+  Wire.write(localBuffer[2]);
+  Wire.write(localBuffer[3]);
+  Wire.write(localBuffer[4]);
+  Wire.endTransmission();
 }
 
 void blinkLED(int times){

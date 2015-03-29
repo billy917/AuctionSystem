@@ -83,7 +83,7 @@ int currentMenu = MainMenu;
 // 8 - ResetClock
 
 int currentRowSelection = 0;
-int maxRows[] = {8, 9, 4, 6, 1, 9};
+int maxRows[] = {8, 9, 4, 6, 10, 1};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -436,16 +436,16 @@ void drawCalibrateLaserSensor(){
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
   tft.setCursor(10,0);
-  tft.println("\nCalibrate Laser Sensors\n");
+  tft.println("\nCalibrate\n");
   
   tft.setTextSize(1); 
   if (0 == currentRowSelection){
       tft.print("->");
   }
   tft.println("Calibrate All Sensors");
-  for(int i=1;i<=5;i++){
+  for(int i=1;i<=9;i++){
     if (i == currentRowSelection) tft.print("->");
-    tft.print("Calibrate Laser Sensor "); tft.println(i);
+    tft.print("Sensor "); tft.println(i);
   }
 }
 
@@ -474,7 +474,7 @@ void drawMainMenu(){
   if(3 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("4) Calibrate Laser Sensors");
+  tft.println("4) Calibrate Sensors");
   
   if(4 == currentRowSelection){
     tft.print("->");
@@ -646,7 +646,7 @@ boolean handleMenuSelection(){
         laserState[currentRowSelection] = true;
       }
       xbeePayload[0] = MESSAGETYPEID_LASER_CONTROL;
-      xbeePayload[2] = currentRowSelection;  
+      xbeePayload[2] = currentRowSelection+1;  
       xbee.send(laser1Tx); 
       //xbee.send(laser2Tx); 
       //xbee.send(laser3Tx); 
