@@ -13,7 +13,9 @@ NFCLock::NFCLock(){
     _clearPattern();
     _clearEquation();
 
-    _loadDesiredNFCValue();
+    /* For testing only: */
+    //_loadDesiredNFCValue();
+
     _loadPatternData();
     _loadEquationData();
     _loadEquationPositionData();
@@ -25,9 +27,9 @@ void NFCLock::initLCD(){
     lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
-    lcd->noAutoscroll();
+    //lcd->noAutoscroll();
     lcd->noCursor();
-    lcd->noBlink();
+    //lcd->noBlink();
 
     currentPatternName = pattern[0];
     nextPatternIndex = 1;
@@ -75,6 +77,21 @@ void NFCLock::_manageNFC(){
 } //end _manageNFC
 
 bool NFCLock::checkEquation(){
+    switch (currentEquationIndex){
+        case 0: return (equationOne() == 
+            desiredEquationValue[currentEquationIndex]);
+            break;
+        case 1: return (equationTwo() == 
+            desiredEquationValue[currentEquationIndex]);
+            break;
+        case 2: return (equationThree() == 
+            desiredEquationValue[currentEquationIndex]);
+            break;
+
+        default: return false; break;
+    }
+
+/*
     bool check = true;
     for (int i=0; i < 5; i++){
         if (detectorNFCValue[i] ==
@@ -87,7 +104,7 @@ bool NFCLock::checkEquation(){
     }
 
     return check;
-
+*/
 } //end checkEquation
 
 void NFCLock::displayAllLCD(){
@@ -96,7 +113,8 @@ void NFCLock::displayAllLCD(){
     displayPatternLCD();
     displayCounterLCD();
     displayEquationLCD();
-    
+   
+    lcd->noBlink();
 }
 
 void NFCLock::displayPatternLCD(){
@@ -129,7 +147,7 @@ void NFCLock::displayCounterLCD (){
 
 void NFCLock::displayEquationLCD(){
 
-    for (int i=0; i < 4; i++){
+    for (int i=0; i < NUM_EQUATION_POSITION; i++){
         int position = _equationPosition[i];
         char message = equation[currentEquationIndex][i];
         
@@ -144,7 +162,7 @@ void NFCLock::displayEquationLCD(){
         displayString (position, 3, message);
     }
 
-    for (int i=0; i < 5; i++) {
+    for (int i=0; i < NUM_NFC_DETECTOR; i++) {
         _updateNFCDetectorLCD (i);
     }
 }
@@ -185,7 +203,7 @@ void NFCLock::_clearEquation(){
 void NFCLock::notifyPatternChanged(){
     currentPatternName = nextPatternName;
     nextPatternIndex += 1;
-    if (nextPatternIndex > 4) nextPatternIndex = 0;
+    if (nextPatternIndex > (NUM_PATTERN -1)) nextPatternIndex = 0;
 
     nextPatternName = pattern[nextPatternIndex];
 
@@ -201,7 +219,7 @@ void NFCLock::notifyPatternChanged(){
 /* Request change equation */
 void NFCLock::changeEquation(){
     currentEquationIndex += 1;
-    if (currentEquationIndex > 4) currentEquationIndex = 0;
+    if (currentEquationIndex > (NUM_EQUATION -1)) currentEquationIndex = 0;
 
     //displayEquationLCD();
     displayAllLCD();
@@ -246,6 +264,7 @@ void NFCLock::displayString (int col, int row, uint8_t message){
 } //end displayString()
 
 void NFCLock::_loadDesiredNFCValue(){
+    /* For testing only: 
     desiredNFCValue[0][0] = 1;
     desiredNFCValue[0][1] = 2;
     desiredNFCValue[0][2] = 3;
@@ -275,6 +294,7 @@ void NFCLock::_loadDesiredNFCValue(){
     desiredNFCValue[4][2] = 3;
     desiredNFCValue[4][3] = 4;
     desiredNFCValue[4][4] = 5;
+    */
 
 } //end desiredNFCValue()
 
@@ -287,21 +307,25 @@ void NFCLock::_loadPatternData(){
 } //end _loadPatternData()
 
 void NFCLock::_loadEquationData(){
-    equation[0][0] = '+';
-    equation[0][1] = '-';
-    equation[0][2] = 'x';
-    equation[0][3] = '/';
+    desiredEquationValue [0] = 11;
+    equation[0][0] = '/';
+    equation[0][1] = '+';
+    equation[0][2] = '-';
+    equation[0][3] = '+';
 
-    equation[1][0] = 'x';
+    desiredEquationValue[1] = 2;
+    equation[1][0] = '/';
     equation[1][1] = '+';
     equation[1][2] = '/';
     equation[1][3] = '-';
 
+    desiredEquationValue[2] = 16;
     equation[2][0] = '/';
     equation[2][1] = 'x';
-    equation[2][2] = '+';
-    equation[2][3] = '-';
+    equation[2][2] = '-';
+    equation[2][3] = '+';
 
+    /*
     equation[3][0] = '-';
     equation[3][1] = '/';
     equation[3][2] = 'x';
@@ -311,6 +335,7 @@ void NFCLock::_loadEquationData(){
     equation[4][1] = '/';
     equation[4][2] = '-';
     equation[4][3] = '+';
+    */
 
 } //end _loadEquationData()
 
@@ -328,3 +353,29 @@ void NFCLock::_loadEquationPositionData(){
     _equationPosition[2] = 11;
     _equationPosition[3] = 15;
 } //end _loadEquationPositionData()
+
+int NFCLock::equationOne(){
+    return (
+      (detectorNFCValue[0]/detectorNFCValue[1]) +
+      detectorNFCValue[2] - 
+      detectorNFCValue[3] +
+      detectorNFCValue[4]
+    );
+}
+
+int NFCLock::equationTwo(){
+    return (
+        (detectorNFCValue[0]/detectorNFCValue[1]) +
+        (detectorNFCValue[2]/detectorNFCValue[3]) -
+        detectorNFCValue[4]
+    );
+}
+
+int NFCLock::equationThree(){
+    return (
+        (detectorNFCValue[0]/detectorNFCValue[1]) *
+        detectorNFCValue[2] -
+        detectorNFCValue[3] +
+        detectorNFCValue[4]
+    );
+}
