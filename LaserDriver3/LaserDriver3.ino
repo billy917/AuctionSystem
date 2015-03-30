@@ -21,7 +21,8 @@ XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
 int laserControllerId = 1;
-LaserController laserController(laserControllerId, false);
+bool enableSensors = false;
+LaserController laserController(laserControllerId, false,enableSensors);
 
 volatile bool receivedI2CMessage = false;
 volatile bool receivedXBeeMessage = false;

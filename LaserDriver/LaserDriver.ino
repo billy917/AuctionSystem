@@ -16,15 +16,15 @@ unsigned long timer = 0;
 XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
-
 uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
 XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
-XBeeAddress64 hackerAddr = XBeeAddress64(0x0013a200, 0x00000000);
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
-ZBTxRequest hackerTx = ZBTxRequest(hackerAddr, xbeePayload, sizeof(xbeePayload));
 
-int laserControllerId, nfcManagerId = 0;
-LaserController laserController(laserControllerId, true);
+
+int laserControllerId = 0;
+int nfcManagerId = 0;
+bool enableSensors = false;
+LaserController laserController(laserControllerId, true, enableSensors);
 NFCManager nfcManager(nfcManagerId, true);
 
 volatile char commandSource = ' ';
@@ -36,9 +36,7 @@ uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 
 // the setup routine runs once when you press reset:
 void setup() {           
-
   Serial.begin(9600);
-  Serial.println("High");
   
   // initialize the digital pin as an output.                                                                                                                                                                                           
   for(int i=1; i<=3; i++){
@@ -118,14 +116,6 @@ void forwardXBeeMessage(){
   xbee.send(laser2Tx);
 }
 
-void instructXBeeModeChange(int messageTypeId){
-  // send instruction to other xBee on mode change
-  xbeePayload[0] = messageTypeId;
-  xbeePayload[1] = 0;
-  xbeePayload[2] = 0;  
-  xbee.send(laser2Tx);
-}
-
 void forwardI2CMessage(int i2cAddr){
   Wire.beginTransmission(i2cAddr); //4 == ShelfLock
   Wire.write(localBuffer[0]);
@@ -156,11 +146,6 @@ void handleMessage(){
   }
 
   nfcManager.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);
-  
-  if('I' == commandSource){
-    // only tell other xBee if the nextMode command came from I2C - fwds wireless signal
-    instructXBeeModeChange(localBuffer[0]); 
-  } 
   
   if(localBuffer[0] == 1){
     //Turn Off

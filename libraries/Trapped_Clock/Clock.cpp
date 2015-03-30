@@ -22,16 +22,18 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
       clockMode = CLOCK_MODE_COUNTDOWN;
     } else if (MESSAGETYPEID_CLOCK_PAUSE == data[1]){
       clockMode = CLOCK_MODE_PAUSE;
-    } else if (MESSAGETYPEID_CLOCK_MODIFY == data[1]){
-      if(MESSAGETYPEID_CLOCK_MODIFY_ADD == data[2]){
-        minutes += data[3];
-      } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[2]){
-        if(minutes > 0){
-          minutes -= data[3];
-        } else {
-          seconds = 0;
-        }
+    } else if(MESSAGETYPEID_CLOCK_MODIFY_ADD == data[1]){
+      minutes += data[2];
+      if(seconds > 60){
+        minutes = minutes + 1;
+        seconds = seconds - 60;  
       }
+    } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[1]){
+      if(minutes > 0){
+        minutes -= data[2];
+      } else {
+        seconds = 0;
+      }      
     }
   }
 }

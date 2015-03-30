@@ -24,8 +24,10 @@ ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload))
 XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0);
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
-int laserControllerId, nfcManagerId = 2;
-LaserController laserController(laserControllerId, false);
+int laserControllerId = 2;
+int nfcManagerId = 2;
+bool enableSensors = false;
+LaserController laserController(laserControllerId, false, enableSensors);
 NFCManager nfcManager(nfcManagerId, false);
 
 volatile char commandSource = ' ';
@@ -38,7 +40,6 @@ uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 // the setup routine runs once when you press reset:
 void setup() {           
   Serial.begin(9600);
- 
   // initialize the digital pin as an output.
   for(int i=1; i<=3; i++){
     pinMode(laserPins[i-1], OUTPUT);
@@ -102,8 +103,9 @@ void handleXBeeMsg(){
       xBeeDataBuffer[3] = rx.getData(3);
     } else if (MESSAGETYPEID_CLOCK == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
-      xBeeDataBuffer[2] = rx.getData(2);
-      if(MESSAGETYPEID_CLOCK_MODIFY == xBeeDataBuffer[1]){
+      if(MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == xBeeDataBuffer[1] ||
+         MESSAGETYPEID_CLOCK_MODIFY_ADD == xBeeDataBuffer[1]){
+        xBeeDataBuffer[2] = rx.getData(2);
         xBeeDataBuffer[3] = rx.getData(3);
       }
     }
@@ -126,7 +128,8 @@ void handleMessage(){
   if(laserController.canHandleMessageType(localBuffer[0])){
       laserController.handleMessage(3, localBuffer);
   }
-  if(MESSAGETYPEID_CLOCK == localBuffer[0]){
+  if(MESSAGETYPEID_CLOCK == localBuffer[0]){    
+    forwardI2CMessage(SOUNDFX_I2C_ADDR);
     forwardI2CMessage(CLOCK_I2C_ADDR);
   } else if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
     forwardI2CMessage(LASER_SENSOR_I2C_ADDR);

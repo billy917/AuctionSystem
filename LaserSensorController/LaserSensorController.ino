@@ -9,7 +9,10 @@ uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile boolean receivedI2CMessage = false;
 
-volatile boolean pin2Interrupt, pin3Interrupt, pin19Interrupt = false;
+volatile boolean pin2Interrupt = false;
+volatile boolean pin3Interrupt = false;
+volatile boolean pin19Interrupt = false;
+
 void pin2Interrupted(){
   pin2Interrupt = true;
 }
@@ -24,31 +27,31 @@ void pin19Interrupted(){
 
 void setup() {
   Serial.begin(9600);
+    
+  //attachInterrupt(1, pin3Interrupted, FALLING); // Laser5, Sensor 1
+  //attachInterrupt(0, pin2Interrupted, FALLING); // Laser?, Sensor2 
+  attachInterrupt(4, pin19Interrupted, FALLING); // Laser2, Sensor3
+  
+  
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
-    
-  attachInterrupt(1, pin3Interrupted, FALLING);
-  //attachInterrupt(0, pin2Interrupted, FALLING);
-  attachInterrupt(4, pin19Interrupted, FALLING);
   
-  laserSensorController.setSensorPin(1, 3, TSL2561_ADDR_0);
-  laserSensorController.calibrateSensorBySensorId(1);
+  //laserSensorController.setSensorPin(1, 3, TSL2561_ADDR_0);
   
   //laserSensorController.setSensorPin(2, 2, TSL2561_ADDR);
-  //laserSensorController.calibrateSensorBySensorId(2);
   
   laserSensorController.setSensorPin(3, 19, TSL2561_ADDR_1);
-  laserSensorController.calibrateSensorBySensorId(3);
-
+  Serial.println("Initialized");
 }
 
 void loop() {
   if(receivedI2CMessage){
+    Serial.println("Received I2C message");
     noInterrupts();
     copyToI2CLocalBuffer();    
     receivedI2CMessage = false; 
     interrupts();   
-    handleMessage();
+    handleMessage();    
   }
 
   if(pin2Interrupt){
@@ -75,6 +78,7 @@ void loop() {
 
 void handleMessage(){
   laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
+  laserSensorController.printState();
 }
 
 void copyToI2CLocalBuffer(){

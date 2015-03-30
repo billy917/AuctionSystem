@@ -20,11 +20,13 @@ class LaserSensorController
     unsigned int getReadings(int sensorId);
     void pinInterrupted(int pin);
 
+    void calibrateSensorByIndex(int sensorIndex);
     void calibrateSensorBySensorId(int sensorId);
     void calibrateSensor(SFE_TSL2561* sensor);
     void enableSensorBySensorId(int sensorId);
     void disableSensorBySensorId(int sensorId);
     void trippedWire(int sensorId);
+    void printState();
 
   private:
     bool _isPrimary;

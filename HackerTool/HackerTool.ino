@@ -51,9 +51,13 @@ ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload))
 XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); // send commands to LaserDriver2
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 
+volatile boolean enableSensor = false;
 volatile boolean laserEnabled = false;
 volatile boolean musicOn = true;
 volatile uint8_t nfcState[6] = {0,0,0,0,0,0};
+
+volatile boolean sensorOn = false;
+volatile uint8_t sensorId = -1;
 
 void setup(void) {  
   // Use this initializer if you're using a 1.8" TFT
@@ -83,7 +87,7 @@ int currentMenu = MainMenu;
 // 8 - ResetClock
 
 int currentRowSelection = 0;
-int maxRows[] = {8, 9, 4, 6, 10, 1};
+int maxRows[] = {9, 9, 4, 6, 10, 1};
 
 void drawMenu(){
   tft.fillScreen(ST7735_BLACK);
@@ -505,6 +509,15 @@ void drawMainMenu(){
   }
   tft.println("8) Reset Clock");
   
+  if(8 == currentRowSelection){
+    tft.print("->");
+  }
+  tft.println("9) Toggle sensor");
+  
+  tft.print("10) Sensor:"); tft.println(sensorId);
+  tft.print(" value:"); tft.println(sensorOn);
+  
+  
 }
 
 void loop() {
@@ -563,7 +576,7 @@ void calibrateLaserSensor (uint8_t laserSensorId){
     xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
     xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_CALIBRATE;
     xbeePayload[2] = laserSensorId;
-    xbee.send (laser2Tx);
+    xbee.send (laser1Tx);
 }
 
 void toggleMusic(){
@@ -635,6 +648,8 @@ boolean handleMenuSelection(){
     } else if(currentRowSelection == 7){
       resetClock();
       updated = true; 
+    } else if(currentRowSelection == 8){
+      toggleSensor(); 
     }
   } else if (currentMenu == ToogleLaser){
       bool currState = laserState[currentRowSelection];
@@ -648,7 +663,8 @@ boolean handleMenuSelection(){
       xbeePayload[0] = MESSAGETYPEID_LASER_CONTROL;
       xbeePayload[2] = currentRowSelection+1;  
       xbee.send(laser1Tx); 
-      //xbee.send(laser2Tx); 
+      
+      //
       //xbee.send(laser3Tx); 
       updated = true;
   } else if (currentMenu == ToggleLock){
@@ -675,6 +691,22 @@ boolean handleMenuSelection(){
       updated = true;
   }
   return updated;
+}
+
+void toggleSensor(){
+  if(enableSensor){    
+    enableSensor = false;
+  } else {
+    enableSensor = true;
+  }
+  xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+  if(enableSensor){
+    xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_ON;
+  } else {
+    xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_OFF;
+  }
+  xbeePayload[2] = 2;
+  xbee.send(laser1Tx);
 }
 
 void requestNewNFCData(){
@@ -798,6 +830,14 @@ boolean handleXBeeMsg(){
       for(int i=1;i<= rx.getData(2);i++){
         nfcState[i] = rx.getData(2+i);
       }
+      return true;
+    } else if (MESSAGETYPEID_LASER_SENSOR == rx.getData(0)){
+      if(MESSAGETYPEID_LASER_SENSOR_ON == rx.getData(1)){
+        sensorOn = true; 
+      } else if(MESSAGETYPEID_LASER_SENSOR_OFF == rx.getData(1)){
+        sensorOn = false; 
+      }
+      sensorId = rx.getData(2);
       return true;
     }
   }   
