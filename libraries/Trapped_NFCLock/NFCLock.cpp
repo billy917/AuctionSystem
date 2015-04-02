@@ -5,7 +5,6 @@
 #include "LiquidCrystal_I2C.h"
 
 NFCLock::NFCLock(){
-    hasReceivedMessage = false;
 
     _messageID, _managerID, _detected, _detectorID, _nfcValue = 0;
 
@@ -18,24 +17,23 @@ NFCLock::NFCLock(){
 
     _loadPatternData();
     _loadEquationData();
-    _loadEquationPositionData();
+    //_loadEquationPositionData();
     _loadNFCPositionData();
-    
+
 }
 
 void NFCLock::initLCD(){
     lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
-    //lcd->noAutoscroll();
     lcd->noCursor();
-    //lcd->noBlink();
 
     currentPatternName = pattern[0];
     nextPatternIndex = 1;
     nextPatternName = pattern[nextPatternIndex];
 
     currentEquationIndex = 0;
+
 
     lcd->clear();
 
@@ -52,8 +50,6 @@ void NFCLock::handleI2CMessage (uint8_t data[]){
     _detectorID = data[3];
     _nfcValue = data[4];
 
-    hasReceivedMessage = true;
-
     if (_messageID == MESSAGETYPEID_NFC_MANAGE){
         _manageNFC();
 
@@ -63,7 +59,7 @@ void NFCLock::handleI2CMessage (uint8_t data[]){
 
 void NFCLock::_manageNFC(){
 
-    uint8_t offsetPosition = _detectorID - (uint8_t)1;
+    uint8_t offsetPosition = _detectorID - 1;
 
     if (_detected == MESSAGETYPEID_NFC_MANAGE_FOUND){
         detectorNFCValue[offsetPosition] = _nfcValue;
@@ -91,20 +87,7 @@ bool NFCLock::checkEquation(){
         default: return false; break;
     }
 
-/*
-    bool check = true;
-    for (int i=0; i < 5; i++){
-        if (detectorNFCValue[i] ==
-            desiredNFCValue[currentEquationIndex][i]){
 
-            check &= true;
-        } else {
-            check &= false;
-        }
-    }
-
-    return check;
-*/
 } //end checkEquation
 
 void NFCLock::displayAllLCD(){
@@ -114,10 +97,12 @@ void NFCLock::displayAllLCD(){
     displayCounterLCD();
     displayEquationLCD();
    
-    lcd->noBlink();
+   lcd->noCursor();
 }
 
 void NFCLock::displayPatternLCD(){
+
+    //Serial.println ("Debug: displayPatternLCD()");
 
     displayString (0,0, "Pattern:");
     displayString (9,0, currentPatternName);
@@ -140,28 +125,44 @@ void NFCLock::displayCounterLCD (){
         displayString (18,0, _counter); 
     }
 
-    //Serial.println ("Debug: displayCounter()");
-    //Serial.print ("Counter: ");
-    //Serial.println (_counter);
+    /*
+    Serial.println ("Debug: displayCounter()");
+    Serial.print ("Counter: ");
+    Serial.println (_counter);
+    */
 }
 
 void NFCLock::displayEquationLCD(){
 
-    for (int i=0; i < NUM_EQUATION_POSITION; i++){
-        int position = _equationPosition[i];
-        char message = equation[currentEquationIndex][i];
-        
-        
-        //Serial.println ("Debug: displayEquationLCD()");
-        //Serial.print ("Equation Position: ");
-        //Serial.print (position);
-        //Serial.print (", Message: ");
-        //Serial.println (message);
-        
+    //Serial.println ("Debug: displayEquationLCD()");
 
-        displayString (position, 3, message);
-    }
+    /* Display equation characters */
+    //for (int i=0; i < NUM_EQUATION_POSITION; i++){
+        //int position = _equationPosition[i];
+        
+        /*
+        Serial.print ("Equation Position: ");
+        Serial.print (position);
+        Serial.print (", Message: ");
+        Serial.println (message);
+        */
 
+        //displayString (position, 3, message);
+        displayString (0,3, *equation[currentEquationIndex]);
+    //}
+
+    /* Display answer */
+    int answerValue = desiredEquationValue[currentEquationIndex];
+    displayString (answerPosition[currentEquationIndex], 3, answerValue);
+
+    /*
+    Serial.print ("Answer position: ");
+    Serial.print (answerPosition);
+    Serial.print (", Answer value: ");
+    Serial.println (answerValue);
+    */
+
+    /* Display NFC values */
     for (int i=0; i < NUM_NFC_DETECTOR; i++) {
         _updateNFCDetectorLCD (i);
     }
@@ -169,14 +170,15 @@ void NFCLock::displayEquationLCD(){
 
 void NFCLock::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
     uint8_t _nfcValue = detectorNFCValue[NFCDetectorID];
-    uint8_t _nfcPosition = _detectorNFCPosition[NFCDetectorID];
+    uint8_t _nfcPosition = _detectorNFCPosition[currentEquationIndex][NFCDetectorID];
     
-    //Serial.println ("Debug: _updateNFCDetectorLCD()");
-    //Serial.print ("NFC_DetectorID Position: ");
-    //Serial.print (_nfcPosition);
-    //Serial.print (", NFC_Value: ");
-    //Serial.println (_nfcValue);
-    
+    /*
+    Serial.println ("Debug: _updateNFCDetectorLCD()");
+    Serial.print ("NFC_DetectorID Position: ");
+    Serial.print (_nfcPosition);
+    Serial.print (", NFC_Value: ");
+    Serial.println (_nfcValue);
+    */
 
     if (_nfcValue == 0) displayString (_nfcPosition, 3, '?');
     else displayString (_nfcPosition, 3, _nfcValue);
@@ -184,33 +186,24 @@ void NFCLock::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
 } //end _updateNFCDetectorLCD
 
 void NFCLock::_clearDetectorNFCValue(){
-    for (int i=0; i<5; i++) detectorNFCValue[i] = 0;
+    for (int i=0; i<NUM_NFC_DETECTOR; i++) detectorNFCValue[i] = 0;
 } //end _clearDetectorNFCValue
 
 void NFCLock::_clearPattern(){
-    for (int i=0; i<5; i++) pattern[i] = '-';
+    for (int i=0; i<NUM_PATTERN; i++) pattern[i] = '-';
 } //end _clearPattern
 
 void NFCLock::_clearEquation(){
-    for (int i=0; i<5; i++){
-        for (int j=0; j < 4; j++){
-            equation[i][j] = '-';
-        }
-    }
+    for (int i=0; i<NUM_EQUATION; i++) *equation[i] = "";
 } //end _clearEquation
 
 /* Pattern changed */
 void NFCLock::notifyPatternChanged(){
     currentPatternName = nextPatternName;
-    nextPatternIndex += 1;
-    if (nextPatternIndex > (NUM_PATTERN -1)) nextPatternIndex = 0;
+    nextPatternIndex = nextPatternIndex + 1;
+    if (nextPatternIndex >= NUM_PATTERN) nextPatternIndex = 0;
 
     nextPatternName = pattern[nextPatternIndex];
-
-    // Send I2CMessage to notify LaserDriver
-    //Wire.beginTransmission ();
-
-    //displayPatternLCD();
 
     displayAllLCD();
 
@@ -218,10 +211,9 @@ void NFCLock::notifyPatternChanged(){
 
 /* Request change equation */
 void NFCLock::changeEquation(){
-    currentEquationIndex += 1;
-    if (currentEquationIndex > (NUM_EQUATION -1)) currentEquationIndex = 0;
+    currentEquationIndex = currentEquationIndex + 1;
+    if (currentEquationIndex >= NUM_EQUATION) currentEquationIndex = 0;
 
-    //displayEquationLCD();
     displayAllLCD();
 
 } //end changeEquation()
@@ -236,11 +228,10 @@ int NFCLock::getCounter(){
 
 /* Display string to LCD */
 void NFCLock::displayString (int col, int row, char message[]){
-
+    
     lcd->setCursor (col, row);
     lcd->print (message);
-
-} //end displayString()
+}
 
 void NFCLock::displayString (int col, int row, char message){
 
@@ -306,26 +297,30 @@ void NFCLock::_loadPatternData(){
     pattern[4] = 'E';
 } //end _loadPatternData()
 
-void NFCLock::_loadEquationData(){
+/*
+void NFCLock::_loadEquationData_old(){
     desiredEquationValue [0] = 11;
     equation[0][0] = '/';
     equation[0][1] = '+';
     equation[0][2] = '-';
     equation[0][3] = '+';
+    equation[0][4] = '=';
 
     desiredEquationValue[1] = 2;
     equation[1][0] = '/';
     equation[1][1] = '+';
     equation[1][2] = '/';
     equation[1][3] = '-';
+    equation[1][4] = '=';
 
     desiredEquationValue[2] = 16;
     equation[2][0] = '/';
     equation[2][1] = 'x';
     equation[2][2] = '-';
     equation[2][3] = '+';
+    equation[2][4] = '=';
 
-    /*
+    *
     equation[3][0] = '-';
     equation[3][1] = '/';
     equation[3][2] = 'x';
@@ -335,24 +330,64 @@ void NFCLock::_loadEquationData(){
     equation[4][1] = '/';
     equation[4][2] = '-';
     equation[4][3] = '+';
-    */
+    *
 
 } //end _loadEquationData()
+*/
+
+void NFCLock::_loadEquationData(){
+    desiredEquationValue[0] = 11;
+    desiredEquationValue[1] = 2;
+    desiredEquationValue[2] = 16;
+
+    answerPosition[0] = 14;
+    answerPosition[1] = 16;
+    answerPosition[2] = 14;
+
+    *equation[0] = "( / )+ - +  =";
+    *equation[1] = "( / )+( / )-  =";
+    *equation[2] = "( / )x - +  =";
+
+}
 
 void NFCLock::_loadNFCPositionData(){
-    _detectorNFCPosition[0] = 1;
-    _detectorNFCPosition[1] = 5;
-    _detectorNFCPosition[2] = 9;
-    _detectorNFCPosition[3] = 13;
-    _detectorNFCPosition[4] = 17;
+    /*
+    _detectorNFCPosition[0] = 0;
+    _detectorNFCPosition[1] = 2;
+    _detectorNFCPosition[2] = 6;
+    _detectorNFCPosition[3] = 10;
+    _detectorNFCPosition[4] = 14;
+    */
+
+    _detectorNFCPosition[0][0] = 1;
+    _detectorNFCPosition[0][1] = 3;
+    _detectorNFCPosition[0][2] = 6;
+    _detectorNFCPosition[0][3] = 8;
+    _detectorNFCPosition[0][4] = 10;
+
+    _detectorNFCPosition[1][0] = 1;
+    _detectorNFCPosition[1][1] = 3;
+    _detectorNFCPosition[1][2] = 7;
+    _detectorNFCPosition[1][3] = 9;
+    _detectorNFCPosition[1][4] = 12;
+
+    _detectorNFCPosition[2][0] = 1;
+    _detectorNFCPosition[2][1] = 3;
+    _detectorNFCPosition[2][2] = 6;
+    _detectorNFCPosition[2][3] = 8;
+    _detectorNFCPosition[2][4] = 10;
+
 } //end _loadLCDPositionData()
 
+/*
 void NFCLock::_loadEquationPositionData(){
-    _equationPosition[0] = 3;
-    _equationPosition[1] = 7;
-    _equationPosition[2] = 11;
-    _equationPosition[3] = 15;
+    _equationPosition[0] = 1;
+    _equationPosition[1] = 4;
+    _equationPosition[2] = 8;
+    _equationPosition[3] = 12;
+    _equationPosition[4] = 16;
 } //end _loadEquationPositionData()
+*/
 
 int NFCLock::equationOne(){
     return (

@@ -95,9 +95,6 @@ void loop() {
 
             } else {}
 
-        } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
-            forwardI2CMessage (KEYPAD_LOCK_I2C_ADDR);
-
         } else {}
 
         /* Reset receivedI2CMessage */

@@ -6,12 +6,14 @@
 #include "LiquidCrystal_I2C.h"
 #include "Wire.h"
 
-class NFCLock{
+#define MAX_COL 20
+#define MAX_ROW 4
+#define NUM_PATTERN 5
+#define NUM_EQUATION 3
+//#define NUM_EQUATION_POSITION 5
+#define NUM_NFC_DETECTOR 5
 
-    #define NUM_PATTERN 5
-    #define NUM_EQUATION 3
-    #define NUM_EQUATION_POSITION 4
-    #define NUM_NFC_DETECTOR 5
+class NFCLock{
 
     public:
         NFCLock();
@@ -25,13 +27,15 @@ class NFCLock{
 
         /* LCD variables */
         LiquidCrystal_I2C *lcd;
-        char equation[NUM_EQUATION][NUM_EQUATION_POSITION];
+        //char equation[NUM_EQUATION][NUM_EQUATION_POSITION];
+        char *equation[NUM_EQUATION][MAX_COL];
         char pattern[NUM_PATTERN];
         char currentPatternName;
         char nextPatternName;
         int nextPatternIndex;
         int currentEquationIndex;
         int desiredEquationValue[NUM_EQUATION];
+        int answerPosition[NUM_EQUATION];
 
         /* LCD methods */
         void initLCD();
@@ -58,8 +62,9 @@ class NFCLock{
         uint8_t _detected;
         uint8_t _detectorID;
         uint8_t _nfcValue;
-        int _detectorNFCPosition[NUM_NFC_DETECTOR];
-        int _equationPosition[NUM_EQUATION_POSITION];
+        //int _detectorNFCPosition[NUM_NFC_DETECTOR];
+        int _detectorNFCPosition[NUM_EQUATION][NUM_NFC_DETECTOR];
+        //int _equationPosition[NUM_EQUATION_POSITION];
 
         int _counter;
 
@@ -70,7 +75,7 @@ class NFCLock{
         void _loadPatternData();
         void _loadEquationData();
         void _loadNFCPositionData();
-        void _loadEquationPositionData();
+        //void _loadEquationPositionData();
 
         void _clearDetectorNFCValue();
         void _clearPattern();

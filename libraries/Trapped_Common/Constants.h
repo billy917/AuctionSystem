@@ -12,11 +12,13 @@ const int LOCK_MANAGER_I2C_ADDR = 106;
 const int BGM_I2C_ADDR = 107;
 const int KEYPAD_LOCK_I2C_ADDR = 108; //SafeKeypad
 const int KEYPAD_I2C_ADDR = 109;
-const int CLOCK_I2C_ADDR = 114; //same as keypad on purpose
 const int LASER_SENSOR_I2C_ADDR = 110;
 const int TRIP_LASER_I2C_ADDR = 111;
 /* NOTE: SKIP I2C_ADDR 112, see below */
 const int SOUNDFX_I2C_ADDR = 113;
+const int CLOCK_I2C_ADDR = 114; //same as keypad on purpose
+const int PIANO_LOCK_I2C_ADDR = 115;
+
 
 	// hardware I2C address
 	// - 7-Segment LED 0x70 -- 112

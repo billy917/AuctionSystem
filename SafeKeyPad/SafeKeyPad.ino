@@ -12,25 +12,26 @@
 #include "LiquidCrystal_I2C.h"
 #include "Timer.h"
 #include "NFCLock.h"
-//#include "pitches.h"
 
 const int MAX_COUNTER_VALUE = 10; //in seconds
 
 /* Initialize variables */
-uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
+uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 
 NFCLock nfcLock;
 
 Timer t;
-int countdownEvent;
-int counter = MAX_COUNTER_VALUE;
-volatile bool counterFlag = false;
+volatile int countdownEvent;
+volatile int counter = MAX_COUNTER_VALUE;
+volatile bool counterFlag = true;
+
 
 char songPassword[5] = {};
 int fail = 0;
 
-// Setup lock settings
+/* Setup lock settings */
 Adafruit_7segment matrix = Adafruit_7segment();
 
 const byte ROWS = 4; //four rows
@@ -54,18 +55,22 @@ volatile bool delayKeyPress = false;
 void setup(){
     Serial.begin (9600);
 
-    Serial.println ("Initializing NFC_Lock...");
-    nfcLock.setCounter (counter);
-    nfcLock.initLCD();
-    Serial.println ("----NFC_Lock initialize complete");
-    
-    delay (200);
-
     Serial.println ("Begin Wire setup...");
     Wire.begin (KEYPAD_LOCK_I2C_ADDR);
     Wire.onReceive (Received);
     Wire.onRequest (Request);
     Serial.println ("----Wire setup complete");
+    
+    delay (200);
+    
+    Serial.println ("Initializing NFC_Lock...");
+    nfcLock.setCounter (counter);
+    nfcLock.initLCD();
+
+    /* Show random equation at start-up */
+    nfcLock.currentEquationIndex = randomEquation();
+
+    Serial.println ("----NFC_Lock initialize complete");
 
     delay (250);
 
@@ -97,16 +102,23 @@ void setup(){
     delay (250);
 
     Serial.println ("Begin LCD countdown event");
-    countdownEvent = t.every (1000, updateCounterFlag);
+    countdownEvent = t.every (1000, updateCounter);
 
 } //end setup()
 
 void loop(){
 
     /* Get key input from keypad */
-    if (!delayKeyPress) keypad.getKey();
-    if (receivedI2CMessage) handleCommands();
-    if (counterFlag) updateCounter();
+    if (!delayKeyPress && counterFlag) keypad.getKey();
+
+    if (receivedI2CMessage){
+        for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+            localBuffer[i] = i2cDataBuffer[i];
+        }
+
+        handleCommands();
+    }
+        
     t.update();
 
 } //end loop()
@@ -126,19 +138,19 @@ void Received (int noBytes){
 void Request(){}
 
 void handleCommands(){
-    if (i2cDataBuffer[0] == MESSAGETYPEID_KEYPAD_LOCK){
+    if (localBuffer[0] == MESSAGETYPEID_KEYPAD_LOCK){
         /* Received reset command */
-        if (i2cDataBuffer[1] == MESSAGETYPEID_KEYPAD_LOCK_RESET){
+        if (localBuffer[1] == MESSAGETYPEID_KEYPAD_LOCK_RESET){
 
             resetAll();
 
-        } else if (i2cDataBuffer[1] ==
+        } else if (localBuffer[1] ==
             MESSAGETYPEID_KEYPAD_LOCK_GET_PASSWORD){
 
             /* Get song password */
             int i;
             for (i = 0; i < 4; i++) {
-                songPassword[i] = i2cDataBuffer[i+2];
+                songPassword[i] = localBuffer[i+2];
             }
 
             Serial.print ("Current password is ");
@@ -146,11 +158,12 @@ void handleCommands(){
 
         } else {}
 
-    } else if (i2cDataBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
-        nfcLock.handleI2CMessage (i2cDataBuffer);
+    } else if (localBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
+        nfcLock.handleI2CMessage (localBuffer);
 
         /* Whenever NFC_DETECTOR state changes */
         if (nfcLock.checkEquation()) {
+
             /* Unlock SHELF_LOCK */
             Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
             Wire.write (MESSAGETYPEID_LOCK);
@@ -168,22 +181,22 @@ void handleCommands(){
 
         }
 
-    } else if (i2cDataBuffer[0] == MESSAGETYPEID_LCD) {
+    } else if (localBuffer[0] == MESSAGETYPEID_LCD) {
         
-        if (i2cDataBuffer[1] == MESSAGETYPEID_LCD_CHANGE_PATTERN){
-            t.stop (countdownEvent);
+        // TODO: Have potential problems
+        
+        if (localBuffer[1] == MESSAGETYPEID_LCD_CHANGE_PATTERN){
             nfcLock.notifyPatternChanged();
-            countdownEvent = t.every (1000, updateCounter);
 
-        } else if (i2cDataBuffer[1] == MESSAGETYPEID_LCD_CHANGE_EQUATION){
+        } else if (localBuffer[1] == MESSAGETYPEID_LCD_CHANGE_EQUATION){
             nfcLock.changeEquation();
         }
+        
 
     } else {}
 
     /* Reset receivedi2cmessage */
     receivedI2CMessage = false;
-    clearI2CBuffer();
 } //end handleCommands()
 
 void initLEDs(){
@@ -253,8 +266,6 @@ void keypadEvent(KeypadEvent eKey){
 
           /* Stop LCD counter */
           t.stop (countdownEvent);
-          //nfcLock.lcd->clear();
-          //nfcLock.displayString (1,0, "Unlocked!");
 
           /* Unlock LOCK_MANAGER */
           Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
@@ -353,34 +364,36 @@ void canKeyPress(){
     t.stop (delayKeyPressEvent);
 }
 
-void updateCounterFlag(){
-    counterFlag = true;
-}
-
 void updateCounter(){
-    counter = counter - 1;
+    if (counterFlag){
+        counter = counter - 1;
 
-    if (counter <= 0) {
-        t.stop (countdownEvent);
+        if (counter <= 0) {
+            counterFlag = false;
 
-        counter = MAX_COUNTER_VALUE;
+            //Serial.println("Before counter reset");
+            counter = MAX_COUNTER_VALUE;
+            nfcLock.setCounter(counter);
 
-        nfcLock.notifyPatternChanged();
-        //nfcLock.changeEquation();
+            nfcLock.notifyPatternChanged();
+            //nfcLock.changeEquation();
+            
+        } else {
 
+            nfcLock.setCounter(counter);
+            nfcLock.displayAllLCD();
 
-        countdownEvent = t.every (1000, updateCounter);
-
+        }
+        
+        //Serial.println ("Debug: updateCounter()");
+        //Serial.print ("CountdownEvent: ");
+        //Serial.print (countdownEvent);
+        //Serial.print (", Counter: ");
+        //Serial.println (counter);
+        
+        counterFlag = true;
     }
 
-    nfcLock.setCounter(counter);
-    nfcLock.displayAllLCD();
-
-    //Serial.println ("Debug: updateCounter()");
-    //Serial.print ("Counter: ");
-    //Serial.println (counter);
-
-    counterFlag = false;
 }
 
 /* Reset to initial settings */
@@ -416,4 +429,16 @@ bool charArrayCompare (char one[], char two[]){
     }
 
     return equal;
+}
+
+int randomEquation(){
+    Serial.print ("Random equation ");
+
+    randomSeed(analogRead(A0));
+    int randomNumber = random(NUM_EQUATION - 1);
+
+    Serial.print (randomNumber);
+    Serial.println (" selected.");
+
+    return randomNumber;
 }
