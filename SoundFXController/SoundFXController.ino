@@ -22,6 +22,9 @@ int playEvent;
 
 int pin;
 
+/* Debug use only */
+//int inc = 0;
+
 void setup(){
     /* Setting up pins connecting to sound board */
     uint8_t i;
@@ -47,7 +50,17 @@ void setup(){
 }
 
 void loop(){
-    
+
+    /*
+    Serial.println ("Debug: playTrack");
+    receivedI2CMessage = true;
+    i2cDataBuffer[0] = MESSAGETYPEID_CLOCK;
+    i2cDataBuffer[1] = MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT;
+
+    if (inc > 10) inc = 0;
+    i2cDataBuffer[3] = inc;
+    */
+
     if (receivedI2CMessage){
         Serial.println ("Has received i2c message");
 
@@ -58,18 +71,27 @@ void loop(){
                     // play specified track
 
                     pin = trackList[i2cDataBuffer[3]] + PIN_OFFSET;
+
                     Serial.print ("Playing pin: ");
                     Serial.println (pin);
 
                     pinMode (pin, OUTPUT);
+                    
+                    delay (105);
 
-                    t.after (1000, stopTrack);
+                    Serial.print ("Stop playing pin: ");
+                    Serial.println (pin);
+
+                    pinMode (pin, INPUT);
                 
             }
         }
         receivedI2CMessage = false;
         clearI2CBuffer();
     }
+
+    //t.update();
+    //inc += 1;
 
 }
 
@@ -97,8 +119,4 @@ void clearI2CBuffer(){
     for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
         i2cDataBuffer[i] = 0;
     }
-}
-
-void stopTrack(){
-    pinMode (pin, INPUT);
 }
