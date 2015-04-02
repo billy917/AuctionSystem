@@ -8,6 +8,7 @@
 #include <LaserSensorController.h>
 #include <Constants.h>
 #include <Wire.h>
+#include <XBee.h>
 
 LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 	_isPrimary = isPrimary;
@@ -18,20 +19,35 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 	
 	for (int i=0; i<3; i++){
 		_sensorEnabled[i] = false;
-		_sensorTimeTick[i] = 1;
+		_sensorTimeTick[i] = 1;		
+		_interruptIds[i] = 0;
+		_interruptFuncs[i] = NULL;
+		_sensorPins[i] = 0;
+	}
+
+	_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
+	_laser2ZBTxRequest = ZBTxRequest(_laser2Addr, _xBeePayload, sizeof(_xBeePayload));
+	for (int i=0;i<4;i++){
+		_xBeePayload[i] = 0;
 	}
 }
 
-void LaserSensorController::setSensorPin(int sensorId, int pin, uint8_t i2cAddress){
+void LaserSensorController::setXBeeReference(XBee* xbee_pointer){
+	_xbee = xbee_pointer;
+}
+
+void LaserSensorController::setSensorPin(int sensorId, int interruptId, int pin, uint8_t i2cAddress, void(*interruptFunc)() ){
 	_sensorIds[_numRegisteredSensors] = sensorId;
 	_sensorPins[_numRegisteredSensors] = pin;
 	_sensorI2CAddresses[_numRegisteredSensors] = i2cAddress;
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
 	_sensors[_numRegisteredSensors]->begin(i2cAddress);
-	_sensors[_numRegisteredSensors]->setTiming(0,0);	
+	_sensors[_numRegisteredSensors]->setTiming(1,0);	
 	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
 	_sensors[_numRegisteredSensors]->clearInterrupt();
-	_sensors[_numRegisteredSensors]->setPowerUp();
+	_sensors[_numRegisteredSensors]->setPowerUp();	
+	_interruptIds[_numRegisteredSensors] = interruptId;
+	_interruptFuncs[_numRegisteredSensors] = interruptFunc;
 	_numRegisteredSensors++;
 	Serial.print("Set sensorId:"); Serial.print(sensorId); Serial.print(" - pin:"); Serial.println(pin);
 }
@@ -55,7 +71,7 @@ void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 void LaserSensorController::pinInterrupted(int pin){
 	Serial.print("Interrupted:");Serial.println(pin);
 	int sensorIndex = _getSensorIndexByPin(pin);
-	if(-1 < sensorIndex){
+	if(-1 < sensorIndex){		
 		int sensorId = _sensorIds[sensorIndex];
 		trippedWire(sensorId);
 	}
@@ -82,43 +98,54 @@ int LaserSensorController::_getSensorIndexById(int sensorId){
 void LaserSensorController::enableSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);	
 	if(-1 < sensorIndex){
-		calibrateSensorByIndex(sensorIndex);
-		_sensorEnabled[sensorIndex] = true;
+		if(calibrateSensorByIndex(sensorIndex)){
+			_sensorEnabled[sensorIndex] = true;
+			attachInterrupt(_interruptIds[sensorIndex], _interruptFuncs[sensorIndex], FALLING);		 
+		}
 	}
 }
 
 void LaserSensorController::disableSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){
-		_sensorEnabled[sensorIndex] = false;
-		SFE_TSL2561* sensor = _sensors[sensorIndex];
-		if(NULL != sensor){
-			sensor->setInterruptControl(0,1);
-		}
+		if(_sensorEnabled[sensorIndex]){
+			detachInterrupt(_interruptIds[sensorIndex]);
+			_sensorEnabled[sensorIndex] = false;
+			SFE_TSL2561* sensor = _sensors[sensorIndex];
+			if(NULL != sensor){
+				sensor->setInterruptControl(0,1);
+			}
+		}	
 	}
 }
 
-void LaserSensorController::calibrateSensorBySensorId(int sensorId){
+bool LaserSensorController::calibrateSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){		
-		calibrateSensorByIndex(sensorIndex);
+		return calibrateSensorByIndex(sensorIndex);
 	}
+	return false;
 }
 
-void LaserSensorController::calibrateSensorByIndex(int sensorIndex){
+bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
 	SFE_TSL2561* sensor = _sensors[sensorIndex];
 	if(NULL != sensor){
-		calibrateSensor(sensor);
+		return calibrateSensor(sensor);
 	}
+	return false;
 }
 
-void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
+bool LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 	if(NULL != sensor){
+		delay(1000);
 		unsigned int data0, data1;
-		sensor->getData(data0,data1);
+		boolean successRead = sensor->getData(data0,data1);
+		if(!successRead){
+			return false;
+		}
 		int threshold1 = data0/3;
 		
-		delay(500);
+		delay(1000);
 		sensor->getData(data0,data1);
 		int threshold2 = data0/3;
 		
@@ -130,6 +157,7 @@ void LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 		Serial.print(data1);Serial.print("-");Serial.print(threshold);Serial.print("-");
 		Serial.print(control);Serial.print("-");Serial.println(setThreshold);	
 	}
+	return true;
 }
 
 unsigned int LaserSensorController::getReadings(int sensorId){
@@ -153,17 +181,12 @@ void LaserSensorController::trippedWire(int sensorId){
 			
 			if(_lastTrippedTime == 0 || currTime - _lastTrippedTime > 1000){
 				_lastTrippedTime = currTime;	
-							
-				if(_controllerId == 2){					
-					Wire.beginTransmission(CLOCK_I2C_ADDR);
-				} else {
-					Wire.beginTransmission(NFC_MANAGER_I2C_ADDR); // transmit to device #100 (NFCDetectorManager
-				}				
-				Wire.write(MESSAGETYPEID_CLOCK);
-				Wire.write(MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT); 				
-				Wire.write(1);
-				Wire.write(sensorId);
-				Wire.endTransmission();
+													
+				_xBeePayload[0] = MESSAGETYPEID_CLOCK;
+				_xBeePayload[1] = MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT; 				
+				_xBeePayload[2] = 1;
+				_xBeePayload[3] = sensorId;
+				_xbee->send(_laser2ZBTxRequest);
 			}
 		}
 		_sensors[sensorIndex]->clearInterrupt();

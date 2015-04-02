@@ -42,6 +42,15 @@ class LaserController
     XBeeAddress64 _toolAddr;
     ZBTxRequest _toolZBTxRequest;
 
+    XBeeAddress64 _sensor1Addr;
+    ZBTxRequest _sensor1ZBTxRequest;
+
+    XBeeAddress64 _sensor2Addr;
+    ZBTxRequest _sensor2ZBTxRequest;
+
+    XBeeAddress64 _sensor3Addr;
+    ZBTxRequest _sensor3ZBTxRequest;
+
     bool _isLaserIndexLocal(int laserId);
     void _turnOnLocalLaser(int laserId);
     void _turnOnLocalLaserByIndexId(int indexId);

@@ -38,6 +38,13 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 
 	_toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66); //HackTool xBee 
 	_toolZBTxRequest = ZBTxRequest(_toolAddr, _xBeePayload, sizeof(_xBeePayload));
+
+	_sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); //Sensor1 xBee 
+	_sensor1ZBTxRequest = ZBTxRequest(_sensor1Addr, _xBeePayload, sizeof(_xBeePayload));
+
+	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor1 xBee 
+	_sensor2ZBTxRequest = ZBTxRequest(_sensor2Addr, _xBeePayload, sizeof(_xBeePayload));
+
 }
 
 bool LaserController::canHandleMessageType(uint8_t messageTypeId){
@@ -102,37 +109,17 @@ void LaserController::_turnOffLocalLaserByIndexId(int indexId){
 void LaserController::_switchSensorState(int laserId, bool on){
 	if(_enableSensor && GLOBAL_ENABLE_SENSOR[laserId-1]){
 		int sensorId = GLOBAL_SENSOR_ID[laserId-1];
-		int sensorManagerId = GLOBAL_SENSOR_MANAGER_ID[laserId-1];
-		int laserManagerId = GLOBAL_LASER_MANAGER_ID[laserId-1];
-		if(sensorManagerId == laserManagerId && sensorManagerId != 1){
-			// same i2c bus, fwd command via i2c
-			Wire.beginTransmission(LASER_SENSOR_I2C_ADDR); // transmit to sensor controller
-			Wire.write(MESSAGETYPEID_LASER_SENSOR);
-			if(on){
-				Wire.write(MESSAGETYPEID_LASER_SENSOR_ON); 
-			} else {
-				Wire.write(MESSAGETYPEID_LASER_SENSOR_OFF); 
-			}
-			Wire.write(sensorId);
-			Wire.endTransmission();
+		int sensorManagerId = GLOBAL_SENSOR_MANAGER_ID[laserId-1];		
+		_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+		_xBeePayload[1] = on?MESSAGETYPEID_LASER_SENSOR_ON:MESSAGETYPEID_LASER_SENSOR_OFF;
+		_xBeePayload[2] = sensorId;
 
-			_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
-			_xBeePayload[1] = on?MESSAGETYPEID_LASER_SENSOR_ON:MESSAGETYPEID_LASER_SENSOR_OFF;
-			_xBeePayload[2] = sensorId;
-			_xbee->send(_toolZBTxRequest);
-		} else {
-			// on different i2c bus, fwd comand via xBee	
-			_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
-			_xBeePayload[1] = on?MESSAGETYPEID_LASER_SENSOR_ON:MESSAGETYPEID_LASER_SENSOR_OFF;
-			_xBeePayload[2] = sensorId;
-
-			if(0 == sensorManagerId){		
-				_xbee->send(_laser1ZBTxRequest);
-			} else if (1 == sensorManagerId){
-				_xbee->send(_nfcManagerZBTxRequest);
-			} else if (2 == sensorManagerId){
-				_xbee->send(_laser2ZBTxRequest);
-			}
+		if(sensorManagerId == 0){			
+			_xbee->send(_sensor1ZBTxRequest);
+		} else if( sensorManagerId == 1 ) {
+			_xbee->send(_sensor2ZBTxRequest);
+		} else if( sensorManagerId == 2 ) {
+			//_xbee->send(_sensor3ZBTxRequest);
 		}
 	}
 }
