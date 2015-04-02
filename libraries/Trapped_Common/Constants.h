@@ -222,6 +222,9 @@ XBee
 0x0013a200, 0x40c04ef1 - laser2
 0x0013a200, 0x40c04edf - laser1
 0x0013a200, 0x40b9df66 - Tool
+0x0013a200, 0x40cab3f1 - Sensor1
+0x0013a200, 0x40bef834 - Sensor2
+
 
 */
 

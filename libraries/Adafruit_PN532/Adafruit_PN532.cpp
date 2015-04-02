@@ -859,8 +859,6 @@ uint8_t Adafruit_PN532::mifareultralight_ReadPage (uint8_t page, uint8_t * buffe
   return 1;
 }
 
-
-
 /************** high level SPI */
 
 

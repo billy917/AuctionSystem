@@ -62,7 +62,11 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
 				detectedValue = 0;
 			}				
+
+            if (_managerStates[data[1]] != detectedValue){
 			_notifyPrimaryManager(data[1], detectedValue != 0, detectedValue);
+            }
+
 			if(_isPrimary){
 				// any local detector changes should check for potential lock updates
 				_managerStates[data[1]] = detectedValue; // assume data[1] within 1 - 5
