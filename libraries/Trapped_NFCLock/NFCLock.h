@@ -22,6 +22,7 @@ class NFCLock{
         
         volatile bool hasReceivedMessage;
         void handleI2CMessage (uint8_t data[]);
+        bool canCheckEquation();
         bool checkEquation();
         int equationOne(), equationTwo(), equationThree();
 

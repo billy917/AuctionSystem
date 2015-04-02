@@ -34,13 +34,6 @@ void NFCLock::initLCD(){
 
     currentEquationIndex = 0;
 
-
-    lcd->clear();
-
-    displayPatternLCD();
-    displayCounterLCD();
-    displayEquationLCD();
-
 } //end _initLCD
 
 void NFCLock::handleI2CMessage (uint8_t data[]){
@@ -68,25 +61,41 @@ void NFCLock::_manageNFC(){
         detectorNFCValue[offsetPosition] = 0;
 
     }
-        _updateNFCDetectorLCD (offsetPosition);
+
+        // break because didn't clear lcd
+        //_updateNFCDetectorLCD (offsetPosition);
+        
+        displayAllLCD();
 
 } //end _manageNFC
 
-bool NFCLock::checkEquation(){
-    switch (currentEquationIndex){
-        case 0: return (equationOne() == 
-            desiredEquationValue[currentEquationIndex]);
-            break;
-        case 1: return (equationTwo() == 
-            desiredEquationValue[currentEquationIndex]);
-            break;
-        case 2: return (equationThree() == 
-            desiredEquationValue[currentEquationIndex]);
-            break;
-
-        default: return false; break;
+bool NFCLock::canCheckEquation(){
+    for (int i=0; i < NUM_NFC_DETECTOR; i++){
+        if (detectorNFCValue[i] == 0){
+            return false;
+        }
     }
+    return true;
+}
 
+bool NFCLock::checkEquation(){
+    if (canCheckEquation()){
+        switch (currentEquationIndex){
+            case 0: return (equationOne() == 
+                desiredEquationValue[currentEquationIndex]);
+                break;
+            case 1: return (equationTwo() == 
+                desiredEquationValue[currentEquationIndex]);
+                break;
+            case 2: return (equationThree() == 
+                desiredEquationValue[currentEquationIndex]);
+                break;
+
+            default: return false; break;
+        }
+    } else {
+        return false;
+    }
 
 } //end checkEquation
 
@@ -104,8 +113,8 @@ void NFCLock::displayPatternLCD(){
 
     //Serial.println ("Debug: displayPatternLCD()");
 
-    displayString (0,0, "Pattern:");
-    displayString (9,0, currentPatternName);
+    displayString (0,0, "Laser Pattern:");
+    displayString (15,0, currentPatternName);
     displayString (0,1, "Next Pattern:");
     displayString (14,1, nextPatternName);
 }

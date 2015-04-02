@@ -25,7 +25,10 @@ NFCLock nfcLock;
 Timer t;
 volatile int countdownEvent;
 volatile int counter = MAX_COUNTER_VALUE;
-volatile bool counterFlag = true;
+/* Counter lock used by other methods */
+volatile bool counterFlag = false;
+/* Counter lock used by Timer */
+volatile bool counterLock = true;
 
 
 char songPassword[5] = {};
@@ -52,6 +55,8 @@ bool locked = true;
 int delayKeyPressEvent;
 volatile bool delayKeyPress = false;
 
+volatile bool checkEquationState = false;
+
 void setup(){
     Serial.begin (9600);
 
@@ -60,9 +65,9 @@ void setup(){
     Wire.onReceive (Received);
     Wire.onRequest (Request);
     Serial.println ("----Wire setup complete");
-    
+
     delay (200);
-    
+
     Serial.println ("Initializing NFC_Lock...");
     nfcLock.setCounter (counter);
     nfcLock.initLCD();
@@ -70,6 +75,7 @@ void setup(){
     /* Show random equation at start-up */
     nfcLock.currentEquationIndex = randomEquation();
 
+    nfcLock.displayAllLCD();
     Serial.println ("----NFC_Lock initialize complete");
 
     delay (250);
@@ -109,7 +115,7 @@ void setup(){
 void loop(){
 
     /* Get key input from keypad */
-    if (!delayKeyPress && counterFlag) keypad.getKey();
+    if (!delayKeyPress) keypad.getKey();
 
     if (receivedI2CMessage){
         for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
@@ -117,8 +123,13 @@ void loop(){
         }
 
         handleCommands();
+
+        /* Reset receivedi2cmessage */
+        receivedI2CMessage = false;
     }
-        
+
+    if (!counterFlag && !counterLock) handleCounter();
+
     t.update();
 
 } //end loop()
@@ -159,7 +170,11 @@ void handleCommands(){
         } else {}
 
     } else if (localBuffer[0] == MESSAGETYPEID_NFC_MANAGE){
+
+        counterFlag = true;
+        counterLock = true;
         nfcLock.handleI2CMessage (localBuffer);
+        counterFlag = false;
 
         /* Whenever NFC_DETECTOR state changes */
         if (nfcLock.checkEquation()) {
@@ -171,32 +186,40 @@ void handleCommands(){
             Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
             Wire.endTransmission();
 
+            checkEquationState = true;
+
         } else {
-            /* Lock SHELF_LOCK */
-            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
-            Wire.write (MESSAGETYPEID_LOCK);
-            Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
-            Wire.write (MESSAGETYPEID_LOCK_LOCK);
-            Wire.endTransmission();
+            if (checkEquationState){
+                /* Lock SHELF_LOCK */
+                Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+                Wire.write (MESSAGETYPEID_LOCK);
+                Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
+                Wire.write (MESSAGETYPEID_LOCK_LOCK);
+                Wire.endTransmission();
+
+                checkEquationState = false;
+            }
 
         }
 
     } else if (localBuffer[0] == MESSAGETYPEID_LCD) {
-        
+
         // TODO: Have potential problems
-        
+
+        counterFlag = true;
         if (localBuffer[1] == MESSAGETYPEID_LCD_CHANGE_PATTERN){
             nfcLock.notifyPatternChanged();
 
         } else if (localBuffer[1] == MESSAGETYPEID_LCD_CHANGE_EQUATION){
             nfcLock.changeEquation();
         }
-        
+
+        counterFlag = false;
+
 
     } else {}
 
-    /* Reset receivedi2cmessage */
-    receivedI2CMessage = false;
+    
 } //end handleCommands()
 
 void initLEDs(){
@@ -249,7 +272,7 @@ void keypadEvent(KeypadEvent eKey){
       }
 
       if(4 == passwordLength){
-        
+
         delayKeyPress = true;
 
         /* If key input IS song password */
@@ -273,7 +296,7 @@ void keypadEvent(KeypadEvent eKey){
           Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
           Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
           Wire.endTransmission();
-          
+
           locked = false;
 
           Serial.println("Unlocked!");
@@ -283,7 +306,7 @@ void keypadEvent(KeypadEvent eKey){
           Serial.println("Failed");
 
           delayKeyPressEvent = t.after (2000, canKeyPress);
-          
+
           /* Increment fail counter by 1 */
           fail += 1;
           turnOnRed(fail);
@@ -311,10 +334,10 @@ void keypadEvent(KeypadEvent eKey){
           Serial.print (3 - fail);
           Serial.print (" time(s) left! The password is ");
           Serial.println (songPassword);
-          
+
         }
       }
-      
+
       if ('*' == eKey || '#' == eKey){
         locked = true;
         clearPassword();
@@ -365,34 +388,43 @@ void canKeyPress(){
 }
 
 void updateCounter(){
-    if (counterFlag){
-        counter = counter - 1;
+    /* if no other methods are running and
+        counter lock is "locked" (true), unlock
+        to update counter on LCD
+    */
 
-        if (counter <= 0) {
-            counterFlag = false;
+    if (!counterFlag && counterLock) counterLock = false;
+}
 
-            //Serial.println("Before counter reset");
-            counter = MAX_COUNTER_VALUE;
-            nfcLock.setCounter(counter);
+void handleCounter(){
+    counterFlag = true;
+    counterLock = true;
 
-            nfcLock.notifyPatternChanged();
-            //nfcLock.changeEquation();
-            
-        } else {
+    counter = counter - 1;
 
-            nfcLock.setCounter(counter);
-            nfcLock.displayAllLCD();
+    if (counter <= 0) {
 
-        }
-        
-        //Serial.println ("Debug: updateCounter()");
-        //Serial.print ("CountdownEvent: ");
-        //Serial.print (countdownEvent);
-        //Serial.print (", Counter: ");
-        //Serial.println (counter);
-        
-        counterFlag = true;
+        //Serial.println("Before counter reset");
+        counter = MAX_COUNTER_VALUE;
+        nfcLock.setCounter(counter);
+
+        nfcLock.notifyPatternChanged();
+        //nfcLock.changeEquation();
+
+    } else {
+
+        nfcLock.setCounter(counter);
+        nfcLock.displayAllLCD();
+
     }
+
+    //Serial.println ("Debug: updateCounter()");
+    Serial.print ("CountdownEvent: ");
+    Serial.print (countdownEvent);
+    Serial.print (", Counter: ");
+    Serial.println (counter);
+    
+    counterFlag = false;
 
 }
 
