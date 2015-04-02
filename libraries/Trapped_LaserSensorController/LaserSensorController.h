@@ -24,7 +24,7 @@ class LaserSensorController
 
     bool calibrateSensorByIndex(int sensorIndex);
     bool calibrateSensorBySensorId(int sensorId);
-    bool calibrateSensor(SFE_TSL2561* sensor);
+    uint8_t calibrateSensor(SFE_TSL2561* sensor);
     void enableSensorBySensorId(int sensorId);
     void disableSensorBySensorId(int sensorId);
     void trippedWire(int sensorId);
@@ -38,17 +38,22 @@ class LaserSensorController
     int _sensorIds[3];
     int _sensorPins[3];
     int _interruptIds[3];
-    bool _sensorEnabled[3];
+    volatile bool _sensorEnabled[3];
     SFE_TSL2561* _sensors[3];    
     int _sensorTimeTick[3];
+    uint8_t _sensorState[3];
     XBee* _xbee;
     XBeeAddress64 _laser2Addr;
     ZBTxRequest _laser2ZBTxRequest;
-    uint8_t _xBeePayload[4];
+    XBeeAddress64 _toolAddr;
+    ZBTxRequest _toolZBTxRequest;
+    uint8_t _xBeePayload[9];
     void (*_interruptFuncs[3])();
+    volatile bool _debugMode;
 
     int _getSensorIndexByPin(int sensorPin);
     int _getSensorIndexById(int sensorId);
+    void _updateToolStatus();
 
 };
 

@@ -41,6 +41,7 @@ ZBRxResponse rx = ZBRxResponse();
 uint8_t commandData[] = {0,0};
 
 int patternIndex = 0;
+
 bool laserState[9] = {true,true,true,true,true,true,true,true,true};
 bool lockState[4] = {true, false, false, false};
 uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
@@ -50,6 +51,8 @@ XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf); // send comman
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); // send commands to LaserDriver2
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
+XBeeAddress64 sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); // send commands to LaserDriver2
+ZBTxRequest sensor1Tx = ZBTxRequest(sensor1Addr, xbeePayload, sizeof(xbeePayload));
 
 volatile boolean enableSensor = false;
 volatile boolean laserEnabled = false;
@@ -108,7 +111,7 @@ void drawMenu(){
       drawNFCDetector();
       break;
     case CalibrateLaserSensor:
-      drawCalibrateLaserSensor();
+      drawSensorDetails();
   }
 }
 
@@ -436,20 +439,20 @@ void drawToggleLock(){
   tft.print(")\n");
 }
 
-void drawCalibrateLaserSensor(){
+uint8_t sensorState[9]={0,0,0,0,0,0,0,0,0};
+
+void drawSensorDetails(){
   tft.setTextColor(ST7735_WHITE);
   tft.setTextSize(2);
   tft.setCursor(10,0);
-  tft.println("\nCalibrate\n");
+  tft.println("Sensors");
   
   tft.setTextSize(1); 
-  if (0 == currentRowSelection){
-      tft.print("->");
-  }
-  tft.println("Calibrate All Sensors");
+  if (0 == currentRowSelection) tft.print("->");
+  tft.println("Refresh data");
   for(int i=1;i<=9;i++){
     if (i == currentRowSelection) tft.print("->");
-    tft.print("Sensor "); tft.println(i);
+    tft.print("Sensor "); tft.print(i); tft.print(": "); tft.println(sensorState[i-1]);
   }
 }
 
@@ -478,7 +481,7 @@ void drawMainMenu(){
   if(3 == currentRowSelection){
     tft.print("->");
   }
-  tft.println("4) Calibrate Sensors");
+  tft.println("4) Sensor Details");
   
   if(4 == currentRowSelection){
     tft.print("->");
@@ -560,16 +563,12 @@ boolean handleJoystickAction(int joystickState){
   return updated;
 }
 
-void handleCalibrateLaserSensor(){
+void handleSensorInfo(){
     if(0 == currentRowSelection){
-        for (int i=0; i<5; i++){
-            calibrateLaserSensor(i);
-            delay (250);
-        }
-    } else {
-        
-        calibrateLaserSensor (currentRowSelection);
-    }
+        xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+        xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_REQUEST;
+        xbee.send (sensor1Tx);
+    } 
 }
 
 void calibrateLaserSensor (uint8_t laserSensorId){
@@ -632,7 +631,7 @@ boolean handleMenuSelection(){
     } else if (currentRowSelection == 3){
         currentMenu = CalibrateLaserSensor;
         currentRowSelection = 0;
-        drawCalibrateLaserSensor();
+        drawSensorDetails();
         updated = true;
     } else if(currentRowSelection == 4){
       currentMenu = NFCDetector;
@@ -684,7 +683,7 @@ boolean handleMenuSelection(){
       handleToggleLaserPattern();
       updated = true;    
   } else if (currentMenu == CalibrateLaserSensor){
-      handleCalibrateLaserSensor();
+      handleSensorInfo();
       updated=true;
   } else if (currentMenu == NFCDetector){
       requestNewNFCData(); 
@@ -834,10 +833,18 @@ boolean handleXBeeMsg(){
     } else if (MESSAGETYPEID_LASER_SENSOR == rx.getData(0)){
       if(MESSAGETYPEID_LASER_SENSOR_ON == rx.getData(1)){
         sensorOn = true; 
+        sensorId = rx.getData(2);
       } else if(MESSAGETYPEID_LASER_SENSOR_OFF == rx.getData(1)){
         sensorOn = false; 
+        sensorId = rx.getData(2);
+      } else if (MESSAGETYPEID_LASER_SENSOR_STATUS == rx.getData(1)){
+        int numPoints = rx.getData(2);
+        for (int i=0; i<numPoints; i++){
+          uint8_t sensorId = rx.getData((i*2)+3);
+          uint8_t sensorValue = rx.getData((i*2)+4);
+          sensorState[sensorId-1] = sensorValue;
+        }
       }
-      sensorId = rx.getData(2);
       return true;
     }
   }   

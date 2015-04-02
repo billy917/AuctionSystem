@@ -68,15 +68,21 @@ bool LaserController::_isLaserIndexLocal(int laserId){
 
 void LaserController::turnOnAllLaser(){
 	for(int i=0;i<_numRegisteredLasers; i++){
-		_turnOnLocalLaserByIndexId(i);
+		_turnOnLocalLaserByIndexId(i);		
+	}
+	delay(2500);
+	for(int i=0;i<_numRegisteredLasers; i++){		
 		_turnOnSensor(_localLaserIds[i]);				
 	}
 }
 
 void LaserController::turnOffAllLaser(){
-	for(int i=0;i<_numRegisteredLasers; i++){
-		_turnOffLocalLaserByIndexId(i);
+	for(int i=0;i<_numRegisteredLasers; i++){		
 		_turnOffSensor(_localLaserIds[i]);
+	}
+	delay(2500);
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOffLocalLaserByIndexId(i);		
 	}
 }
 
@@ -139,9 +145,11 @@ void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){
 		if(_isLaserIndexLocal(data[2])){
 			if(MESSAGETYPEID_LASER_CONTROL_ON == data[1]){
 				_turnOnLocalLaser(data[2]);
+				delay(2500);
 				_turnOnSensor(data[2]);
 			} else if (MESSAGETYPEID_LASER_CONTROL_OFF == data[1]){
 				_turnOffSensor(data[2]);
+				delay(2500);
 				_turnOffLocalLaser(data[2]);
 			}
 		} else if(_isPrimary) {

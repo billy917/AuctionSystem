@@ -36,7 +36,7 @@ void setup() {
   Serial.begin(9600);
   Serial2.begin(9600);
   xbee.begin(Serial2);   
-  laserSensorController.setXBeeReference(&xbee);\
+  laserSensorController.setXBeeReference(&xbee);
   
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);

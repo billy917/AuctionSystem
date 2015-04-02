@@ -61,11 +61,13 @@ const uint8_t MESSAGETYPEID_NFC_TOOL_REQUEST = 1; // Tool -> PrimaryManager
 const uint8_t MESSAGETYPEID_NFC_TOOL_STATUS = 2; // PrimaryManager -> Tool
 const uint8_t MESSAGETYPEID_NFC_TOOL_DEBUG = 3; // Tool -> PrimaryManager set DebugMode
 
-const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Laser1
-const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 
-const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> LaserController
-const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Sensor1
+const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Sensor1 -> Tool
+const uint8_t MESSAGETYPEID_LASER_SENSOR_DEBUG = 3; // Tool -> Sensor1
+
+const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> SensorController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> SensorController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
@@ -103,10 +105,19 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
-const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,false,false,false,false,false,false};
+const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,false,true,false,false,false,false};
 
 const int CLOCK_MODE_PAUSE = 1;
 const int CLOCK_MODE_COUNTDOWN = 2;
+
+const uint8_t SENSOR_STATE_NONE = 0;
+const uint8_t SENSOR_STATE_INIT = 1;
+const uint8_t SENSOR_STATE_ON = 2;
+const uint8_t SENSOR_STATE_OFF = 3;
+const uint8_t SENSOR_STATE_CANNOT_READ_DATA = 4;
+const uint8_t SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL = 5;
+const uint8_t SENSOR_STATE_CANNOT_SET_THRESHOLD = 6;
+const uint8_t SENSOR_STATE_CANNOT_CLEAR_INTERRUPT = 7;
 
 /*
 Clock Control message protocol

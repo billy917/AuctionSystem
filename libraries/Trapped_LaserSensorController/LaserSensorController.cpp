@@ -15,6 +15,7 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 	_controllerId = controllerId; 
 	_numRegisteredSensors = 0;
 	_lastTrippedTime = 0;
+	_debugMode = true;
 	//This controller is meant to be used on a Mega where pin D2(0), D3(1), D19(4) are used for interrupts
 	
 	for (int i=0; i<3; i++){
@@ -23,11 +24,16 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 		_interruptIds[i] = 0;
 		_interruptFuncs[i] = NULL;
 		_sensorPins[i] = 0;
+		_sensorState[i] = SENSOR_STATE_NONE;
 	}
 
 	_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
 	_laser2ZBTxRequest = ZBTxRequest(_laser2Addr, _xBeePayload, sizeof(_xBeePayload));
-	for (int i=0;i<4;i++){
+
+	_toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66); //HackTool xBee 
+	_toolZBTxRequest = ZBTxRequest(_toolAddr, _xBeePayload, sizeof(_xBeePayload));
+
+	for (int i=0;i<9;i++){
 		_xBeePayload[i] = 0;
 	}
 }
@@ -46,6 +52,7 @@ void LaserSensorController::setSensorPin(int sensorId, int interruptId, int pin,
 	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
 	_sensors[_numRegisteredSensors]->clearInterrupt();
 	_sensors[_numRegisteredSensors]->setPowerUp();	
+	_sensorState[_numRegisteredSensors] = SENSOR_STATE_INIT;
 	_interruptIds[_numRegisteredSensors] = interruptId;
 	_interruptFuncs[_numRegisteredSensors] = interruptFunc;
 	_numRegisteredSensors++;
@@ -53,6 +60,9 @@ void LaserSensorController::setSensorPin(int sensorId, int interruptId, int pin,
 }
 
 void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
+	if(_debugMode){
+		Serial.print("DEBUG::");
+	}
 	Serial.print("Handle msg: ");
 	Serial.print(data[0]); Serial.print("-");
 	Serial.print(data[1]); Serial.print("-");
@@ -64,8 +74,32 @@ void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 			disableSensorBySensorId(data[2]);
 		} else if(MESSAGETYPEID_LASER_SENSOR_CALIBRATE == data[1]){		
 			calibrateSensorBySensorId(data[2]);			
+		} else if(MESSAGETYPEID_LASER_SENSOR_DEBUG == data[1]){
+			_debugMode = !_debugMode;
+		} else if (!_debugMode && MESSAGETYPEID_LASER_SENSOR_REQUEST == data[1]){
+			_updateToolStatus();
 		}
 	}
+	if(_debugMode){
+		//update hack tool on sensor details
+		_updateToolStatus();
+	}
+}
+
+void LaserSensorController::_updateToolStatus(){
+	Serial.println("== Sensor State ==");
+	_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+	_xBeePayload[1] = MESSAGETYPEID_LASER_SENSOR_STATUS;
+	_xBeePayload[2] = _numRegisteredSensors;
+	Serial.print("Num sensors:");Serial.println(_numRegisteredSensors);
+	for(int i=0; i<_numRegisteredSensors; i++){
+		_xBeePayload[3+(i*2)] = _sensorIds[i];		
+		_xBeePayload[3+(i*2)+1] = _sensorState[i];		
+		Serial.print(_sensorIds[i]); Serial.print("-");Serial.print(_sensorEnabled[i]); Serial.print("-");Serial.println(_sensorState[i]);
+	}
+	_xbee->send(_toolZBTxRequest);
+
+	Serial.println("============");
 }
 
 void LaserSensorController::pinInterrupted(int pin){
@@ -97,20 +131,22 @@ int LaserSensorController::_getSensorIndexById(int sensorId){
 
 void LaserSensorController::enableSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);	
-	if(-1 < sensorIndex){
+	if(-1 < sensorIndex){		
 		if(calibrateSensorByIndex(sensorIndex)){
-			_sensorEnabled[sensorIndex] = true;
 			attachInterrupt(_interruptIds[sensorIndex], _interruptFuncs[sensorIndex], FALLING);		 
+			_sensorEnabled[sensorIndex] = true;			
+			Serial.print("Sensor state:"); Serial.println(_sensorState[sensorIndex]);
 		}
 	}
 }
 
 void LaserSensorController::disableSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
-	if(-1 < sensorIndex){
+	if(-1 < sensorIndex){		
 		if(_sensorEnabled[sensorIndex]){
-			detachInterrupt(_interruptIds[sensorIndex]);
 			_sensorEnabled[sensorIndex] = false;
+			_sensorState[sensorIndex] = SENSOR_STATE_OFF;	
+			detachInterrupt(_interruptIds[sensorIndex]);								
 			SFE_TSL2561* sensor = _sensors[sensorIndex];
 			if(NULL != sensor){
 				sensor->setInterruptControl(0,1);
@@ -130,34 +166,51 @@ bool LaserSensorController::calibrateSensorBySensorId(int sensorId){
 bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
 	SFE_TSL2561* sensor = _sensors[sensorIndex];
 	if(NULL != sensor){
-		return calibrateSensor(sensor);
+		uint8_t returnCode = calibrateSensor(sensor);
+		_sensorState[sensorIndex] = returnCode;
+		if(SENSOR_STATE_ON == returnCode){
+			return true;
+		}
 	}
 	return false;
 }
 
-bool LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
+uint8_t LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 	if(NULL != sensor){
 		delay(1000);
-		unsigned int data0, data1;
-		boolean successRead = sensor->getData(data0,data1);
-		if(!successRead){
-			return false;
+		unsigned int data0, data1;		
+		if(!sensor->getData(data0,data1)){
+			Serial.println("Unable to read data 1 when calibrating sensor");
+			return SENSOR_STATE_CANNOT_READ_DATA;
 		}
 		int threshold1 = data0/3;
 		
 		delay(1000);
-		sensor->getData(data0,data1);
+		if(!sensor->getData(data0,data1)){
+			Serial.println("Unable to read data 2 when calibrating sensor");
+			return SENSOR_STATE_CANNOT_READ_DATA;
+		}
 		int threshold2 = data0/3;
 		
 		int threshold = (threshold1 + threshold2)/2;		
-		int control = sensor->setInterruptControl(1,1);		
-		int setThreshold = sensor->setInterruptThreshold(threshold,threshold*1000);	
-		sensor->clearInterrupt();		
+		
+		if(!sensor->setInterruptControl(1,1)){
+			Serial.println("Unable to set interrupt control");
+			return SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL;
+		}
+		if(!sensor->setInterruptThreshold(threshold,threshold*1000)){
+			Serial.println("Unable to set threshold");
+			return SENSOR_STATE_CANNOT_SET_THRESHOLD;
+		}
+		if(!sensor->clearInterrupt()){
+			Serial.println("Unable to clear interrupt");
+			return SENSOR_STATE_CANNOT_CLEAR_INTERRUPT;
+		}
 		Serial.print("Threshold:");Serial.print(data0);Serial.print("-");
-		Serial.print(data1);Serial.print("-");Serial.print(threshold);Serial.print("-");
-		Serial.print(control);Serial.print("-");Serial.println(setThreshold);	
+		Serial.print(data1);Serial.print("-");Serial.println(threshold);
+		
 	}
-	return true;
+	return SENSOR_STATE_ON;
 }
 
 unsigned int LaserSensorController::getReadings(int sensorId){
