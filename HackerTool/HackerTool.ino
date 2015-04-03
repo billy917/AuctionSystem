@@ -440,6 +440,7 @@ void drawToggleLock(){
 }
 
 uint8_t sensorState[9]={0,0,0,0,0,0,0,0,0};
+uint8_t sensorData[9]={0,0,0,0,0,0,0,0,0};
 
 void drawSensorDetails(){
   tft.setTextColor(ST7735_WHITE);
@@ -452,7 +453,7 @@ void drawSensorDetails(){
   tft.println("Refresh data");
   for(int i=1;i<=9;i++){
     if (i == currentRowSelection) tft.print("->");
-    tft.print("Sensor "); tft.print(i); tft.print(": "); tft.println(sensorState[i-1]);
+    tft.print("Sensor "); tft.print(i); tft.print(": "); tft.print(sensorState[i-1]);tft.print("-");tft.println(sensorData[i-1]);
   }
 }
 
@@ -838,12 +839,9 @@ boolean handleXBeeMsg(){
         sensorOn = false; 
         sensorId = rx.getData(2);
       } else if (MESSAGETYPEID_LASER_SENSOR_STATUS == rx.getData(1)){
-        int numPoints = rx.getData(2);
-        for (int i=0; i<numPoints; i++){
-          uint8_t sensorId = rx.getData((i*2)+3);
-          uint8_t sensorValue = rx.getData((i*2)+4);
-          sensorState[sensorId-1] = sensorValue;
-        }
+          uint8_t sensorId = rx.getData(2);
+          sensorState[sensorId-1] = rx.getData(3);
+          sensorData[sensorId-1] = rx.getData(4);        
       }
       return true;
     }

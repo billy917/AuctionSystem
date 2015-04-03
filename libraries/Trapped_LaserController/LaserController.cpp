@@ -39,10 +39,10 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 	_toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66); //HackTool xBee 
 	_toolZBTxRequest = ZBTxRequest(_toolAddr, _xBeePayload, sizeof(_xBeePayload));
 
-	_sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); //Sensor1 xBee 
+	_sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); //Sensor1 xBee  (1,2,3)
 	_sensor1ZBTxRequest = ZBTxRequest(_sensor1Addr, _xBeePayload, sizeof(_xBeePayload));
 
-	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor1 xBee 
+	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor2 xBee  (4,5,6)
 	_sensor2ZBTxRequest = ZBTxRequest(_sensor2Addr, _xBeePayload, sizeof(_xBeePayload));
 
 }

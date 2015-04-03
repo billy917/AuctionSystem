@@ -24,11 +24,12 @@ class LaserSensorController
 
     bool calibrateSensorByIndex(int sensorIndex);
     bool calibrateSensorBySensorId(int sensorId);
-    uint8_t calibrateSensor(SFE_TSL2561* sensor);
+    uint8_t calibrateSensor(int sensorIndex, SFE_TSL2561* sensor);
     void enableSensorBySensorId(int sensorId);
     void disableSensorBySensorId(int sensorId);
     void trippedWire(int sensorId);
     void printState();
+    void clearTrippedFlag();
   private:
     bool _isPrimary;
     int _controllerId;
@@ -38,6 +39,7 @@ class LaserSensorController
     int _sensorIds[3];
     int _sensorPins[3];
     int _interruptIds[3];
+    int _sensorData[3];
     volatile bool _sensorEnabled[3];
     SFE_TSL2561* _sensors[3];    
     int _sensorTimeTick[3];
@@ -50,6 +52,8 @@ class LaserSensorController
     uint8_t _xBeePayload[9];
     void (*_interruptFuncs[3])();
     volatile bool _debugMode;
+    volatile unsigned long _lastTripTime[3];
+    volatile bool _trippedFlag[3];
 
     int _getSensorIndexByPin(int sensorPin);
     int _getSensorIndexById(int sensorId);

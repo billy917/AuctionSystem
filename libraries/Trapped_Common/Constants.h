@@ -105,7 +105,7 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
-const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,false,true,false,false,false,false};
+const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,true,true,true,false,false,false};
 
 const int CLOCK_MODE_PAUSE = 1;
 const int CLOCK_MODE_COUNTDOWN = 2;

@@ -25,6 +25,9 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 		_interruptFuncs[i] = NULL;
 		_sensorPins[i] = 0;
 		_sensorState[i] = SENSOR_STATE_NONE;
+		_lastTripTime[i] = 0;
+		_trippedFlag[i] = false;
+		_sensorData[i] = -1;
 	}
 
 	_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
@@ -35,6 +38,18 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 
 	for (int i=0;i<9;i++){
 		_xBeePayload[i] = 0;
+	}
+}
+
+void LaserSensorController::clearTrippedFlag(){
+	for(int i=0; i<3; i++){
+		if(_trippedFlag[i]){
+			unsigned long currTime = millis();
+			if(currTime - _lastTripTime[i] > 2000){				
+				_sensors[i]->clearInterrupt();
+				_trippedFlag[i] = false;				
+			}
+		}
 	}
 }
 
@@ -89,15 +104,17 @@ void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 void LaserSensorController::_updateToolStatus(){
 	Serial.println("== Sensor State ==");
 	_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
-	_xBeePayload[1] = MESSAGETYPEID_LASER_SENSOR_STATUS;
-	_xBeePayload[2] = _numRegisteredSensors;
+	_xBeePayload[1] = MESSAGETYPEID_LASER_SENSOR_STATUS;	
 	Serial.print("Num sensors:");Serial.println(_numRegisteredSensors);
 	for(int i=0; i<_numRegisteredSensors; i++){
-		_xBeePayload[3+(i*2)] = _sensorIds[i];		
-		_xBeePayload[3+(i*2)+1] = _sensorState[i];		
+		_xBeePayload[2] = _sensorIds[i];		
+		_xBeePayload[3] = _sensorState[i];
+		_xBeePayload[4]	= _sensorData[i];	
+		_xbee->send(_toolZBTxRequest);
+		delay(100);
 		Serial.print(_sensorIds[i]); Serial.print("-");Serial.print(_sensorEnabled[i]); Serial.print("-");Serial.println(_sensorState[i]);
 	}
-	_xbee->send(_toolZBTxRequest);
+	
 
 	Serial.println("============");
 }
@@ -166,7 +183,7 @@ bool LaserSensorController::calibrateSensorBySensorId(int sensorId){
 bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
 	SFE_TSL2561* sensor = _sensors[sensorIndex];
 	if(NULL != sensor){
-		uint8_t returnCode = calibrateSensor(sensor);
+		uint8_t returnCode = calibrateSensor(sensorIndex, sensor);
 		_sensorState[sensorIndex] = returnCode;
 		if(SENSOR_STATE_ON == returnCode){
 			return true;
@@ -175,7 +192,7 @@ bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
 	return false;
 }
 
-uint8_t LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
+uint8_t LaserSensorController::calibrateSensor(int sensorIndex, SFE_TSL2561* sensor){
 	if(NULL != sensor){
 		delay(1000);
 		unsigned int data0, data1;		
@@ -206,6 +223,8 @@ uint8_t LaserSensorController::calibrateSensor(SFE_TSL2561* sensor){
 			Serial.println("Unable to clear interrupt");
 			return SENSOR_STATE_CANNOT_CLEAR_INTERRUPT;
 		}
+
+		_sensorData[sensorIndex] = threshold;
 		Serial.print("Threshold:");Serial.print(data0);Serial.print("-");
 		Serial.print(data1);Serial.print("-");Serial.println(threshold);
 		
@@ -230,19 +249,15 @@ void LaserSensorController::trippedWire(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(sensorIndex > -1){		
 		if(_sensorEnabled[sensorIndex]){
-			unsigned long currTime = millis();
-			
-			if(_lastTrippedTime == 0 || currTime - _lastTrippedTime > 1000){
-				_lastTrippedTime = currTime;	
-													
-				_xBeePayload[0] = MESSAGETYPEID_CLOCK;
-				_xBeePayload[1] = MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT; 				
-				_xBeePayload[2] = 1;
-				_xBeePayload[3] = sensorId;
-				_xbee->send(_laser2ZBTxRequest);
-			}
-		}
-		_sensors[sensorIndex]->clearInterrupt();
+			_trippedFlag[sensorIndex] = true;
+			_lastTripTime[sensorIndex] = millis();
+
+			_xBeePayload[0] = MESSAGETYPEID_CLOCK;
+			_xBeePayload[1] = MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT; 				
+			_xBeePayload[2] = 1;
+			_xBeePayload[3] = sensorId;
+			_xbee->send(_laser2ZBTxRequest);
+		}		
 	}
 }
 
