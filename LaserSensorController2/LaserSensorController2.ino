@@ -1,15 +1,25 @@
 #include <Wire.h>
+#include <XBee.h>
 #include <SFE_TSL2561.h>
 #include "Constants.h"
 #include "LaserSensorController.h"
 
-int sensorControllerId = 1;
+int sensorControllerId = 2;
 LaserSensorController laserSensorController(sensorControllerId, false);
-uint8_t i2cLocalBuffer[I2C_MESSAGE_MAX_SIZE];
+uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
-volatile boolean receivedMessage = false;
+volatile uint8_t xBeeDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile boolean receivedI2CMessage = false;
+volatile bool receivedXBeeMessage = false;
 
-volatile boolean pin2Interrupt, pin3Interrupt, pin19Interrupt = false;
+volatile boolean pin2Interrupt = false;
+volatile boolean pin3Interrupt = false;
+volatile boolean pin19Interrupt = false;
+
+XBee xbee = XBee();
+XBeeResponse response = XBeeResponse();
+ZBRxResponse rx = ZBRxResponse();
+
 void pin2Interrupted(){
   pin2Interrupt = true;
 }
@@ -24,31 +34,39 @@ void pin19Interrupted(){
 
 void setup() {
   Serial.begin(9600);
+  Serial2.begin(9600);
+  xbee.begin(Serial2);   
+  laserSensorController.setXBeeReference(&xbee);
+  
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
-    
-  attachInterrupt(1, pin3Interrupted, FALLING);
-  //attachInterrupt(0, pin2Interrupted, FALLING);
-  attachInterrupt(4, pin19Interrupted, FALLING);
   
-  laserSensorController.setSensorPin(4, 3, TSL2561_ADDR_0);
-  laserSensorController.calibrateSensorBySensorId(4);
-  
-  //laserSensorController.setSensorPin(5, 2, TSL2561_ADDR);
-  //laserSensorController.calibrateSensorBySensorId(5);
-  
-  laserSensorController.setSensorPin(6, 19, TSL2561_ADDR_1);
-  laserSensorController.calibrateSensorBySensorId(6);
-
+  laserSensorController.setSensorPin(7, 4, 19, TSL2561_ADDR_0, &pin19Interrupted); //0  
+  laserSensorController.setSensorPin(8, 0, 2, TSL2561_ADDR, &pin2Interrupted);  
+  laserSensorController.setSensorPin(9, 1, 3, TSL2561_ADDR_1, &pin3Interrupted); //1
+  Serial.println("Initialized");
 }
 
 void loop() {
-  if(receivedMessage){
+  laserSensorController.clearTrippedFlag();
+  handleXBeeMsg();
+  if(receivedXBeeMessage){
+    for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
+      localBuffer[i] = xBeeDataBuffer[i];
+    }
+    handleMessage();
+    receivedXBeeMessage = false; 
+  }
+  
+  if(receivedI2CMessage){    
+    Serial.println("Received I2C message");
     noInterrupts();
-    copyToI2CLocalBuffer();    
-    receivedMessage = false; 
+    for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+      localBuffer[i] = i2cDataBuffer[i]; 
+    }
+    receivedI2CMessage = false; 
     interrupts();   
-    laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
+    handleMessage();    
   }
 
   if(pin2Interrupt){
@@ -73,10 +91,22 @@ void loop() {
   }
 }
 
-void copyToI2CLocalBuffer(){
-  for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-    i2cLocalBuffer[i] = i2cDataBuffer[i]; 
-  }
+void handleMessage(){
+  laserSensorController.handleMessage(I2C_MESSAGE_MAX_SIZE, localBuffer);
+}
+
+void handleXBeeMsg(){
+  xbee.readPacket();
+  if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    xbee.getResponse().getZBRxResponse(rx);
+        
+    xBeeDataBuffer[0] = rx.getData(0);    
+    if(MESSAGETYPEID_LASER_SENSOR == xBeeDataBuffer[0]){
+      xBeeDataBuffer[1] = rx.getData(1);
+      xBeeDataBuffer[2] = rx.getData(2);
+    }
+    receivedXBeeMessage = true;
+  }   
 }
 
 void receiveI2CEvent(int howMany){    

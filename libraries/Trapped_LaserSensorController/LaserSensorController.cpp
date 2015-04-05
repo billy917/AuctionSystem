@@ -92,16 +92,16 @@ void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 		} else if(MESSAGETYPEID_LASER_SENSOR_DEBUG == data[1]){
 			_debugMode = !_debugMode;
 		} else if (!_debugMode && MESSAGETYPEID_LASER_SENSOR_REQUEST == data[1]){
-			_updateToolStatus();
+			updateToolStatus();
 		}
 	}
 	if(_debugMode){
 		//update hack tool on sensor details
-		_updateToolStatus();
+		updateToolStatus();
 	}
 }
 
-void LaserSensorController::_updateToolStatus(){
+void LaserSensorController::updateToolStatus(){
 	Serial.println("== Sensor State ==");
 	_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
 	_xBeePayload[1] = MESSAGETYPEID_LASER_SENSOR_STATUS;	
@@ -111,7 +111,7 @@ void LaserSensorController::_updateToolStatus(){
 		_xBeePayload[3] = _sensorState[i];
 		_xBeePayload[4]	= _sensorData[i];	
 		_xbee->send(_toolZBTxRequest);
-		delay(100);
+		delay(500);
 		Serial.print(_sensorIds[i]); Serial.print("-");Serial.print(_sensorEnabled[i]); Serial.print("-");Serial.println(_sensorState[i]);
 	}
 	
@@ -215,7 +215,7 @@ uint8_t LaserSensorController::calibrateSensor(int sensorIndex, SFE_TSL2561* sen
 			Serial.println("Unable to set interrupt control");
 			return SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL;
 		}
-		if(!sensor->setInterruptThreshold(threshold,threshold*1000)){
+		if(!sensor->setInterruptThreshold(threshold,1023)){
 			Serial.println("Unable to set threshold");
 			return SENSOR_STATE_CANNOT_SET_THRESHOLD;
 		}

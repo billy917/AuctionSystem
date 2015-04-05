@@ -45,6 +45,9 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor2 xBee  (4,5,6)
 	_sensor2ZBTxRequest = ZBTxRequest(_sensor2Addr, _xBeePayload, sizeof(_xBeePayload));
 
+	_sensor3Addr = XBeeAddress64(0x0013a200, 0x40bf36b4); //Sensor3 xBee  (7,8,9)
+	_sensor3ZBTxRequest = ZBTxRequest(_sensor3Addr, _xBeePayload, sizeof(_xBeePayload));
+
 }
 
 bool LaserController::canHandleMessageType(uint8_t messageTypeId){
@@ -125,7 +128,7 @@ void LaserController::_switchSensorState(int laserId, bool on){
 		} else if( sensorManagerId == 1 ) {
 			_xbee->send(_sensor2ZBTxRequest);
 		} else if( sensorManagerId == 2 ) {
-			//_xbee->send(_sensor3ZBTxRequest);
+			_xbee->send(_sensor3ZBTxRequest);
 		}
 	}
 }

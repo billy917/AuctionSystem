@@ -26,7 +26,7 @@ ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload))
 
 int laserControllerId = 2;
 int nfcManagerId = 2;
-bool enableSensors = false;
+bool enableSensors = true;
 LaserController laserController(laserControllerId, false, enableSensors);
 NFCManager nfcManager(nfcManagerId, false);
 

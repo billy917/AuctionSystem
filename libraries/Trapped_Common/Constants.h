@@ -105,7 +105,7 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
-const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,true,true,true,false,false,false};
+const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,true,true,true,true,true,true};
 
 const int CLOCK_MODE_PAUSE = 1;
 const int CLOCK_MODE_COUNTDOWN = 2;
@@ -231,8 +231,9 @@ XBee
 0x0013a200, 0x40c04ef1 - laser2
 0x0013a200, 0x40c04edf - laser1
 0x0013a200, 0x40b9df66 - Tool
-0x0013a200, 0x40cab3f1 - Sensor1
-0x0013a200, 0x40bef834 - Sensor2
+0x0013a200, 0x40cab3f1 - Sensor1 (Diamond wall)
+0x0013a200, 0x40bef834 - Sensor2 (Window wall)
+0x0013a200, 0x40bf36b4 - Sensor3 (Claustrophobia wall)
 
 
 */

@@ -53,6 +53,10 @@ XBeeAddress64 laser3Addr = XBeeAddress64(0x0013a200, 0x40c337e0); // send comman
 ZBTxRequest laser3Tx = ZBTxRequest(laser3Addr, xbeePayload, sizeof(xbeePayload));
 XBeeAddress64 sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); // send commands to LaserDriver2
 ZBTxRequest sensor1Tx = ZBTxRequest(sensor1Addr, xbeePayload, sizeof(xbeePayload));
+XBeeAddress64 sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); // send commands to LaserDriver2
+ZBTxRequest sensor2Tx = ZBTxRequest(sensor2Addr, xbeePayload, sizeof(xbeePayload));
+XBeeAddress64 sensor3Addr = XBeeAddress64(0x0013a200, 0x40bf36b4); // send commands to LaserDriver2
+ZBTxRequest sensor3Tx = ZBTxRequest(sensor3Addr, xbeePayload, sizeof(xbeePayload));
 
 volatile boolean enableSensor = false;
 volatile boolean laserEnabled = false;
@@ -565,11 +569,22 @@ boolean handleJoystickAction(int joystickState){
 }
 
 void handleSensorInfo(){
-    if(0 == currentRowSelection){
-        xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
-        xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_REQUEST;
+  xbeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
+  xbeePayload[1] = MESSAGETYPEID_LASER_SENSOR_REQUEST;
+  if(0 == currentRowSelection){
+        
         xbee.send (sensor1Tx);
-    } 
+        delay(1000);
+        xbee.send (sensor2Tx);
+        delay(1000);
+        xbee.send (sensor3Tx);
+    } else if( currentRowSelection <= 3 ){
+        xbee.send (sensor1Tx);
+    } else if( currentRowSelection <= 6 ){
+        xbee.send (sensor2Tx);
+    } else {
+        xbee.send (sensor3Tx);
+    }
 }
 
 void calibrateLaserSensor (uint8_t laserSensorId){
@@ -830,6 +845,7 @@ boolean handleXBeeMsg(){
       for(int i=1;i<= rx.getData(2);i++){
         nfcState[i] = rx.getData(2+i);
       }
+      
       return true;
     } else if (MESSAGETYPEID_LASER_SENSOR == rx.getData(0)){
       if(MESSAGETYPEID_LASER_SENSOR_ON == rx.getData(1)){

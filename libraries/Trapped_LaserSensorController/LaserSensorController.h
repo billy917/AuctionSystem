@@ -30,6 +30,8 @@ class LaserSensorController
     void trippedWire(int sensorId);
     void printState();
     void clearTrippedFlag();
+    void updateToolStatus();
+    
   private:
     bool _isPrimary;
     int _controllerId;
@@ -57,7 +59,7 @@ class LaserSensorController
 
     int _getSensorIndexByPin(int sensorPin);
     int _getSensorIndexById(int sensorId);
-    void _updateToolStatus();
+    
 
 };
 

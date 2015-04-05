@@ -46,7 +46,6 @@ void setup() {
   laserSensorController.setSensorPin(6, 4, 19, TSL2561_ADDR_1, &pin19Interrupted); //1
   
   Serial.println("Initialized");
-  
 }
 
 void loop() {
@@ -98,8 +97,10 @@ void handleMessage(){
 }
 
 void handleXBeeMsg(){
+
   xbee.readPacket();
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    Serial.println("Received xBee message");
     xbee.getResponse().getZBRxResponse(rx);
         
     xBeeDataBuffer[0] = rx.getData(0);    
