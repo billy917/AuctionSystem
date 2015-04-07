@@ -70,7 +70,7 @@ void loop(){
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
-                    pin = trackList[i2cDataBuffer[3]] + PIN_OFFSET;
+                    pin = trackList[i2cDataBuffer[3]-1] + PIN_OFFSET;
 
                     Serial.print ("Playing pin: ");
                     Serial.println (pin);
@@ -87,7 +87,6 @@ void loop(){
             }
         }
         receivedI2CMessage = false;
-        clearI2CBuffer();
     }
 
     //t.update();
@@ -115,8 +114,3 @@ void fillTrackData(){
 
 }
 
-void clearI2CBuffer(){
-    for (int i=0; i < I2C_MESSAGE_MAX_SIZE; i++){
-        i2cDataBuffer[i] = 0;
-    }
-}

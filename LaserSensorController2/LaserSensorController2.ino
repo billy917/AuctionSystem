@@ -41,9 +41,9 @@ void setup() {
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
   
-  laserSensorController.setSensorPin(7, 4, 19, TSL2561_ADDR_0, &pin19Interrupted); //0  
-  laserSensorController.setSensorPin(8, 0, 2, TSL2561_ADDR, &pin2Interrupted);  
-  laserSensorController.setSensorPin(9, 1, 3, TSL2561_ADDR_1, &pin3Interrupted); //1
+  laserSensorController.setSensorPin(7, 4, 19, 1, TSL2561_ADDR_0, &pin19Interrupted); //0  
+  laserSensorController.setSensorPin(8, 0, 2, 1, TSL2561_ADDR, &pin2Interrupted);  
+  laserSensorController.setSensorPin(9, 1, 3, 1, TSL2561_ADDR_1, &pin3Interrupted); //1
   Serial.println("Initialized");
 }
 

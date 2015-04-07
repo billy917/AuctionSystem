@@ -28,6 +28,7 @@ LaserSensorController::LaserSensorController(int controllerId, bool isPrimary){
 		_lastTripTime[i] = 0;
 		_trippedFlag[i] = false;
 		_sensorData[i] = -1;
+		_sensorPersistConfig[i] = 1;
 	}
 
 	_laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1); //Laser2 xBee 
@@ -57,14 +58,25 @@ void LaserSensorController::setXBeeReference(XBee* xbee_pointer){
 	_xbee = xbee_pointer;
 }
 
-void LaserSensorController::setSensorPin(int sensorId, int interruptId, int pin, uint8_t i2cAddress, void(*interruptFunc)() ){
+void LaserSensorController::setSensorPin(int sensorId, int interruptId, int pin, int persistConfig, uint8_t i2cAddress, void(*interruptFunc)() ){
 	_sensorIds[_numRegisteredSensors] = sensorId;
 	_sensorPins[_numRegisteredSensors] = pin;
 	_sensorI2CAddresses[_numRegisteredSensors] = i2cAddress;
 	_sensors[_numRegisteredSensors] = new SFE_TSL2561();
 	_sensors[_numRegisteredSensors]->begin(i2cAddress);
-	_sensors[_numRegisteredSensors]->setTiming(1,0);	
-	_sensors[_numRegisteredSensors]->setInterruptControl(1,1);
+	_sensors[_numRegisteredSensors]->setTiming(1,0);
+	_sensorPersistConfig[_numRegisteredSensors] = persistConfig;
+		// gain, time
+		// If time = 0, integration will be 13.7ms
+		// If time = 1, integration will be 101ms
+		// If time = 2, integration will be 402ms	
+	_sensors[_numRegisteredSensors]->setInterruptControl(1,persistConfig);		
+		// control, persist
+		// If control = 0, interrupt output disabled
+		// If control = 1, use level interrupt, see setInterruptThreshold()
+		// If persist = 0, every integration cycle generates an interrupt
+		// If persist = 1, any value outside of threshold generates an interrupt
+		// If persist = 2 to 15, value must be outside of threshold for 2 to 15 integration cycles
 	_sensors[_numRegisteredSensors]->clearInterrupt();
 	_sensors[_numRegisteredSensors]->setPowerUp();	
 	_sensorState[_numRegisteredSensors] = SENSOR_STATE_INIT;
@@ -149,7 +161,7 @@ int LaserSensorController::_getSensorIndexById(int sensorId){
 void LaserSensorController::enableSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);	
 	if(-1 < sensorIndex){		
-		if(calibrateSensorByIndex(sensorIndex)){
+		if(calibrateSensorByIndex(sensorId, sensorIndex)){
 			attachInterrupt(_interruptIds[sensorIndex], _interruptFuncs[sensorIndex], FALLING);		 
 			_sensorEnabled[sensorIndex] = true;			
 			Serial.print("Sensor state:"); Serial.println(_sensorState[sensorIndex]);
@@ -166,7 +178,7 @@ void LaserSensorController::disableSensorBySensorId(int sensorId){
 			detachInterrupt(_interruptIds[sensorIndex]);								
 			SFE_TSL2561* sensor = _sensors[sensorIndex];
 			if(NULL != sensor){
-				sensor->setInterruptControl(0,1);
+				sensor->setInterruptControl(0,_sensorPersistConfig[sensorIndex]);
 			}
 		}	
 	}
@@ -175,15 +187,15 @@ void LaserSensorController::disableSensorBySensorId(int sensorId){
 bool LaserSensorController::calibrateSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){		
-		return calibrateSensorByIndex(sensorIndex);
+		return calibrateSensorByIndex(sensorId, sensorIndex);
 	}
 	return false;
 }
 
-bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
+bool LaserSensorController::calibrateSensorByIndex(int sensorId, int sensorIndex){
 	SFE_TSL2561* sensor = _sensors[sensorIndex];
 	if(NULL != sensor){
-		uint8_t returnCode = calibrateSensor(sensorIndex, sensor);
+		uint8_t returnCode = calibrateSensor(sensorId, sensorIndex, sensor);
 		_sensorState[sensorIndex] = returnCode;
 		if(SENSOR_STATE_ON == returnCode){
 			return true;
@@ -192,7 +204,7 @@ bool LaserSensorController::calibrateSensorByIndex(int sensorIndex){
 	return false;
 }
 
-uint8_t LaserSensorController::calibrateSensor(int sensorIndex, SFE_TSL2561* sensor){
+uint8_t LaserSensorController::calibrateSensor(int sensorId, int sensorIndex, SFE_TSL2561* sensor){
 	if(NULL != sensor){
 		delay(1000);
 		unsigned int data0, data1;		
@@ -209,22 +221,30 @@ uint8_t LaserSensorController::calibrateSensor(int sensorIndex, SFE_TSL2561* sen
 		}
 		int threshold2 = data0/3;
 		
-		int threshold = (threshold1 + threshold2)/2;		
-		
-		if(!sensor->setInterruptControl(1,1)){
-			Serial.println("Unable to set interrupt control");
-			return SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL;
+		int threshold = (threshold1 + threshold2)/2;	
+		_sensorData[sensorIndex] = threshold;
+
+		if(!AUTO_CALIBRATE_SENSOR[sensorId-1]){
+			threshold = SENSOR_TRESHOLD[sensorId-1];
+			_sensorData[sensorIndex] = data0;
 		}
-		if(!sensor->setInterruptThreshold(threshold,1023)){
+		
+		if(!sensor->setInterruptThreshold(threshold,-1)){
+				//-1 unsigned int == max possible value
 			Serial.println("Unable to set threshold");
 			return SENSOR_STATE_CANNOT_SET_THRESHOLD;
 		}
+
+		if(!sensor->setInterruptControl(1,_sensorPersistConfig[sensorIndex])){
+			Serial.println("Unable to set interrupt control");
+			return SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL;
+		}
+		
 		if(!sensor->clearInterrupt()){
 			Serial.println("Unable to clear interrupt");
 			return SENSOR_STATE_CANNOT_CLEAR_INTERRUPT;
 		}
 
-		_sensorData[sensorIndex] = threshold;
 		Serial.print("Threshold:");Serial.print(data0);Serial.print("-");
 		Serial.print(data1);Serial.print("-");Serial.println(threshold);
 		
