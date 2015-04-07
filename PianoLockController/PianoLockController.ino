@@ -19,9 +19,9 @@ volatile uint8_t i2cDataBuffer[NFC_MESSAGE_MAX_SIZE];
 #define UNLOCKED false
 volatile bool lockState = LOCKED;
 
-#define SPEAKER_PIN  13
+#define SPEAKER_PIN  12
 #define ERROR_KEY -9
-int keySounds[7] = {NOTE_F3, NOTE_G3, NOTE_A4, NOTE_B4, NOTE_C4, NOTE_D4, NOTE_E4};
+int keySounds[7] = {NOTE_F4, NOTE_G4, NOTE_A4, NOTE_B4, NOTE_C5, NOTE_D5, NOTE_E5};
 
 /* Button sound pins are from D3 - D12 */
 #define KEY_PIN_OFFSET 3
@@ -36,11 +36,13 @@ int lastKeyState[NUMBER_KEYS];
 #define TRIES 3
 int currentPasswordIndex;
 int passwordSound[NUM_PASSWORD][MAX_PASSWORD_KEYS];
+int passwordMaxKeys[NUM_PASSWORD];
 int inputSound[MAX_PASSWORD_KEYS];
 int fail = 0;
 
 LiquidCrystal_I2C lcd = LiquidCrystal_I2C (0x3F, 20, 4);
-long int debounceTime[NUMBER_KEYS];
+#define DEBOUNCE_TIME 700
+volatile unsigned long debounceTime[NUMBER_KEYS];
 
 void setup(){
     Serial.begin(9600);
@@ -57,19 +59,18 @@ void setup(){
     lcd.backlight();
     lcd.noCursor();
     lcd.clear();
-    Serial.print ("---- LCD setup complete");
+    showInput();
+    Serial.println ("---- LCD setup complete");
 
     Serial.println ("Initialize pins setup...");
     /* Setup lock pin for usage */
-    pinMode (LOCK_PIN, INPUT);
-    digitalWrite (LOCK_PIN, HIGH);
+    lock();
     Serial.println ("---- Done LOCK_PIN setup...");
 
     /* Setup speaker pin for usage */
     pinMode (SPEAKER_PIN, OUTPUT);
     digitalWrite (SPEAKER_PIN, LOW);
     Serial.println ("---- Done SPEAKER_PIN setup...");
-
 
     /* Initialize key pin and key states */
     for (int i=0; i < NUMBER_KEYS; i++){
@@ -107,11 +108,17 @@ void loop(){
 
     readKeyState();
 
-    handleKey();
+    /* Use below only if handleKey() is not in readKeyState() */
+    //handleKey();
     
     if (inputSound[0] != ERROR_KEY){
         if (checkPassword()){
             fail = 0;
+
+            lcd.clear();
+            lcd.setCursor(6,1);
+            lcd.print ("Unlocked!");
+
             unlock();
 
         } else {
@@ -132,6 +139,9 @@ void loop(){
             /* Reset input */
             initInputSound();
 
+            /* Display updates on LCD */
+            showInput();
+
             Serial.print (TRIES - fail);
             Serial.println (" time(s) left!");
 
@@ -146,7 +156,8 @@ void readKeyState(){
     for(int i=0; i < NUMBER_KEYS; i++){
 
         keyState[i] = digitalRead (i + KEY_PIN_OFFSET);
-
+        handleKey(i);
+        
         //Serial.print (keyState[i]);
         //Serial.print (" ");
         
@@ -156,31 +167,46 @@ void readKeyState(){
 
 }
 
-void handleKey(){
+void handleKey (int _key){
     //Serial.println ("Handling key states...");
 
-    for (int i=0; i < NUMBER_KEYS; i++){
-        if (debounceTime[i] + 125 <= millis()){
-            if (isKeyStateChanged (i)){
+    /* Use the below for loop when handling outside readKeyState */
+    //for (int i=0; i < NUMBER_KEYS; i++){
+
+        Serial.print ("micros(): ");
+        Serial.println ((long)micros());
+
+        if ((long)(micros()-debounceTime[_key]) >= (DEBOUNCE_TIME*1000)){
+           
+            if (isKeyStateChanged (_key)){
                
-               /* Get new debounce time */
-               debounceTime[i] = millis();
+               Serial.print ("Key pressed: ");
+               Serial.println (_key);
+               Serial.print ("Debounce time: ");
+               Serial.println (debounceTime[_key]);
+               Serial.print ("Last key state: ");
+               Serial.print (lastKeyState[_key]);
+               Serial.print (", Key state: ");
+               Serial.println (keyState[_key]);
+               
 
                 /* Record pressed button */
-                recordKey(i);
+                recordKey(_key);
 
                 /* Display inputted sequence on LCD */
                 showInput();
 
                 /* Make the corresponding sound */
-                pressedKeySound (i);
+                pressedKeySound (_key);
 
+                /* Get new debounce time */
+                debounceTime[_key] = (long)micros();
             }
         }
-        
+
         /* Update key state */
-        lastKeyState[i] = keyState[i];
-    }
+        lastKeyState[_key] = keyState[_key];
+    //}
 
 }
 
@@ -191,22 +217,30 @@ void pressedKeySound (int numberPressed){
 
 bool isKeyStateChanged (int _key){
     
-    /* Count only on press event, NOT on release event */
-    if ((keyState[_key] == LOW) && (lastKeyState[_key] == HIGH)){
-
-        /*
+    /*
         Serial.print ("Pin: ");
         Serial.print (keyPin[_key]);
         Serial.print (" state changed from ");
         Serial.print (lastKeyState[_key]);
         Serial.print (" to ");
         Serial.println (keyState[_key]);
-        */
+    */
 
+    if ((keyState[_key] == HIGH) && (lastKeyState[_key] == LOW) ||
+        (keyState[_key] == LOW) && (lastKeyState[_key] == LOW) ||
+        (keyState[_key] == HIGH) && (lastKeyState[_key] == HIGH)
+       ){
+        return false;
+    }
+    
+    /* Count only one event, NOT both onPress and onRelease event */
+    if ((keyState[_key] == LOW) && (lastKeyState[_key] == HIGH)){
         return true;
 
     }
-        return false;
+
+    return false;
+    
 }
 
 void initInputSound(){
@@ -218,14 +252,13 @@ void initInputSound(){
 
 void recordKey(int _key){
     
-    for (int i=0; i < (MAX_PASSWORD_KEYS - 1); i++){
+    for (int i=0; i < (passwordMaxKeys[currentPasswordIndex]- 1); i++){
       inputSound[i] = inputSound[i+1];
     }
 
-    inputSound[MAX_PASSWORD_KEYS - 1] = _key;
+    inputSound[passwordMaxKeys[currentPasswordIndex]- 1] = _key;
 
-    Serial.print ("Key pressed: ");
-    Serial.println (_key);
+    
 }
 
 void showInput(){
@@ -244,34 +277,45 @@ void showInput(){
         case 1: displaySong2(); break;
         case 2: displaySong3(); break;
         case 3: displaySong4(); break;
-        case 4: displaySong4(); break;
+        case 4: displaySong5(); break;
         default: break;
     }
 
+    /* Display fail times */
+    lcd.setCursor(19,0);
+    lcd.print (3 - fail);
+
     /* Display input */
-    for (int i=0; i<MAX_PASSWORD_KEYS; i++){
-        lcd.setCursor (2,i+1);
+    for (int i=0; i<passwordMaxKeys[currentPasswordIndex]; i++){
+        lcd.setCursor ((i+1)*2, 3);
 
         if (inputSound[i] == ERROR_KEY) {
             lcd.print ('-');
         } else {
-            lcd.print (inputSound[i]);
+            switch (inputSound[i]){
+                case 0: lcd.print ('F'); break;
+                case 1: lcd.print ('G'); break;
+                case 2: lcd.print ('A'); break;
+                case 3: lcd.print ('B'); break;
+                case 4: lcd.print ('C'); break;
+                case 5: lcd.print ('D'); break;
+                case 6: lcd.print ('E'); break;
+                default: break;
+            }
         }
     }
+
+    lcd.noCursor();
 
 }
 
 bool checkPassword(){
     
     bool equal = true;
-    for (int i=0; i < MAX_PASSWORD_KEYS; i++){
+    for (int i=0; i < passwordMaxKeys[currentPasswordIndex]; i++){
         if (inputSound[i] == ERROR_KEY) return false;
 
         if (inputSound[i] == passwordSound[currentPasswordIndex][i]){
-            equal &= true;
-        }else if (passwordSound[currentPasswordIndex][i] == 0){
-            //Serial.print ("passwordSound :");
-            //Serial.println (passwordSound[currentPasswordIndex][i]);
             equal &= true;
         } else {
             equal &= false;
@@ -313,7 +357,7 @@ void displaySong1(){
     lcd.setCursor(0,0);
     lcd.print ("Minuet");
 
-    lcd.setCursor(6,1);
+    lcd.setCursor(5,1);
     lcd.print ("in G Major");
 }
 
@@ -321,7 +365,7 @@ void displaySong2(){
     lcd.setCursor(0,0);
     lcd.print ("Beethoven's");
 
-    lcd.setCursor(11,1);
+    lcd.setCursor(5,1);
     lcd.print ("Fifth");
 }
 
@@ -329,7 +373,7 @@ void displaySong3(){
     lcd.setCursor(0,0);
     lcd.print ("Vivaldi");
 
-    lcd.setCursor(7,1);
+    lcd.setCursor(5,1);
     lcd.print ("Four Seasons");
 }
 
@@ -337,7 +381,7 @@ void displaySong4(){
     lcd.setCursor(0,0);
     lcd.print ("Tchaikovsky");
     
-    lcd.setCursor(11,1);
+    lcd.setCursor(0,1);
     lcd.print ("Waltz of the Flowers");
 
 }
@@ -346,12 +390,13 @@ void displaySong5(){
     lcd.setCursor(0,0);
     lcd.print ("Pachelbel's");
     
-    lcd.setCursor(11,1);
+    lcd.setCursor(5,1);
     lcd.print ("Canon in D");
 }
 
 void loadPasswordSound(){
     /* Minuet in G Major */
+    passwordMaxKeys[0] = 8;
     passwordSound[0][0] = 5; //D,G,A,B,C,D,G,G
     passwordSound[0][1] = 1;
     passwordSound[0][2] = 2;
@@ -362,6 +407,7 @@ void loadPasswordSound(){
     passwordSound[0][7] = 1;
 
     /* Beethoven's Fifth */
+    passwordMaxKeys[1] = 8;
     passwordSound[1][0] = 6; //E,E,E,C,D,D,D,B
     passwordSound[1][1] = 6;
     passwordSound[1][2] = 6;
@@ -372,6 +418,7 @@ void loadPasswordSound(){
     passwordSound[1][7] = 3;
 
     /* Vivaldi Four Seasons */
+    passwordMaxKeys[2] = 7;
     passwordSound[2][0] = 5; //D,C,B,C,D,E,D
     passwordSound[2][1] = 4;
     passwordSound[2][2] = 3;
@@ -382,6 +429,7 @@ void loadPasswordSound(){
     passwordSound[2][7] = 0;
 
     /* Tchaikovsky Waltz of the Flowers */
+    passwordMaxKeys[3] = 6;
     passwordSound[3][0] = 1; //G,B,D,E,D,D
     passwordSound[3][1] = 3;
     passwordSound[3][2] = 5;
@@ -392,6 +440,7 @@ void loadPasswordSound(){
     passwordSound[3][7] = 0;
     
     /* Pachelbel's Canon in D */
+    passwordMaxKeys[4] = 8;
     passwordSound[4][0] = 6; //E,D,C,B,A,G,A,B
     passwordSound[4][1] = 5;
     passwordSound[4][2] = 4;
