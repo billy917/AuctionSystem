@@ -63,11 +63,13 @@ const uint8_t MESSAGETYPEID_NFC_TOOL_REQUEST = 1; // Tool -> PrimaryManager
 const uint8_t MESSAGETYPEID_NFC_TOOL_STATUS = 2; // PrimaryManager -> Tool
 const uint8_t MESSAGETYPEID_NFC_TOOL_DEBUG = 3; // Tool -> PrimaryManager set DebugMode
 
-const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Laser1
-const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Laser1 -> Tool
 
-const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> LaserController
-const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> LaserController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_REQUEST = 1; // Tool -> Sensor1
+const uint8_t MESSAGETYPEID_LASER_SENSOR_STATUS = 2; // Sensor1 -> Tool
+const uint8_t MESSAGETYPEID_LASER_SENSOR_DEBUG = 3; // Tool -> Sensor1
+
+const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> SensorController
+const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> SensorController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
@@ -105,10 +107,32 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
-const bool GLOBAL_ENABLE_SENSOR[9] = {false,true,false,false,false,false,false,false,false};
-
+const bool GLOBAL_ENABLE_SENSOR[9] = {true,true,true,true,true,true,true,true,true};
+const int SENSOR_TRESHOLD[9] = {30,40,30,40,30,40,30,30,40}; 
+	// 7,8,9 - 40,10,40
+const bool AUTO_CALIBRATE_SENSOR[9] = {false,false,false,false,false,false,false,false,false};
+/*
+1 151
+2 122
+3
+4 15, 58
+5 45, 48
+6
+7 89, 77
+8 136, 23, 193
+9 82, 118
+*/
 const int CLOCK_MODE_PAUSE = 1;
 const int CLOCK_MODE_COUNTDOWN = 2;
+
+const uint8_t SENSOR_STATE_NONE = 0;
+const uint8_t SENSOR_STATE_INIT = 1;
+const uint8_t SENSOR_STATE_ON = 2;
+const uint8_t SENSOR_STATE_OFF = 3;
+const uint8_t SENSOR_STATE_CANNOT_READ_DATA = 4;
+const uint8_t SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL = 5;
+const uint8_t SENSOR_STATE_CANNOT_SET_THRESHOLD = 6;
+const uint8_t SENSOR_STATE_CANNOT_CLEAR_INTERRUPT = 7;
 
 /*
 Clock Control message protocol
@@ -222,9 +246,9 @@ XBee
 0x0013a200, 0x40c04ef1 - laser2
 0x0013a200, 0x40c04edf - laser1
 0x0013a200, 0x40b9df66 - Tool
-0x0013a200, 0x40cab3f1 - Sensor1
-0x0013a200, 0x40bef834 - Sensor2
-
+0x0013a200, 0x40cab3f1 - Sensor1 (Diamond wall)
+0x0013a200, 0x40bef834 - Sensor2 (Window wall)
+0x0013a200, 0x40bf36b4 - Sensor3 (Claustrophobia wall)
 
 */
 

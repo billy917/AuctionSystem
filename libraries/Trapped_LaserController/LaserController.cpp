@@ -39,11 +39,14 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 	_toolAddr = XBeeAddress64(0x0013a200, 0x40b9df66); //HackTool xBee 
 	_toolZBTxRequest = ZBTxRequest(_toolAddr, _xBeePayload, sizeof(_xBeePayload));
 
-	_sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); //Sensor1 xBee 
+	_sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1); //Sensor1 xBee  (1,2,3)
 	_sensor1ZBTxRequest = ZBTxRequest(_sensor1Addr, _xBeePayload, sizeof(_xBeePayload));
 
-	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor1 xBee 
+	_sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834); //Sensor2 xBee  (4,5,6)
 	_sensor2ZBTxRequest = ZBTxRequest(_sensor2Addr, _xBeePayload, sizeof(_xBeePayload));
+
+	_sensor3Addr = XBeeAddress64(0x0013a200, 0x40bf36b4); //Sensor3 xBee  (7,8,9)
+	_sensor3ZBTxRequest = ZBTxRequest(_sensor3Addr, _xBeePayload, sizeof(_xBeePayload));
 
 }
 
@@ -68,15 +71,21 @@ bool LaserController::_isLaserIndexLocal(int laserId){
 
 void LaserController::turnOnAllLaser(){
 	for(int i=0;i<_numRegisteredLasers; i++){
-		_turnOnLocalLaserByIndexId(i);
+		_turnOnLocalLaserByIndexId(i);		
+	}
+	delay(2500);
+	for(int i=0;i<_numRegisteredLasers; i++){		
 		_turnOnSensor(_localLaserIds[i]);				
 	}
 }
 
 void LaserController::turnOffAllLaser(){
-	for(int i=0;i<_numRegisteredLasers; i++){
-		_turnOffLocalLaserByIndexId(i);
+	for(int i=0;i<_numRegisteredLasers; i++){		
 		_turnOffSensor(_localLaserIds[i]);
+	}
+	delay(2500);
+	for(int i=0;i<_numRegisteredLasers; i++){
+		_turnOffLocalLaserByIndexId(i);		
 	}
 }
 
@@ -119,7 +128,7 @@ void LaserController::_switchSensorState(int laserId, bool on){
 		} else if( sensorManagerId == 1 ) {
 			_xbee->send(_sensor2ZBTxRequest);
 		} else if( sensorManagerId == 2 ) {
-			//_xbee->send(_sensor3ZBTxRequest);
+			_xbee->send(_sensor3ZBTxRequest);
 		}
 	}
 }
@@ -139,9 +148,11 @@ void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){
 		if(_isLaserIndexLocal(data[2])){
 			if(MESSAGETYPEID_LASER_CONTROL_ON == data[1]){
 				_turnOnLocalLaser(data[2]);
+				delay(2500);
 				_turnOnSensor(data[2]);
 			} else if (MESSAGETYPEID_LASER_CONTROL_OFF == data[1]){
 				_turnOffSensor(data[2]);
+				delay(2500);
 				_turnOffLocalLaser(data[2]);
 			}
 		} else if(_isPrimary) {

@@ -4,7 +4,7 @@
 #include "Constants.h"
 #include "LaserSensorController.h"
 
-int sensorControllerId = 0;
+int sensorControllerId = 1;
 LaserSensorController laserSensorController(sensorControllerId, false);
 uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
@@ -40,10 +40,11 @@ void setup() {
   
   Wire.begin(LASER_SENSOR_I2C_ADDR);
   Wire.onReceive(receiveI2CEvent);
+
+  laserSensorController.setSensorPin(4, 1, 3, 1, TSL2561_ADDR_0, &pin3Interrupted); //0
+  laserSensorController.setSensorPin(5, 0, 2, 1, TSL2561_ADDR, &pin2Interrupted); 
+  laserSensorController.setSensorPin(6, 4, 19, 1, TSL2561_ADDR_1, &pin19Interrupted); //1
   
-  laserSensorController.setSensorPin(1, 1, 3, 1, TSL2561_ADDR_0, &pin3Interrupted); //0  
-  laserSensorController.setSensorPin(2, 0, 2, 1, TSL2561_ADDR, &pin2Interrupted);  
-  laserSensorController.setSensorPin(3, 4, 19, 1, TSL2561_ADDR_1, &pin19Interrupted); //1
   Serial.println("Initialized");
 }
 
@@ -96,8 +97,10 @@ void handleMessage(){
 }
 
 void handleXBeeMsg(){
+
   xbee.readPacket();
   if(xbee.getResponse().isAvailable() && xbee.getResponse().getApiId() == ZB_RX_RESPONSE){
+    Serial.println("Received xBee message");
     xbee.getResponse().getZBRxResponse(rx);
         
     xBeeDataBuffer[0] = rx.getData(0);    
