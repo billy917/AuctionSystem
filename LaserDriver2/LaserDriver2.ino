@@ -17,7 +17,7 @@ XBee xbee = XBee();
 XBeeResponse response = XBeeResponse();
 ZBRxResponse rx = ZBRxResponse();
 
-uint8_t xbeePayload[3] = { 0, 0, 0 };
+uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
 XBeeAddress64 laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
 ZBTxRequest laser1Tx = ZBTxRequest(laser1Addr, xbeePayload, sizeof(xbeePayload));
 
@@ -36,6 +36,8 @@ volatile bool receivedXBeeMessage = false;
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t xBeeDataBuffer[I2C_MESSAGE_MAX_SIZE];
 uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
+
+volatile bool i2cLock = false;
 
 // the setup routine runs once when you press reset:
 void setup() {           
@@ -67,20 +69,32 @@ void loop() {
   }
 
   if(receivedI2CMessage){
+    i2cLock = true;
     for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
       localBuffer[i] = i2cDataBuffer[i];
     }
     handleMessage();
     receivedI2CMessage = false; 
+    i2cLock = false;
   }
 }
 
 void receiveI2CEvent(int howMany){
-  for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
-    i2cDataBuffer[i] = Wire.read();
+  if (!i2cLock){
+    for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+      i2cDataBuffer[i] = Wire.read();
+    }
+    commandSource = 'I';
+    receivedI2CMessage = true;
   }
-  commandSource = 'I';
-  receivedI2CMessage = true;
+
+  else {
+    uint8_t temp = 0;
+    for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+      temp = Wire.read();
+    }
+      
+  }
 }
 
 void handleXBeeMsg(){

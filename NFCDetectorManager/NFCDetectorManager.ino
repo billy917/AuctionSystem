@@ -12,6 +12,7 @@ volatile uint8_t i2cDataBuffer[NFC_MESSAGE_MAX_SIZE];
 volatile uint8_t xBeeDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile boolean receivedI2CMessage = false;
 volatile bool receivedXBeeMessage = false;
+volatile bool i2cLock = false;
 
 uint8_t localBuffer[NFC_MESSAGE_MAX_SIZE];
 // need to store expected UID for each detector
@@ -30,14 +31,22 @@ void setup() {
 
 void receiveI2CEvent(int howMany){  
   if(NFC_MESSAGE_MAX_SIZE+1 > howMany){ // assume 9 is the max size of XBee message
-    for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
-      if(i>=howMany){
-        i2cDataBuffer[i] = 0;
-      } else {
-        i2cDataBuffer[i] = Wire.read(); 
-      }
+    if (!i2cLock){
+        for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
+          if(i>=howMany){
+            i2cDataBuffer[i] = 0;
+          } else {
+            i2cDataBuffer[i] = Wire.read(); 
+          }
+        }
+        receivedI2CMessage = true; // TODO: need better way to queue incoming requests
+    } else {
+        uint8_t temp = 0;
+        for (int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
+            temp = Wire.read();
+        }
+        
     }
-    receivedI2CMessage = true; // TODO: need better way to queue incoming requests
   } else {
     while(1 < Wire.available()) // loop through all but the last
     {
@@ -73,11 +82,13 @@ void loop() {
   }
   
   if(receivedI2CMessage){
+    i2cLock = true;
     for(int i=0;i<NFC_MESSAGE_MAX_SIZE;i++){
       localBuffer[i] = i2cDataBuffer[i]; 
     }  
     handleMessage();
     receivedI2CMessage = false; 
+    i2cLock = false;
   }
 }
 
