@@ -34,6 +34,8 @@ volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile uint8_t xBeeDataBuffer[I2C_MESSAGE_MAX_SIZE];
 uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 
+volatile bool i2cLock = false;
+
 // the setup routine runs once when you press reset:
 void setup() {           
   Serial.begin(9600);
@@ -64,20 +66,30 @@ void loop() {
   }
 
   if(receivedI2CMessage){
+      i2cLock = true;
     for(int i=0; i<NFC_MESSAGE_MAX_SIZE; i++){
       localBuffer[i] = i2cDataBuffer[i];
     }
     handleMessage();
     receivedI2CMessage = false; 
+    i2cLock = false;
   }
 }
 
 void receiveEvent(int howMany){
-  for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
-    i2cDataBuffer[i] = Wire.read();
+  if (!i2cLock){
+      for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+        i2cDataBuffer[i] = Wire.read();
+      }
+      commandSource = 'I';
+      receivedI2CMessage = true;
+  } else {
+      uint8_t temp = 0;
+      for(int i=0; i<howMany && i< I2C_MESSAGE_MAX_SIZE; i++){
+        temp = Wire.read();
+      }
+
   }
-  commandSource = 'I';
-  receivedI2CMessage = true;
 }
 
 void handleXBeeMsg(){

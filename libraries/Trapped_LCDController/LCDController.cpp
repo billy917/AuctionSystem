@@ -1,12 +1,10 @@
-#include "NFCLock.h"
+#include "LCDController.h"
 #include "Arduino.h"
 #include "Wire.h"
 #include "Constants.h"
 #include "LiquidCrystal_I2C.h"
 
-NFCLock::NFCLock(){
-
-    _messageID, _managerID, _detected, _detectorID, _nfcValue = 0;
+LCDController::LCDController(){
 
     _clearDetectorNFCValue();
     _clearPattern();
@@ -22,7 +20,7 @@ NFCLock::NFCLock(){
 
 }
 
-void NFCLock::initLCD(){
+void LCDController::initLCD(){
     lcd = new LiquidCrystal_I2C (0x3F, 20, 4);
     lcd->init();
     lcd->backlight();
@@ -36,40 +34,7 @@ void NFCLock::initLCD(){
 
 } //end _initLCD
 
-void NFCLock::handleI2CMessage (uint8_t data[]){
-    _messageID = data[0];
-    _managerID = data[1];
-    _detected = data[2];
-    _detectorID = data[3];
-    _nfcValue = data[4];
-
-    if (_messageID == MESSAGETYPEID_NFC_MANAGE){
-        _manageNFC();
-
-    } else {}
-
-} //end handleI2CMessage
-
-void NFCLock::_manageNFC(){
-
-    uint8_t offsetPosition = _detectorID - 1;
-
-    if (_detected == MESSAGETYPEID_NFC_MANAGE_FOUND){
-        detectorNFCValue[offsetPosition] = _nfcValue;
-
-    } else if (_detected == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
-        detectorNFCValue[offsetPosition] = 0;
-
-    }
-
-        // break because didn't clear lcd
-        //_updateNFCDetectorLCD (offsetPosition);
-        
-        displayAllLCD();
-
-} //end _manageNFC
-
-bool NFCLock::canCheckEquation(){
+bool LCDController::canCheckEquation(){
     for (int i=0; i < NUM_NFC_DETECTOR; i++){
         if (detectorNFCValue[i] == 0){
             return false;
@@ -78,7 +43,7 @@ bool NFCLock::canCheckEquation(){
     return true;
 }
 
-bool NFCLock::checkEquation(){
+bool LCDController::checkEquation(){
     if (canCheckEquation()){
         switch (currentEquationIndex){
             case 0: return (equationOne() == 
@@ -99,7 +64,7 @@ bool NFCLock::checkEquation(){
 
 } //end checkEquation
 
-void NFCLock::displayAllLCD(){
+void LCDController::displayAllLCD(){
     lcd->clear();
 
     displayPatternLCD();
@@ -109,7 +74,7 @@ void NFCLock::displayAllLCD(){
    lcd->noCursor();
 }
 
-void NFCLock::displayPatternLCD(){
+void LCDController::displayPatternLCD(){
 
     //Serial.println ("Debug: displayPatternLCD()");
 
@@ -119,7 +84,7 @@ void NFCLock::displayPatternLCD(){
     displayString (14,1, nextPatternName);
 }
 
-void NFCLock::displayCounterLCD (){
+void LCDController::displayCounterLCD (){
     /* 
      Cannot just display _counter,
      when it gets down to single digit, the lcd will
@@ -141,7 +106,7 @@ void NFCLock::displayCounterLCD (){
     */
 }
 
-void NFCLock::displayEquationLCD(){
+void LCDController::displayEquationLCD(){
 
     //Serial.println ("Debug: displayEquationLCD()");
 
@@ -177,7 +142,7 @@ void NFCLock::displayEquationLCD(){
     }
 }
 
-void NFCLock::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
+void LCDController::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
     uint8_t _nfcValue = detectorNFCValue[NFCDetectorID];
     uint8_t _nfcPosition = _detectorNFCPosition[currentEquationIndex][NFCDetectorID];
     
@@ -194,76 +159,72 @@ void NFCLock::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
 
 } //end _updateNFCDetectorLCD
 
-void NFCLock::_clearDetectorNFCValue(){
+void LCDController::_clearDetectorNFCValue(){
     for (int i=0; i<NUM_NFC_DETECTOR; i++) detectorNFCValue[i] = 0;
 } //end _clearDetectorNFCValue
 
-void NFCLock::_clearPattern(){
+void LCDController::_clearPattern(){
     for (int i=0; i<NUM_PATTERN; i++) pattern[i] = '-';
 } //end _clearPattern
 
-void NFCLock::_clearEquation(){
+void LCDController::_clearEquation(){
     for (int i=0; i<NUM_EQUATION; i++) *equation[i] = "";
 } //end _clearEquation
 
 /* Pattern changed */
-void NFCLock::notifyPatternChanged(){
+void LCDController::notifyPatternChanged(){
     currentPatternName = nextPatternName;
     nextPatternIndex = nextPatternIndex + 1;
     if (nextPatternIndex >= NUM_PATTERN) nextPatternIndex = 0;
 
     nextPatternName = pattern[nextPatternIndex];
 
-    displayAllLCD();
-
 } //end patternChanged()
 
 /* Request change equation */
-void NFCLock::changeEquation(){
+void LCDController::changeEquation(){
     currentEquationIndex = currentEquationIndex + 1;
     if (currentEquationIndex >= NUM_EQUATION) currentEquationIndex = 0;
 
-    displayAllLCD();
-
 } //end changeEquation()
 
-void NFCLock::setCounter (int counter){
+void LCDController::setCounter (int counter){
     _counter = counter;
 }
 
-int NFCLock::getCounter(){
+int LCDController::getCounter(){
     return _counter;
 }
 
 /* Display string to LCD */
-void NFCLock::displayString (int col, int row, char message[]){
+void LCDController::displayString (int col, int row, char message[]){
     
     lcd->setCursor (col, row);
     lcd->print (message);
 }
 
-void NFCLock::displayString (int col, int row, char message){
+void LCDController::displayString (int col, int row, char message){
 
     lcd->setCursor (col, row);
     lcd->print (message);
 
 } //end displayString()
 
-void NFCLock::displayString (int col, int row, int message){
+void LCDController::displayString (int col, int row, int message){
 
     lcd->setCursor (col, row);
     lcd->print (message);
 
 } //end displayString()
 
-void NFCLock::displayString (int col, int row, uint8_t message){
+void LCDController::displayString (int col, int row, uint8_t message){
 
     lcd->setCursor (col, row);
     lcd->print (message);
 
 } //end displayString()
 
-void NFCLock::_loadDesiredNFCValue(){
+void LCDController::_loadDesiredNFCValue(){
     /* For testing only: 
     desiredNFCValue[0][0] = 1;
     desiredNFCValue[0][1] = 2;
@@ -298,7 +259,7 @@ void NFCLock::_loadDesiredNFCValue(){
 
 } //end desiredNFCValue()
 
-void NFCLock::_loadPatternData(){
+void LCDController::_loadPatternData(){
     pattern[0] = 'A';
     pattern[1] = 'B';
     pattern[2] = 'C';
@@ -307,7 +268,7 @@ void NFCLock::_loadPatternData(){
 } //end _loadPatternData()
 
 /*
-void NFCLock::_loadEquationData_old(){
+void LCDController::_loadEquationData_old(){
     desiredEquationValue [0] = 11;
     equation[0][0] = '/';
     equation[0][1] = '+';
@@ -344,7 +305,7 @@ void NFCLock::_loadEquationData_old(){
 } //end _loadEquationData()
 */
 
-void NFCLock::_loadEquationData(){
+void LCDController::_loadEquationData(){
     desiredEquationValue[0] = 11;
     desiredEquationValue[1] = 2;
     desiredEquationValue[2] = 16;
@@ -359,7 +320,7 @@ void NFCLock::_loadEquationData(){
 
 }
 
-void NFCLock::_loadNFCPositionData(){
+void LCDController::_loadNFCPositionData(){
     /*
     _detectorNFCPosition[0] = 0;
     _detectorNFCPosition[1] = 2;
@@ -389,7 +350,7 @@ void NFCLock::_loadNFCPositionData(){
 } //end _loadLCDPositionData()
 
 /*
-void NFCLock::_loadEquationPositionData(){
+void LCDController::_loadEquationPositionData(){
     _equationPosition[0] = 1;
     _equationPosition[1] = 4;
     _equationPosition[2] = 8;
@@ -398,26 +359,39 @@ void NFCLock::_loadEquationPositionData(){
 } //end _loadEquationPositionData()
 */
 
-int NFCLock::equationOne(){
+int LCDController::equationOne(){
+    if (detectorNFCValue[0]%detectorNFCValue[1] != 0){
+        return -1;
+    }
+
     return (
-      (detectorNFCValue[0]/detectorNFCValue[1]) +
+      float(detectorNFCValue[0]/detectorNFCValue[1]) +
       detectorNFCValue[2] - 
       detectorNFCValue[3] +
       detectorNFCValue[4]
     );
 }
 
-int NFCLock::equationTwo(){
+int LCDController::equationTwo(){
+    if ((detectorNFCValue[0]%detectorNFCValue[1] != 0) ||
+        (detectorNFCValue[2]%detectorNFCValue[3])){
+        return -1;
+    }
+
     return (
-        (detectorNFCValue[0]/detectorNFCValue[1]) +
-        (detectorNFCValue[2]/detectorNFCValue[3]) -
+        float(detectorNFCValue[0]/detectorNFCValue[1]) +
+        float(detectorNFCValue[2]/detectorNFCValue[3]) -
         detectorNFCValue[4]
     );
 }
 
-int NFCLock::equationThree(){
+int LCDController::equationThree(){
+    if (detectorNFCValue[0]%detectorNFCValue[1] != 0){
+        return -1;
+    }
+
     return (
-        (detectorNFCValue[0]/detectorNFCValue[1]) *
+        float(detectorNFCValue[0]/detectorNFCValue[1]) *
         detectorNFCValue[2] -
         detectorNFCValue[3] +
         detectorNFCValue[4]

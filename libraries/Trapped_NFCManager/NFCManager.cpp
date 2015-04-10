@@ -14,6 +14,7 @@ NFCManager::NFCManager(int managerId, bool isPrimary){
 	_managerId = managerId;
 	_isPrimary = isPrimary;
 	_shelfIsLocked = true;
+    _i2cLock = false;
 	_numRegisteredDetector = 3;
 	_registeredDetectorIds[0] = 3;
 	_registeredDetectorIds[1] = 4;
@@ -58,14 +59,12 @@ void NFCManager::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
 			}
 		} else  if (data[2] == MESSAGETYPEID_NFC_FOUNDEXPECTED || data[2] == MESSAGETYPEID_NFC_NOTFOUND){
 			// got a message from detector, relay it to primary NFCManager via Laser1	
-			int detectedValue = data[3];
-			if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
-				detectedValue = 0;
-			}				
-
-            if (_managerStates[data[1]] != detectedValue){
-			_notifyPrimaryManager(data[1], detectedValue != 0, detectedValue);
+            int detectedValue = data[3];
+            if(data[2] == MESSAGETYPEID_NFC_MANAGE_NOTFOUND){
+                detectedValue = 0;
             }
+            
+                _notifyPrimaryManager(data[1], detectedValue != 0, detectedValue);
 
 			if(_isPrimary){
 				// any local detector changes should check for potential lock updates

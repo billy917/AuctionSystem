@@ -31,6 +31,9 @@ class NFCManager
     bool _shelfIsLocked;
     bool _isPrimary;  // if _isPrimary is true, then relay messages via I2C
     int _localLockManagerAddr; // if _isPrimary is true, set the I2C addr for the LockManager
+
+    volatile bool _i2cLock;
+
     XBee* _xbee_pointer;
     
     XBeeAddress64 _laser1Addr;

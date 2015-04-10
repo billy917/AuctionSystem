@@ -1,5 +1,5 @@
-#ifndef NFCLock_h
-#define NFCLock_h
+#ifndef LCDController_h
+#define LCDController_h
 
 #include "Arduino.h"
 #include "Constants.h"
@@ -13,10 +13,10 @@
 //#define NUM_EQUATION_POSITION 5
 #define NUM_NFC_DETECTOR 5
 
-class NFCLock{
+class LCDController{
 
     public:
-        NFCLock();
+        LCDController();
         uint8_t detectorNFCValue[NUM_NFC_DETECTOR];
         uint8_t desiredNFCValue[NUM_PATTERN][NUM_NFC_DETECTOR];
         
@@ -58,11 +58,6 @@ class NFCLock{
         int getCounter();
 
     private:
-        uint8_t _messageID;
-        uint8_t _managerID;
-        uint8_t _detected;
-        uint8_t _detectorID;
-        uint8_t _nfcValue;
         //int _detectorNFCPosition[NUM_NFC_DETECTOR];
         int _detectorNFCPosition[NUM_EQUATION][NUM_NFC_DETECTOR];
         //int _equationPosition[NUM_EQUATION_POSITION];
@@ -70,7 +65,6 @@ class NFCLock{
         int _counter;
 
         void _updateNFCDetectorLCD (uint8_t NFCDetectorID);
-        void _manageNFC();
 
         void _loadDesiredNFCValue();
         void _loadPatternData();
