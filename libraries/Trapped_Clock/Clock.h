@@ -7,6 +7,7 @@
 #define Clock_h
 
 #include "Arduino.h"  
+#include "Wire.h"
 #include <Digits.h>
 
 class Clock
@@ -24,6 +25,8 @@ class Clock
   	
   	int _digitArray[4];
   	void _updateClockDisplay();
+    bool playWarningFlag;
+    int _playWarningCounter;
 };
 
 #endif

@@ -14,7 +14,6 @@
 
 /* Initialize Variables */
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
-volatile uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
 
 int trackList[NUM_TRACK];
@@ -23,12 +22,14 @@ Timer t;
 int playEvent;
 
 int pin;
+const int WARNING_PIN = WARNING_TRACK - NUM_TRACK + PIN_OFFSET;
+volatile bool warningLock = false;
 
 /* Debug use only */
 //int inc = 0;
 
 void setup(){
-    /* Setting up laser sensor pins connecting to sound board */
+    /* Setting up pins connecting to sound board */
     uint8_t i;
     for(i=0 + PIN_OFFSET; i<=NUM_TRACK + PIN_OFFSET; i++){
         pinMode(i, INPUT);
@@ -39,8 +40,8 @@ void setup(){
     }
     
     /* Setting up WARNING pin */
-    pinMode (WARNING_TRACK, INPUT);
-    digitalWrite (WARNING_TRACK, LOW);
+    pinMode (WARNING_PIN, INPUT);
+    digitalWrite (WARNING_PIN, LOW);
 
     /* Setting up I2C Wire */
     Wire.begin(SOUNDFX_I2C_ADDR);
@@ -68,20 +69,16 @@ void loop(){
     */
 
     if (receivedI2CMessage){
-        
-        for (int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
-            localBuffer[i] = i2cDataBuffer[i];
-        }
-
         Serial.println ("Has received i2c message");
 
-        if (localBuffer[0] == MESSAGETYPEID_CLOCK){
-            if (localBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
+        if (i2cDataBuffer[0] == MESSAGETYPEID_CLOCK){
+            if (i2cDataBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
                     
+                    if (!warningLock){
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
-                    pin = trackList[localBuffer[3]-1] + PIN_OFFSET;
+                    pin = trackList[i2cDataBuffer[3]-1] + PIN_OFFSET;
 
                     Serial.print ("Playing pin: ");
                     Serial.println (pin);
@@ -94,19 +91,19 @@ void loop(){
                     Serial.println (pin);
 
                     pinMode (pin, INPUT);
+                    }
                 
-            } else if (localBuffer[1] == 
+            } else if (i2cDataBuffer[1] == 
                 MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK){
-                
-                pinMode (WARNING_TRACK, OUTPUT);
+                warningLock = true;
+                pinMode (WARNING_PIN, OUTPUT);
 
-            } else if (localBuffer[1] ==
+            } else if (i2cDataBuffer[1] ==
                 MESSAGETYPEID_CLOCK_STOP_LAST_TRACK){
-
-                pinMode (WARNING_TRACK, INPUT);
+                warningLock = false;
+                pinMode (WARNING_PIN, INPUT);
                 
             }
-
         }
         receivedI2CMessage = false;
     }
@@ -133,5 +130,6 @@ void fillTrackData(){
     for (int i=0; i<NUM_TRACK; i++){
         trackList[i] = (NUM_TRACK - i);
     }
+
 }
 
