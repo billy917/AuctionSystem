@@ -33,8 +33,13 @@ void pin19Interrupted(){
 }
 
 void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
+  pinMode(19, INPUT_PULLUP);
+  
   Serial.begin(9600);
   Serial2.begin(9600);
+  
   xbee.begin(Serial2);   
   laserSensorController.setXBeeReference(&xbee);
   
