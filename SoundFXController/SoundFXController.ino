@@ -10,6 +10,7 @@
 
 #define PIN_OFFSET 3
 #define NUM_TRACK 9
+#define WARNING_TRACK 9
 
 /* Initialize Variables */
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
@@ -21,6 +22,8 @@ Timer t;
 int playEvent;
 
 int pin;
+const int WARNING_PIN = WARNING_TRACK - NUM_TRACK + PIN_OFFSET;
+volatile bool warningLock = false;
 
 /* Debug use only */
 //int inc = 0;
@@ -35,6 +38,10 @@ void setup(){
     for(i=0 + PIN_OFFSET; i<=NUM_TRACK + PIN_OFFSET; i++){
         digitalWrite(i, LOW);
     }
+    
+    /* Setting up WARNING pin */
+    pinMode (WARNING_PIN, INPUT);
+    digitalWrite (WARNING_PIN, LOW);
 
     /* Setting up I2C Wire */
     Wire.begin(SOUNDFX_I2C_ADDR);
@@ -67,6 +74,7 @@ void loop(){
         if (i2cDataBuffer[0] == MESSAGETYPEID_CLOCK){
             if (i2cDataBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
                     
+                    if (!warningLock){
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
@@ -83,6 +91,17 @@ void loop(){
                     Serial.println (pin);
 
                     pinMode (pin, INPUT);
+                    }
+                
+            } else if (i2cDataBuffer[1] == 
+                MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK){
+                warningLock = true;
+                pinMode (WARNING_PIN, OUTPUT);
+
+            } else if (i2cDataBuffer[1] ==
+                MESSAGETYPEID_CLOCK_STOP_LAST_TRACK){
+                warningLock = false;
+                pinMode (WARNING_PIN, INPUT);
                 
             }
         }

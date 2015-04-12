@@ -12,6 +12,10 @@ Clock::Clock(uint8_t dataPin, uint8_t clockPin, uint8_t latchPin){
   _digitArray[0] = _digitArray[1] = _digitArray[2] = _digitArray[3] = 0;
   _digits = new Digits(dataPin, clockPin, latchPin);
   resetClock();
+
+  /* Play Warning sound variables */
+  playWarningFlag = false;
+  _playWarningCounter = 30;
 }
 
 void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
@@ -28,6 +32,7 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
         minutes = minutes + 1;
         seconds = seconds - 60;  
       }
+      _updateClockDisplay();
     } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[1]){
       if(minutes > 0){
         minutes -= data[2];
@@ -56,6 +61,29 @@ void Clock::oneSecondLater(){
     }
     if(minutes <= 0  && seconds <= 0){
       clockMode = CLOCK_MODE_PAUSE;
+
+      // set flag to play for 30sec
+      playWarningFlag = true;
+    }
+    
+    if ((clockMode == CLOCK_MODE_PAUSE) && (playWarningFlag)){
+        if (_playWarningCounter >= 30){
+            Wire.beginTransmission (SOUNDFX_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_CLOCK);
+            Wire.write (MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK);
+            Wire.endTransmission();
+        }
+        
+        if (_playWarningCounter == 0){
+            Wire.beginTransmission (SOUNDFX_I2C_ADDR);
+            Wire.write (MESSAGETYPEID_CLOCK);
+            Wire.write (MESSAGETYPEID_CLOCK_STOP_LAST_TRACK);
+            Wire.endTransmission();
+
+            playWarningFlag = false;
+        }
+
+        _playWarningCounter -= 0;
     }
   }
 }
