@@ -32,6 +32,7 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
         minutes = minutes + 1;
         seconds = seconds - 60;  
       }
+      _updateClockDisplay();
     } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[1]){
       if(minutes > 0){
         minutes -= data[2];
