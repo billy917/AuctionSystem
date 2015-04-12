@@ -26,6 +26,8 @@ volatile bool i2cKeypadLock = true;
 
 LCDController lcdController;
 volatile bool lcdPrint = false;
+volatile bool i2cPrintLock = false;
+bool bookLock = true;
 
 Timer t;
 volatile int countdownEvent;
@@ -136,7 +138,7 @@ void loop(){
     //Serial.println(freeRam());
 
     /* Get key input from keypad */
-    if ((!delayKeyPress) && (locked)) keypad.getKey();
+    if ((!delayKeyPress)) keypad.getKey();
 
     if (receivedI2CMessage){
         counterFlag = true;
@@ -186,19 +188,22 @@ void loop(){
         }
     }
 
-    if (lcdPrint){
-        lcdController.displayAllLCD();
+    if (lcdPrint && !i2cPrintLock){
+        if (millis()%300000 == 0) lcdController.lcd->init();
+        if (bookLock) lcdController.displayAllLCD();
         lcdPrint = false;
+    }
     }
 
     t.update();
-    }
 
 } //end loop()
 
 /* I2C onReceive interrupt */
 void Received (int noBytes){
     uint8_t temp = Wire.read();
+
+   i2cPrintLock = true;
 
     if ((temp == MESSAGETYPEID_KEYPAD_LOCK) && (!i2cKeypadLock)){
         i2cDataBuffer[0] = temp;
@@ -223,6 +228,8 @@ void Received (int noBytes){
            temp = Wire.read();
         }
     }
+
+    i2cPrintLock = false;
 } //end Received()
 
 /* I2C onRequest interrupt */
@@ -396,6 +403,7 @@ void keypadEvent(KeypadEvent eKey){
           Serial.print (" time(s) left! The password is ");
           Serial.println (songPassword);
 
+          locked = true;
         }
       }
 
