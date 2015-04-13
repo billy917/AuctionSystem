@@ -10,7 +10,7 @@
 #include "pitches.h"
 #include "LiquidCrystal_I2C.h"
 
-const uint8_t PIANO_LOCK_I2C_ADDR = 120;
+//const uint8_t PIANO_LOCK_I2C_ADDR = 120;
 volatile bool receivedI2CMessage = false;
 volatile uint8_t i2cDataBuffer[NFC_MESSAGE_MAX_SIZE];
 
@@ -106,6 +106,7 @@ void requestEvent(){}
 
 void loop(){
 
+    if (lockState){
     readKeyState();
 
     /* Use below only if handleKey() is not in readKeyState() */
@@ -148,6 +149,7 @@ void loop(){
             Serial.println (" time(s) left!");
 
         }
+    }
     }
 }
 
