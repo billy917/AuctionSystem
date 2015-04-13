@@ -112,6 +112,10 @@ void handleXBeeMsg(){
       xBeeDataBuffer[2] = rx.getData(2);
       xBeeDataBuffer[3] = rx.getData(3);
       xBeeDataBuffer[4] = rx.getData(4);
+    } else if(MESSAGETYPEID_GAME == xBeeDataBuffer[0]){
+      xBeeDataBuffer[1] = rx.getData(1);
+      xBeeDataBuffer[2] = rx.getData(2);
+      xBeeDataBuffer[3] = rx.getData(3);
     }
     
     commandSource = 'X';
@@ -164,7 +168,7 @@ void handleMessage(){
     laserController.turnOffAllLaser();
   } else if (localBuffer[0] == 3){
     //Turn On
-    laserController.turnOnAllLaser();
+    laserController.turnOnAllLaser(true);
   } 
   commandSource = ' ';
 }

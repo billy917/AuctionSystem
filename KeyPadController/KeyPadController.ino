@@ -60,7 +60,7 @@ void setup() {
   Wire.onReceive(receiveI2CEvent);
   
   timer.setInterval(1000, oneSecondLater);
-  clock.startClock();
+  clock.stopClock();
 }
 
 void loop() {

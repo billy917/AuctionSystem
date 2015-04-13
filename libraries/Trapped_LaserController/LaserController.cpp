@@ -22,6 +22,7 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 		_laserPins[i] = 0;
 		_xBeePayload[i] = 0;
 		_laserStates[i] = false;
+		_enableLaser[i] = false;
 	}
 
 	_laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf); //Laser1 xBee 
@@ -51,13 +52,23 @@ LaserController::LaserController(int controllerId, bool isPrimary, bool enableSe
 }
 
 bool LaserController::canHandleMessageType(uint8_t messageTypeId){
-	return MESSAGETYPEID_LASER_CONTROL == messageTypeId;
+	return MESSAGETYPEID_LASER_CONTROL == messageTypeId || MESSAGETYPEID_GAME == messageTypeId;
 }
 
 void LaserController::setLaserPin(int laserId, int pin){
 	_localLaserIds[_numRegisteredLasers] = laserId;
 	_laserPins[_numRegisteredLasers] = pin;
+	_enableLaser[_numRegisteredLasers] = GLOBAL_ENABLE_LASER[laserId-1];
 	_numRegisteredLasers++;
+}
+
+int LaserController::_getIndexByLaserId(int laserId){
+	for(int i=0; i<_numRegisteredLasers; i++){
+		if(laserId == _localLaserIds[i]){
+			return i;
+		}
+	}
+	return -1;
 }
 
 bool LaserController::_isLaserIndexLocal(int laserId){
@@ -69,13 +80,15 @@ bool LaserController::_isLaserIndexLocal(int laserId){
 	return false;
 }
 
-void LaserController::turnOnAllLaser(){
-	for(int i=0;i<_numRegisteredLasers; i++){
+void LaserController::turnOnAllLaser(bool turnOnSensor){
+	for(int i=0;i<_numRegisteredLasers; i++){		
 		_turnOnLocalLaserByIndexId(i);		
 	}
-	delay(2500);
-	for(int i=0;i<_numRegisteredLasers; i++){		
-		_turnOnSensor(_localLaserIds[i]);				
+	if(turnOnSensor){
+		delay(1000);
+		for(int i=0;i<_numRegisteredLasers; i++){		
+			_turnOnSensor(_localLaserIds[i]);				
+		}
 	}
 }
 
@@ -98,8 +111,10 @@ void LaserController::_turnOnLocalLaser(int laserId){
 }
 
 void LaserController::_turnOnLocalLaserByIndexId(int indexId){
-	digitalWrite(_laserPins[indexId], HIGH);
-	_laserStates[indexId] = true;
+	if(_enableLaser[indexId]){
+		digitalWrite(_laserPins[indexId], HIGH);
+		_laserStates[indexId] = true;
+	}	
 }
 
 void LaserController::_turnOffLocalLaser(int laserId){
@@ -111,12 +126,15 @@ void LaserController::_turnOffLocalLaser(int laserId){
 }
 
 void LaserController::_turnOffLocalLaserByIndexId(int indexId){
-	digitalWrite(_laserPins[indexId], LOW);
-	_laserStates[indexId] = false;
+	if(_enableLaser[indexId]){
+		digitalWrite(_laserPins[indexId], LOW);
+		_laserStates[indexId] = false;
+	}
 }
 
 void LaserController::_switchSensorState(int laserId, bool on){
-	if(_enableSensor && GLOBAL_ENABLE_SENSOR[laserId-1]){
+	int laserIndex = _getIndexByLaserId(laserId);
+	if(laserIndex > -1 && _enableSensor && GLOBAL_ENABLE_SENSOR[laserId-1] && _enableLaser[laserIndex]){
 		int sensorId = GLOBAL_SENSOR_ID[laserId-1];
 		int sensorManagerId = GLOBAL_SENSOR_MANAGER_ID[laserId-1];		
 		_xBeePayload[0] = MESSAGETYPEID_LASER_SENSOR;
@@ -124,7 +142,7 @@ void LaserController::_switchSensorState(int laserId, bool on){
 		_xBeePayload[2] = sensorId;
 
 		if(sensorManagerId == 0){			
-			_xbee->send(_sensor1ZBTxRequest);
+			_xbee->send(_sensor1ZBTxRequest);			
 		} else if( sensorManagerId == 1 ) {
 			_xbee->send(_sensor2ZBTxRequest);
 		} else if( sensorManagerId == 2 ) {
@@ -145,19 +163,78 @@ void LaserController::_turnOnSensor(int laserId){
 void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){	
 	Serial.print("Handling Message:");Serial.print(data[0]);Serial.print(data[1]);Serial.println(data[2]);
 	if(canHandleMessageType(data[0])){
-		if(_isLaserIndexLocal(data[2])){
-			if(MESSAGETYPEID_LASER_CONTROL_ON == data[1]){
-				_turnOnLocalLaser(data[2]);
-				delay(2500);
-				_turnOnSensor(data[2]);
-			} else if (MESSAGETYPEID_LASER_CONTROL_OFF == data[1]){
-				_turnOffSensor(data[2]);
-				delay(2500);
-				_turnOffLocalLaser(data[2]);
+		if(MESSAGETYPEID_GAME == data[0]){
+			if(MESSAGETYPEID_GAME_INIT_LASER_CONFIG == data[1]){				
+				int laserIndex = _getIndexByLaserId(data[2]);
+				if(-1 < laserIndex){
+					_enableLaser[laserIndex] = data[3]==0?false:true;
+				} else if(_isPrimary) {
+					_forwardMessageToOtherControllers(data[2], dataLength, data);
+				}
 			}
-		} else if(_isPrimary) {
-			_forwardMessageToOtherControllers(data[2], dataLength, data);
+		} else if (MESSAGETYPEID_LASER_CONTROL == data[0]){
+			if (MESSAGETYPEID_LASER_CONTROL_ON_ALL == data[1]){
+				turnOnAllLaser(true);
+				if(_isPrimary){
+					_forwardMessageToOtherControllers(4, dataLength, data);
+					_forwardMessageToOtherControllers(7, dataLength, data);
+				}
+			} else if(MESSAGETYPEID_LASER_CONTROL_ON_ALL_NO_SENSOR == data[1]){
+				turnOnAllLaser(false);
+				if(_isPrimary){
+					_forwardMessageToOtherControllers(4, dataLength, data);
+					_forwardMessageToOtherControllers(7, dataLength, data);
+				}
+			} else if (MESSAGETYPEID_LASER_CONTROL_ON_ALL_ACTIVE == data[1]){ // turn on all active laser sensor
+				_enableActiveLaserSensor();
+				if(_isPrimary){
+					_forwardMessageToOtherControllers(4, dataLength, data);
+					_forwardMessageToOtherControllers(7, dataLength, data);
+				}
+			} else if (MESSAGETYPEID_LASER_CONTROL_OFF_ALL_ACTIVE == data[1]){ // turn off all active laser sensor
+				_disableActiveLaserSensor();
+				if(_isPrimary){
+					_forwardMessageToOtherControllers(4, dataLength, data);
+					_forwardMessageToOtherControllers(7, dataLength, data);
+				}
+			} else if (MESSAGETYPEID_LASER_CONTROL_OFF_ALL == data[1]){
+				turnOffAllLaser();
+				if(_isPrimary){
+					_forwardMessageToOtherControllers(4, dataLength, data);
+					_forwardMessageToOtherControllers(7, dataLength, data);
+				}
+			} else if(_isLaserIndexLocal(data[2])){
+				if(MESSAGETYPEID_LASER_CONTROL_ON == data[1]){
+					_turnOnLocalLaser(data[2]);
+					delay(2500);
+					_turnOnSensor(data[2]);
+				} else if (MESSAGETYPEID_LASER_CONTROL_OFF == data[1]){
+					_turnOffSensor(data[2]);
+					delay(2500);
+					_turnOffLocalLaser(data[2]);
+				}
+			} else if(_isPrimary) {
+				_forwardMessageToOtherControllers(data[2], dataLength, data);
+			}
 		}
+	}
+}
+
+void LaserController::_enableActiveLaserSensor(){
+	for(int i=0; i<_numRegisteredLasers; i++){
+		if(_laserStates[i]){ // if laser is ON
+			_switchSensorState(_localLaserIds[i],true);		
+			delay(250);	
+		}		
+	}
+}
+
+void LaserController::_disableActiveLaserSensor(){
+	for(int i=0; i<_numRegisteredLasers; i++){
+		if(_laserStates[i]){ // if laser is ON
+			_switchSensorState(_localLaserIds[i],false);	
+			delay(250);		
+		}		
 	}
 }
 

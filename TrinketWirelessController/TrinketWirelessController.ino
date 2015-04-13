@@ -1,5 +1,7 @@
 //I2C address: 2
 #include <Wire.h> 
+#include "Constants.h"
+#include "GameController.h"
 
 //PIN 0, 2 - I2C
 //PIN 1 = A, 3 = B, 4 = C
@@ -11,17 +13,32 @@ int numSignals = 4;
 int signalPin[4] = {3, 4, 5, 6};
 int lastSignalState[4] = {LOW, LOW, LOW, LOW};
 int curSignalState[4];
+GameController gameController;
 
-void setup() {                
+void setup() {      
+   pinMode(13, OUTPUT);
+   
+   Wire.begin(WIRELESS_I2C_ADDR);  
    pinMode(3,INPUT);
    pinMode(4,INPUT);
    pinMode(5,INPUT);
    pinMode(6,INPUT);
-   Wire.begin();
    
    readCurrentSignalState();
    copyLastSignalState();
-   delay(1000);
+   blink();
+   delay(2000);
+   gameController.overrideConfig();
+}
+
+void blink(){
+  digitalWrite(13, HIGH);
+  delay(300);
+  digitalWrite(13, LOW); 
+  delay(300);
+  digitalWrite(13, HIGH);
+  delay(300);
+  digitalWrite(13, LOW);
 }
 
 void readCurrentSignalState(){
@@ -46,7 +63,7 @@ void loop() {
     if(curSignalState[i] != lastSignalState[i]){
       // just pressed
       if(curSignalState[i] == HIGH){
-        send(i);
+        detectedSignal(i);
       }
     } 
   }
@@ -55,12 +72,15 @@ void loop() {
   delay(200);
 }
 
-void send(int mode){
-  Wire.beginTransmission(1); //LaserDriver
-  Wire.write(mode);              // sends one byte  
-  Wire.endTransmission();    // stop transmitting
-  
-  Wire.beginTransmission(4); //ShelfLock
-  Wire.write(mode);              // sends one byte  
-  Wire.endTransmission();    // stop transmitting
+void detectedSignal(int pinIndex){
+  if(0 == pinIndex){ // pin 3 A
+    gameController.start();
+  } else if (1 == pinIndex){ // pin 4 B
+    gameController.pause();    
+  } else if (2 == pinIndex){ // pin 5 C
+    gameController.addTime();
+  } else if (3 == pinIndex){ // pin 6 D
+    gameController.restart();    
+  }
+  blink();
 }

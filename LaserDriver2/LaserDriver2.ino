@@ -111,7 +111,8 @@ void handleXBeeMsg(){
         || MESSAGETYPEID_BGM == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
-    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]){
+    } else if(MESSAGETYPEID_NFC_MANAGE == xBeeDataBuffer[0]
+        || MESSAGETYPEID_GAME == xBeeDataBuffer[0]){
       xBeeDataBuffer[1] = rx.getData(1);
       xBeeDataBuffer[2] = rx.getData(2);
       xBeeDataBuffer[3] = rx.getData(3);
@@ -142,9 +143,9 @@ void handleMessage(){
   if(laserController.canHandleMessageType(localBuffer[0])){
       laserController.handleMessage(3, localBuffer);
   }
-  if(MESSAGETYPEID_CLOCK == localBuffer[0]){    
-    forwardI2CMessage(SOUNDFX_I2C_ADDR);
-    forwardI2CMessage(CLOCK_I2C_ADDR);
+  if(MESSAGETYPEID_CLOCK == localBuffer[0]){      
+      forwardI2CMessage(SOUNDFX_I2C_ADDR);
+      forwardI2CMessage(CLOCK_I2C_ADDR);    
   } else if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
     forwardI2CMessage(LASER_SENSOR_I2C_ADDR);
   }
@@ -163,7 +164,7 @@ void handleMessage(){
       instructXBeeModeChange(localBuffer[0]); 
     }     
     //Turn On
-    laserController.turnOnAllLaser();
+    laserController.turnOnAllLaser(true);
   } 
   commandSource = ' ';
 

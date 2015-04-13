@@ -18,13 +18,14 @@ class Clock
     void oneSecondLater();
     void resetClock();
     void startClock();
+    void stopClock();
+    void updateClockDisplay();
   private:
   	int i;
     int clockMode, minutes, seconds;
   	Digits* _digits;
   	
-  	int _digitArray[4];
-  	void _updateClockDisplay();
+  	int _digitArray[4];  	
     bool playWarningFlag;
     int _playWarningCounter;
 };

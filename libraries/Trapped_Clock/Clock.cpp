@@ -11,7 +11,6 @@
 Clock::Clock(uint8_t dataPin, uint8_t clockPin, uint8_t latchPin){
   _digitArray[0] = _digitArray[1] = _digitArray[2] = _digitArray[3] = 0;
   _digits = new Digits(dataPin, clockPin, latchPin);
-  resetClock();
 
   /* Play Warning sound variables */
   playWarningFlag = false;
@@ -32,15 +31,30 @@ void Clock::handleI2CMessage(uint8_t dataLength, uint8_t data[]){
         minutes = minutes + 1;
         seconds = seconds - 60;  
       }
-      _updateClockDisplay();
-    } else if (MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[1]){
+      updateClockDisplay();
+    } else if (CLOCK_MODE_PAUSE != clockMode && MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT == data[1]){
       if(minutes > 0){
         minutes -= data[2];
       } else {
         seconds = 0;
       }      
+    } else if (MESSAGETYPEID_CLOCK_STOP == data[1]){
+      stopClock();
+    } else if (MESSAGETYPEID_CLOCK_STOP_LAST_TRACK == data[1]){
+      playWarningFlag = false;
+      Wire.beginTransmission (SOUNDFX_I2C_ADDR);
+      Wire.write (MESSAGETYPEID_CLOCK);
+      Wire.write (MESSAGETYPEID_CLOCK_STOP_LAST_TRACK);
+      Wire.endTransmission();
+      _playWarningCounter = 30;
     }
   }
+}
+
+void Clock::stopClock(){
+  clockMode = CLOCK_MODE_PAUSE;
+  _digitArray[0] = _digitArray[1] = _digitArray[2] = _digitArray[3] = 0;
+  updateClockDisplay();
 }
 
 void Clock::oneSecondLater(){
@@ -57,7 +71,7 @@ void Clock::oneSecondLater(){
     }
 
     if(CLOCK_MODE_COUNTDOWN == clockMode){
-      _updateClockDisplay();
+      updateClockDisplay();
     }
     if(minutes <= 0  && seconds <= 0){
       clockMode = CLOCK_MODE_PAUSE;
@@ -92,14 +106,14 @@ void Clock::resetClock(){
   minutes = 45;
   seconds = 0;
   clockMode = CLOCK_MODE_PAUSE;
-  _updateClockDisplay();
+  updateClockDisplay();
 }
 
 void Clock::startClock(){
   clockMode = CLOCK_MODE_COUNTDOWN;
 }
 
-void Clock::_updateClockDisplay(){
+void Clock::updateClockDisplay(){
   int digit4 = seconds % 10;
   int digit3 = ( (seconds%100) - digit4 ) / 10;
 

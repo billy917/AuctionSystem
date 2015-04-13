@@ -27,6 +27,8 @@ class LaserSensorController
     uint8_t calibrateSensor(int sensorId, int sensorIndex, SFE_TSL2561* sensor);
     void enableSensorBySensorId(int sensorId);
     void disableSensorBySensorId(int sensorId);
+    void pauseAllSensors();
+    void reenableAllSensors();
     void trippedWire(int sensorId);
     void printState();
     void clearTrippedFlag();

@@ -184,6 +184,26 @@ void LaserSensorController::disableSensorBySensorId(int sensorId){
 	}
 }
 
+void LaserSensorController::pauseAllSensors(){
+	for(int sensorIndex=0; sensorIndex<_numRegisteredSensors; sensorIndex++){
+		detachInterrupt(_interruptIds[sensorIndex]);								
+		SFE_TSL2561* sensor = _sensors[sensorIndex];
+		if(NULL != sensor){
+			sensor->setInterruptControl(0,_sensorPersistConfig[sensorIndex]);
+		}
+	}
+}
+
+void LaserSensorController::reenableAllSensors(){
+	for(int sensorIndex=0; sensorIndex<_numRegisteredSensors; sensorIndex++){
+		if (_sensorEnabled[sensorIndex]){
+			if(calibrateSensorByIndex(_sensorIds[sensorIndex], sensorIndex)){
+				attachInterrupt(_interruptIds[sensorIndex], _interruptFuncs[sensorIndex], FALLING);		 
+			}			
+		}
+	}
+}
+
 bool LaserSensorController::calibrateSensorBySensorId(int sensorId){
 	int sensorIndex = _getSensorIndexById(sensorId);
 	if(-1 < sensorIndex){		

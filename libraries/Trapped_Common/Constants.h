@@ -38,6 +38,7 @@ const uint8_t MESSAGETYPEID_CLOCK = 13;
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14; //SafeKeyPad
 const uint8_t MESSAGETYPEID_TRIP_LASER = 15;
 const uint8_t MESSAGETYPEID_LCD = 16;
+const uint8_t MESSAGETYPEID_GAME = 17;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -75,6 +76,11 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL = 3; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF_ALL = 4; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL_NO_SENSOR = 5; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL_ACTIVE = 6; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF_ALL_ACTIVE = 7;
 
 const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
 const uint8_t MESSAGETYPEID_BGM_PLAY_SONG = 2;
@@ -91,6 +97,7 @@ const uint8_t MESSAGETYPEID_TRIP_LASER_ON = 1;
 const uint8_t MESSAGETYPEID_TRIP_LASER_OFF = 2;
 const uint8_t MESSAGETYPEID_TRIP_LASER_BEEP = 3;
 
+
 const uint8_t MESSAGETYPEID_CLOCK_RESET = 1;
 const uint8_t MESSAGETYPEID_CLOCK_START = 2;
 const uint8_t MESSAGETYPEID_CLOCK_PAUSE = 3;
@@ -98,6 +105,10 @@ const uint8_t MESSAGETYPEID_CLOCK_MODIFY_ADD = 4;
 const uint8_t MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT = 5;
 const uint8_t MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK = 6;
 const uint8_t MESSAGETYPEID_CLOCK_STOP_LAST_TRACK = 7;
+const uint8_t MESSAGETYPEID_CLOCK_STOP = 8;
+
+const uint8_t MESSAGETYPEID_GAME_INIT_LASER_CONFIG = 1;
+const uint8_t MESSAGETYPEID_GAME_INIT_SENSOR_CONFIG = 2;
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
 const uint8_t I2C_MESSAGE_MAX_SIZE = 9; // should be same as NFC Message Max Size
@@ -143,6 +154,12 @@ const uint8_t GAME_STATE_RUNNING = 2;
 const uint8_t GAME_STATE_PAUSED = 3;
 const uint8_t GAME_STATE_STOPPED = 4;
 
+/*
+Game Control init config protocol
+	[0] messageTypeId (MESSAGETYPEID_GAME_INIT_LASER_CONFIG)
+	[1] detailedMessageType (1 = Laser config, 2 = Sensor config)
+	[2] laserId [1..9]
+	[3] enabled [0,1]
 
 /*
 Clock Control message protocol

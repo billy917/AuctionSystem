@@ -34,7 +34,7 @@ void pin19Interrupted(){
 
 void setup() {
   
-  \pinMode(2, INPUT_PULLUP);
+  pinMode(2, INPUT_PULLUP);
   pinMode(3, INPUT_PULLUP);
   pinMode(19, INPUT_PULLUP);
   
@@ -47,7 +47,7 @@ void setup() {
   Wire.onReceive(receiveI2CEvent);
 
   laserSensorController.setSensorPin(4, 1, 3, 1, TSL2561_ADDR_0, &pin3Interrupted); //0
-  laserSensorController.setSensorPin(5, 0, 2, 1, TSL2561_ADDR, &pin2Interrupted); 
+  laserSensorController.setSensorPin(5, 0, 2, 2, TSL2561_ADDR, &pin2Interrupted); 
   laserSensorController.setSensorPin(6, 4, 19, 1, TSL2561_ADDR_1, &pin19Interrupted); //1
 
   Serial.println("Initialized");
