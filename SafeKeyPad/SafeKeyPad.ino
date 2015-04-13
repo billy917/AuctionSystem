@@ -57,7 +57,7 @@ byte colPins[COLS] = {2, 3, 4}; //connect to the column pinouts of the keypad
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char password[4] = {'-','-','-','-'};
 int passwordLength = 0;
-bool locked = true;
+volatile bool locked = true;
 int delayKeyPressEvent;
 volatile bool delayKeyPress = false;
 
@@ -116,7 +116,7 @@ void setup(){
 
     i2cDetectorLock = false;
     i2cKeypadLock = false;
-
+    
     delay (1500);
 
     Wire.beginTransmission (BGM_I2C_ADDR);
@@ -125,10 +125,14 @@ void setup(){
     Wire.endTransmission();
     Serial.println ("Sent PLAY_SONG message");
 
+    turnOnGreenLEDs();
     delay (200);
+    turnOffLEDs();
 
     Serial.println ("Begin LCD countdown event");
-    countdownEvent = t.every (1000, updateCounter);
+    /* BELOW BREAKS I2C BUS */
+    /* BUT ALSO BREAKS KEYPAD */
+    //countdownEvent = t.every (1000, updateCounter);
 
 } //end setup()
 
@@ -138,15 +142,18 @@ void loop(){
     //Serial.println(freeRam());
 
     /* Get key input from keypad */
-    if ((!delayKeyPress)) keypad.getKey();
+    //if ((!delayKeyPress)) keypad.getKey();
+    keypad.getKey();
 
     if (receivedI2CMessage){
         counterFlag = true;
         counterLock = true;
-        
+
+        noInterrupts();
         for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
             localBuffer[i] = i2cDataBuffer[i];
         }
+        interrupts();
         
         handleCommands();
 
@@ -156,46 +163,27 @@ void loop(){
     }
 
     if (!locked){
-    if (!counterFlag && !counterLock) handleCounter();
+        if (!counterFlag && !counterLock) handleCounter();
 
-    if (lcdController.canCheckEquation()){
-        if (lcdController.checkEquation()) {
-
-            /* Unlock SHELF_LOCK */
-            Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
-            Wire.write (MESSAGETYPEID_LOCK);
-            Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
-            Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
-            Wire.endTransmission();
-
-            lcdController.clearLCD();
-            lcdController.displayString (1, 7, "Bookcase");
-            lcdController.displayString (2, 7, "Unlocked");
-
-            checkEquationState = true;
-
-        } else {
-            if (checkEquationState){
-                /* Lock SHELF_LOCK */
-                Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
-                Wire.write (MESSAGETYPEID_LOCK);
-                Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
-                Wire.write (MESSAGETYPEID_LOCK_LOCK);
-                Wire.endTransmission();
-
-                checkEquationState = false;
+        if (lcdController.canCheckEquation()){
+            if (lcdController.checkEquation()) {
+                unlockShelf();
+            } else {
+                lockShelf();
             }
+        } else {
+            lockShelf();
+        }
+
+        if (lcdPrint){
+            /* the code below may cause lcd corruption */
+            if (((long)millis())%300000 == 0) lcdController.lcd->init();
+            if (bookLock) lcdController.displayAllLCD();
+            lcdPrint = false;
         }
     }
 
-    if (lcdPrint && !i2cPrintLock){
-        if (millis()%300000 == 0) lcdController.lcd->init();
-        if (bookLock) lcdController.displayAllLCD();
-        lcdPrint = false;
-    }
-    }
-
-    t.update();
+    //t.update();
 
 } //end loop()
 
@@ -203,9 +191,8 @@ void loop(){
 void Received (int noBytes){
     uint8_t temp = Wire.read();
 
-   i2cPrintLock = true;
-
     if ((temp == MESSAGETYPEID_KEYPAD_LOCK) && (!i2cKeypadLock)){
+
         i2cDataBuffer[0] = temp;
         for (int i=1; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
            i2cDataBuffer[i] = Wire.read();
@@ -216,6 +203,7 @@ void Received (int noBytes){
     } else if ((temp == MESSAGETYPEID_NFC_MANAGE) &&
                 (!i2cDetectorLock) &&
                 (!locked)){
+
         i2cDataBuffer[0] = temp;
         for (int i=1; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
            i2cDataBuffer[i] = Wire.read();
@@ -223,13 +211,14 @@ void Received (int noBytes){
 
         receivedI2CMessage = true;
 
-    } else {
-        for (int i=1; i < noBytes && i < I2C_MESSAGE_MAX_SIZE; i++){
-           temp = Wire.read();
+    } else{
+        /* MUST KEEP BELOW or else cannot receive BGM password */
+        for (int i=1; i<noBytes; i++){
+            temp = Wire.read();
         }
+        
     }
 
-    i2cPrintLock = false;
 } //end Received()
 
 /* I2C onRequest interrupt */
@@ -351,10 +340,12 @@ void keypadEvent(KeypadEvent eKey){
           Serial.println ("Correct password!");
 
           /* Stop playing song */
+          /*
           Wire.beginTransmission (BGM_I2C_ADDR);
           Wire.write (MESSAGETYPEID_BGM);
           Wire.write (MESSAGETYPEID_BGM_STOP_SONG);
           Wire.endTransmission();
+          */
 
           turnOnGreenLEDs();
 
@@ -373,11 +364,14 @@ void keypadEvent(KeypadEvent eKey){
         } else {
           Serial.println("Failed");
 
-          delayKeyPressEvent = t.after (2000, canKeyPress);
+          //delayKeyPressEvent = t.after (2000, canKeyPress);
 
           /* Increment fail counter by 1 */
           fail += 1;
           turnOnRed(fail);
+
+          delay(2000);
+          clearPassword();
 
           /* If fail three times */
           if (fail >= 3){
@@ -496,6 +490,39 @@ void handleCounter(){
     
     counterFlag = false;
 
+}
+
+void lockShelf(){
+    if (checkEquationState){
+        /* Lock SHELF_LOCK */
+        Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+        Wire.write (MESSAGETYPEID_LOCK);
+        Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
+        Wire.write (MESSAGETYPEID_LOCK_LOCK);
+        Wire.endTransmission();
+
+        bookLock = true;
+        checkEquationState = false;
+    }
+}
+
+void unlockShelf(){
+    if (!checkEquationState){
+        /* Unlock SHELF_LOCK */
+        Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
+        Wire.write (MESSAGETYPEID_LOCK);
+        Wire.write (MESSAGETYPEID_LOCK_LOCKID_SHELF);
+        Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
+        Wire.endTransmission();
+
+        bookLock = false;
+
+        lcdController.clearLCD();
+        lcdController.displayString (7, 1, "Bookcase");
+        lcdController.displayString (7, 2, "Unlocked");
+
+        checkEquationState = true;
+    }
 }
 
 /* Reset to initial settings */

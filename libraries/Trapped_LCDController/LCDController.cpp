@@ -71,8 +71,8 @@ void LCDController::clearLCD(){
 void LCDController::displayAllLCD(){
     lcd->clear();
 
-    displayPatternLCD();
-    displayCounterLCD();
+    //displayPatternLCD();
+    //displayCounterLCD();
     displayEquationLCD();
    
    lcd->noCursor();
@@ -126,12 +126,12 @@ void LCDController::displayEquationLCD(){
         */
 
         //displayString (position, 3, message);
-        displayString (0,3, *equation[currentEquationIndex]);
+        displayString (0,2, *equation[currentEquationIndex]);
     //}
 
     /* Display answer */
     int answerValue = desiredEquationValue[currentEquationIndex];
-    displayString (answerPosition[currentEquationIndex], 3, answerValue);
+    displayString (answerPosition[currentEquationIndex], 2, answerValue);
 
     /*
     Serial.print ("Answer position: ");
@@ -149,7 +149,7 @@ void LCDController::displayEquationLCD(){
 void LCDController::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
     uint8_t _nfcValue = detectorNFCValue[NFCDetectorID];
     uint8_t _nfcPosition = _detectorNFCPosition[currentEquationIndex][NFCDetectorID];
-    
+    char _nfcDetector = pattern[NFCDetectorID];
     /*
     Serial.println ("Debug: _updateNFCDetectorLCD()");
     Serial.print ("NFC_DetectorID Position: ");
@@ -158,8 +158,8 @@ void LCDController::_updateNFCDetectorLCD (uint8_t NFCDetectorID){
     Serial.println (_nfcValue);
     */
 
-    if (_nfcValue == 0) displayString (_nfcPosition, 3, '?');
-    else displayString (_nfcPosition, 3, _nfcValue);
+    if (_nfcValue == 0) displayString (_nfcPosition, 2, _nfcDetector);
+    else displayString (_nfcPosition, 2, _nfcValue);
 
 } //end _updateNFCDetectorLCD
 
