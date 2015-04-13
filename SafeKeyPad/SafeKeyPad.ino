@@ -175,9 +175,12 @@ void loop(){
             lockShelf();
         }
 
+    if (lcdPrint){
+        lcdController.displayAllLCD();
+        lcdPrint = false;
         if (lcdPrint){
             /* the code below may cause lcd corruption */
-            if (((long)millis())%300000 == 0) lcdController.lcd->init();
+            //if (((long)millis())%300000 == 0) lcdController.lcd->init();
             if (bookLock) lcdController.displayAllLCD();
             lcdPrint = false;
         }
