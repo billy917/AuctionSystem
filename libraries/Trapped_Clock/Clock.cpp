@@ -97,7 +97,7 @@ void Clock::oneSecondLater(){
             playWarningFlag = false;
         }
 
-        _playWarningCounter -= 0;
+        _playWarningCounter -= 1;
     }
   }
 }
@@ -106,6 +106,14 @@ void Clock::resetClock(){
   minutes = 45;
   seconds = 0;
   clockMode = CLOCK_MODE_PAUSE;
+  _playWarningCounter = 30;
+  playWarningFlag = false;
+
+  Wire.beginTransmission (SOUNDFX_I2C_ADDR);
+  Wire.write (MESSAGETYPEID_CLOCK);
+  Wire.write (MESSAGETYPEID_CLOCK_STOP_LAST_TRACK);
+  Wire.endTransmission();
+
   updateClockDisplay();
 }
 
