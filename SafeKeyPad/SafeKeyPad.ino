@@ -58,7 +58,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char password[4] = {'-','-','-','-'};
 int passwordLength = 0;
 volatile bool locked = true;
-int delayKeyPressEvent;
+long int lastKeyPress;
 volatile bool delayKeyPress = false;
 
 volatile bool checkEquationState = false;
@@ -142,12 +142,20 @@ void loop(){
     //Serial.println(freeRam());
 
     /* Get key input from keypad */
-    //if ((!delayKeyPress)) keypad.getKey();
-    keypad.getKey();
+    if (locked){
+    if ((!delayKeyPress)) keypad.getKey();
+
+    if (delayKeyPress){
+        if ((long)(millis() - lastKeyPress) >= 2000){
+            delayKeyPress = false;
+            clearPassword();
+        }
+    }
+    }
 
     if (receivedI2CMessage){
-        counterFlag = true;
-        counterLock = true;
+        //counterFlag = true;
+        //counterLock = true;
 
         noInterrupts();
         for(int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
@@ -159,7 +167,7 @@ void loop(){
 
         /* Reset receivedi2cmessage */
         receivedI2CMessage = false;
-        counterFlag = false;
+        //counterFlag = false;
     }
 
     if (!locked){
@@ -175,9 +183,6 @@ void loop(){
             lockShelf();
         }
 
-    if (lcdPrint){
-        lcdController.displayAllLCD();
-        lcdPrint = false;
         if (lcdPrint){
             /* the code below may cause lcd corruption */
             //if (((long)millis())%300000 == 0) lcdController.lcd->init();
@@ -336,11 +341,11 @@ void keypadEvent(KeypadEvent eKey){
 
       if(4 == passwordLength){
 
-        delayKeyPress = true;
-
         /* If key input IS song password */
         if(checkPassword()){
           Serial.println ("Correct password!");
+
+          delayKeyPress = false;
 
           /* Stop playing song */
           /*
@@ -373,8 +378,11 @@ void keypadEvent(KeypadEvent eKey){
           fail += 1;
           turnOnRed(fail);
 
-          delay(2000);
-          clearPassword();
+          delayKeyPress = true;
+          lastKeyPress = (long)millis();
+          
+          //delay(2000);
+          //clearPassword();
 
           /* If fail three times */
           if (fail >= 3){
@@ -447,11 +455,13 @@ bool checkPassword(){
     return (charArrayCompare (songPassword, password));
 } //end checkPassword()
 
+/*
 void canKeyPress(){
     clearPassword();
     delayKeyPress = false;
     t.stop (delayKeyPressEvent);
 }
+*/
 
 void updateCounter(){
     /* if no other methods are running and
