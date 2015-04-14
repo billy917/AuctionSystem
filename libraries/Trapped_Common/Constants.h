@@ -18,6 +18,7 @@ const int TRIP_LASER_I2C_ADDR = 111;
 const int SOUNDFX_I2C_ADDR = 113;
 const int CLOCK_I2C_ADDR = 114; //same as keypad on purpose
 const int PIANO_LOCK_I2C_ADDR = 115;
+const int WIRELESS_I2C_ADDR = 116;
 
 
 	// hardware I2C address
@@ -37,6 +38,7 @@ const uint8_t MESSAGETYPEID_CLOCK = 13;
 const uint8_t MESSAGETYPEID_KEYPAD_LOCK = 14; //SafeKeyPad
 const uint8_t MESSAGETYPEID_TRIP_LASER = 15;
 const uint8_t MESSAGETYPEID_LCD = 16;
+const uint8_t MESSAGETYPEID_GAME = 17;
 
 const uint8_t MESSAGETYPEID_NFC_FOUNDEXPECTED = 1;
 const uint8_t MESSAGETYPEID_NFC_NOTFOUND = 2;
@@ -74,6 +76,11 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL = 3; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF_ALL = 4; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL_NO_SENSOR = 5; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_ON_ALL_ACTIVE = 6; // GameController -> Laser1
+const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF_ALL_ACTIVE = 7;
 
 const uint8_t MESSAGETYPEID_BGM_UPDATE = 1;
 const uint8_t MESSAGETYPEID_BGM_PLAY_SONG = 2;
@@ -90,6 +97,7 @@ const uint8_t MESSAGETYPEID_TRIP_LASER_ON = 1;
 const uint8_t MESSAGETYPEID_TRIP_LASER_OFF = 2;
 const uint8_t MESSAGETYPEID_TRIP_LASER_BEEP = 3;
 
+
 const uint8_t MESSAGETYPEID_CLOCK_RESET = 1;
 const uint8_t MESSAGETYPEID_CLOCK_START = 2;
 const uint8_t MESSAGETYPEID_CLOCK_PAUSE = 3;
@@ -97,6 +105,10 @@ const uint8_t MESSAGETYPEID_CLOCK_MODIFY_ADD = 4;
 const uint8_t MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT = 5;
 const uint8_t MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK = 6;
 const uint8_t MESSAGETYPEID_CLOCK_STOP_LAST_TRACK = 7;
+const uint8_t MESSAGETYPEID_CLOCK_STOP = 8;
+
+const uint8_t MESSAGETYPEID_GAME_INIT_LASER_CONFIG = 1;
+const uint8_t MESSAGETYPEID_GAME_INIT_SENSOR_CONFIG = 2;
 
 const uint8_t NFC_MESSAGE_MAX_SIZE = 9;
 const uint8_t I2C_MESSAGE_MAX_SIZE = 9; // should be same as NFC Message Max Size
@@ -109,8 +121,9 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
+const bool GLOBAL_ENABLE_LASER[9] = {true,true,true,true,true,true,true,true,true}; // if laser is false, then sensor will not turn on
 const bool GLOBAL_ENABLE_SENSOR[9] = {true,true,true,true,true,true,true,true,true};
-const int SENSOR_TRESHOLD[9] = {30,40,30,40,30,40,30,30,40}; 
+const int SENSOR_TRESHOLD[9] = {30,40,30,40,30,20,10,30,40}; 
 	// 7,8,9 - 40,10,40
 const bool AUTO_CALIBRATE_SENSOR[9] = {false,false,false,false,false,false,false,false,false};
 /*
@@ -135,6 +148,18 @@ const uint8_t SENSOR_STATE_CANNOT_READ_DATA = 4;
 const uint8_t SENSOR_STATE_CANNOT_SET_INTERRUPT_CONTROL = 5;
 const uint8_t SENSOR_STATE_CANNOT_SET_THRESHOLD = 6;
 const uint8_t SENSOR_STATE_CANNOT_CLEAR_INTERRUPT = 7;
+
+const uint8_t GAME_STATE_RESTART = 1;
+const uint8_t GAME_STATE_RUNNING = 2;
+const uint8_t GAME_STATE_PAUSED = 3;
+const uint8_t GAME_STATE_STOPPED = 4;
+
+/*
+Game Control init config protocol
+	[0] messageTypeId (MESSAGETYPEID_GAME_INIT_LASER_CONFIG)
+	[1] detailedMessageType (1 = Laser config, 2 = Sensor config)
+	[2] laserId [1..9]
+	[3] enabled [0,1]
 
 /*
 Clock Control message protocol

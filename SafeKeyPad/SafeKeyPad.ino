@@ -357,11 +357,24 @@ void keypadEvent(KeypadEvent eKey){
 
           turnOnGreenLEDs();
 
-          /* Unlock LOCK_MANAGER */
+          /* アンロック セイフ*/
           Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
           Wire.write (MESSAGETYPEID_LOCK);
           Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
           Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
+          Wire.endTransmission();
+
+          /* アンロック メインドーア */
+          Wire.beginTransmission(LOCK_MANAGER_I2C_ADDR);
+          Wire.write (MESSAGETYPEID_LOCK);
+          Wire.write (MESSAGETYPEID_LOCK_LOCKID_MAINDOOR);
+          Wire.write (2);
+          Wire.endTransmission();
+
+          /* 全てのレーザーを遮断する */
+          Wire.beginTransmission(NFC_MANAGER_I2C_ADDR);
+          Wire.write(MESSAGETYPEID_LASER_CONTROL);
+          Wire.write(MESSAGETYPEID_LASER_CONTROL_OFF_ALL);
           Wire.endTransmission();
 
           locked = false;
