@@ -14,6 +14,7 @@
 
 /* Initialize Variables */
 volatile uint8_t i2cDataBuffer[I2C_MESSAGE_MAX_SIZE];
+volatile uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool receivedI2CMessage = false;
 
 int trackList[NUM_TRACK];
@@ -69,23 +70,34 @@ void loop(){
     */
 
     if (receivedI2CMessage){
+        for (int i=0; i<I2C_MESSAGE_MAX_SIZE; i++){
+            localBuffer[i] = i2cDataBuffer[i];
+        }
+
         Serial.println ("Has received i2c message");
 
-        if (i2cDataBuffer[0] == MESSAGETYPEID_CLOCK){
-            if (i2cDataBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
+        if (localBuffer[0] == MESSAGETYPEID_CLOCK){
+            if (localBuffer[1] == MESSAGETYPEID_CLOCK_MODIFY_SUBTRACT){
                     
                     if (!warningLock){
                     // get sensor id from i2cDataBuffer[4]
                     // play specified track
 
-                    pin = trackList[i2cDataBuffer[3]-1] + PIN_OFFSET;
+                    pin = trackList[localBuffer[3]-1] + PIN_OFFSET;
 
                     Serial.print ("Playing pin: ");
                     Serial.println (pin);
 
                     pinMode (pin, OUTPUT);
                     
-                    delay (105);
+                    // loop for ~100ms in OUTPUT to play track
+                    long int lastMillis = (long)millis();
+                    while ((long)millis() <= lastMillis + 103){
+                        // Idling for the track to be played
+                    }
+
+                    /* Instead of using delay... */
+                    //delay (105);
 
                     Serial.print ("Stop playing pin: ");
                     Serial.println (pin);
@@ -93,12 +105,12 @@ void loop(){
                     pinMode (pin, INPUT);
                     }
                 
-            } else if (i2cDataBuffer[1] == 
+            } else if (localBuffer[1] == 
                 MESSAGETYPEID_CLOCK_PLAY_LAST_TRACK){
                 warningLock = true;
                 pinMode (WARNING_PIN, OUTPUT);
 
-            } else if (i2cDataBuffer[1] ==
+            } else if (localBuffer[1] ==
                 MESSAGETYPEID_CLOCK_STOP_LAST_TRACK){
                 warningLock = false;
                 pinMode (WARNING_PIN, INPUT);
