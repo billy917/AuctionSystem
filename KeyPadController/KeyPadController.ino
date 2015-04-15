@@ -34,7 +34,7 @@ int keySounds[10] = {NOTE_A4, NOTE_AS4, NOTE_B4, NOTE_C4, NOTE_D4, NOTE_DS4, NOT
 int errorSound = NOTE_B0;
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
-Password password = Password( "9999" );
+Password password = Password( "5354" );
 char passChar[4] = {};
 int passwordLength = 0;
 volatile int mode, nextMode = 1;
@@ -65,7 +65,6 @@ void setup() {
 
 void loop() {
   keypad.getKey();
-  handleCommands();
   if(receivedMessage){
     copyToI2CLocalBuffer();    
     clock.handleI2CMessage(I2C_MESSAGE_MAX_SIZE, i2cLocalBuffer);
@@ -154,12 +153,7 @@ void checkPassword(){
   blinkLED(250,4);
   if (password.evaluate()){
     Serial.println("Success");
-    //Add code to run if it works
-    if(1 == mode){
-      nextMode = 3;
-    } else if (3 == mode){
-      nextMode = 1; 
-    }
+    instructModeChange();
     sucessUnlockSound();
   }else{
     Serial.println("Wrong");
@@ -174,20 +168,11 @@ void resetPassword(){
   resetLED();
 }
 
-void handleCommands(){
-  if(nextMode != mode){
-    if(nextMode == 1 || nextMode == 3){
-      //Turn Off  
-      instructModeChange(nextMode);
-    } 
-    mode = nextMode;
-  } 
-}
-
-void instructModeChange(int nextMode){
+void instructModeChange(){
   // send instructions to internal I2C nodes on mode change
   Wire.beginTransmission(NFC_MANAGER_I2C_ADDR); //2 == LaserDriver2 addr
-  Wire.write(mode);
+  Wire.write(MESSAGETYPEID_LASER_CONTROL);  
+  Wire.write(MESSAGETYPEID_LASER_CONTROL_OFF_MODE_1);
   Wire.endTransmission();
 }
 

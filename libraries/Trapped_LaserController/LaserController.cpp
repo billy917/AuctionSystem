@@ -173,7 +173,25 @@ void LaserController::handleMessage(uint8_t dataLength, uint8_t data[]){
 				}
 			}
 		} else if (MESSAGETYPEID_LASER_CONTROL == data[0]){
-			if (MESSAGETYPEID_LASER_CONTROL_ON_ALL == data[1]){
+			if(MESSAGETYPEID_LASER_CONTROL_OFF_MODE_1 == data[1]){
+				// forward to other laserControllers
+				if(2 == _controllerId){ // only laser2 will recieve message from keypad
+					_forwardMessageToOtherControllers(1, dataLength, data);
+					_forwardMessageToOtherControllers(4, dataLength, data);
+				}
+
+				// turn off lasers
+				for(int i=0; i<_numRegisteredLasers; i++){
+					int localLaserId = _localLaserIds[i];
+					if(!GLOBAL_LASER_PATTERN_1[localLaserId-1]){ // if laser is ON
+						_turnOffSensor(localLaserId);
+						delay(1000);
+						_turnOffLocalLaser(localLaserId);
+					}		
+				}
+
+
+			} else if (MESSAGETYPEID_LASER_CONTROL_ON_ALL == data[1]){
 				turnOnAllLaser(true);
 				if(_isPrimary){
 					_forwardMessageToOtherControllers(4, dataLength, data);
@@ -247,7 +265,9 @@ void LaserController::_forwardMessageToOtherControllers(uint8_t laserId, uint8_t
 		_xBeePayload[i] = data[i];
 	}
 
-	if(1 == GLOBAL_LASER_MANAGER_ID[laserId-1]){
+	if(0 == GLOBAL_LASER_MANAGER_ID[laserId-1]){
+		_xbee->send(_laser1ZBTxRequest);
+	} else if(1 == GLOBAL_LASER_MANAGER_ID[laserId-1]){
 		_xbee->send(_laser3ZBTxRequest);
 	} else if (2 == GLOBAL_LASER_MANAGER_ID[laserId-1]) {
 		_xbee->send(_laser2ZBTxRequest);

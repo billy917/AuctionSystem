@@ -23,6 +23,8 @@ void GameController::start(){
 	    Wire.write(1);
 		Wire.endTransmission();
 
+		delay(250);
+
 		// start sensor	that are active	
 		Wire.beginTransmission (NFC_MANAGER_I2C_ADDR);
 	    Wire.write(MESSAGETYPEID_LASER_CONTROL);
