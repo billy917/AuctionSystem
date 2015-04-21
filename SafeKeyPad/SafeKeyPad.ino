@@ -23,7 +23,6 @@ uint8_t localBuffer[I2C_MESSAGE_MAX_SIZE];
 volatile bool i2cDetectorLock = true;
 volatile bool i2cKeypadLock = true;
 
-
 LCDController lcdController;
 volatile bool lcdPrint = false;
 volatile bool i2cPrintLock = false;
@@ -66,15 +65,15 @@ volatile bool checkEquationState = false;
 void setup(){
     Serial.begin (9600);
 
-    Serial.println ("Begin Wire setup...");
+    Serial.println (F("Begin Wire setup..."));
     Wire.begin (KEYPAD_LOCK_I2C_ADDR);
     Wire.onReceive (Received);
     Wire.onRequest (Request);
-    Serial.println ("---- Wire setup complete");
+    Serial.println (F("---- Wire setup complete"));
 
     delay (500);
 
-    Serial.println ("Initializing LCD_Controller...");
+    Serial.println (F("Initializing LCD_Controller..."));
     lcdController.setCounter (counter);
     lcdController.initLCD();
 
@@ -82,29 +81,29 @@ void setup(){
     lcdController.currentEquationIndex = randomEquation();
 
     lcdController.displayAllLCD();
-    Serial.println ("---- LCD_Controller initialize complete");
+    Serial.println (F("---- LCD_Controller initialize complete"));
     
     delay (200);
 
-    Serial.println ("Initializing Keypad...");
+    Serial.println (F("Initializing Keypad..."));
     keypad.addEventListener (keypadEvent);
     keypad.setDebounceTime(20);
     initLEDs();
     // try to print a number thats too long
     matrix.begin(0x70);  //0x70 is the 7-Segment address
     clearPassword();
-    Serial.println ("---- Keypad initialize complete");
+    Serial.println (F("---- Keypad initialize complete"));
 
     delay (200);
 
-    Serial.println ("Initializing magnetic lock...");
+    Serial.println (F("Initializing magnetic lock..."));
     /* Lock LOCK_MANAGER */
     Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
     Wire.write (MESSAGETYPEID_LOCK);
     Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
     Wire.write (MESSAGETYPEID_LOCK_LOCK);
     Wire.endTransmission();
-    Serial.println ("---- Mag-Lock initialize complete");
+    Serial.println (F("---- Mag-Lock initialize complete"));
 
     delay (200);
 
@@ -123,13 +122,13 @@ void setup(){
     Wire.write (MESSAGETYPEID_BGM);
     Wire.write (MESSAGETYPEID_BGM_PLAY_SONG);
     Wire.endTransmission();
-    Serial.println ("Sent PLAY_SONG message");
+    Serial.println (F("Sent PLAY_SONG message"));
 
     turnOnGreenLEDs();
     delay (200);
     turnOffLEDs();
 
-    Serial.println ("Begin LCD countdown event");
+    Serial.println (F("Begin LCD countdown event"));
     /* BELOW BREAKS I2C BUS */
     /* BUT ALSO BREAKS KEYPAD */
     //countdownEvent = t.every (1000, updateCounter);
@@ -249,7 +248,7 @@ void handleCommands(){
                 songPassword[i] = localBuffer[i+2];
             }
 
-            Serial.print ("Current password is ");
+            Serial.print (F("Current password is "));
             Serial.println (songPassword);
 
         } else {}
@@ -332,7 +331,7 @@ void clearI2CBuffer(){
 void keypadEvent(KeypadEvent eKey){
   if(PRESSED == keypad.getState()){
     if(locked){
-      Serial.print("Pressed: "); Serial.println(eKey);
+      Serial.print(F("Pressed: ")); Serial.println(eKey);
       switch (eKey){
         case '*':
         case '#': clearPassword(); break;
@@ -343,7 +342,7 @@ void keypadEvent(KeypadEvent eKey){
 
         /* If key input IS song password */
         if(checkPassword()){
-          Serial.println ("Correct password!");
+          Serial.println (F("Correct password!"));
 
           delayKeyPress = false;
 
@@ -379,11 +378,11 @@ void keypadEvent(KeypadEvent eKey){
 
           locked = false;
 
-          Serial.println("Unlocked!");
+          Serial.println(F("Unlocked!"));
 
         /* If key input is NOT song password */
         } else {
-          Serial.println("Failed");
+          Serial.println(F("Failed"));
 
           //delayKeyPressEvent = t.after (2000, canKeyPress);
 
@@ -408,7 +407,7 @@ void keypadEvent(KeypadEvent eKey){
 
             delay (100);
 
-            Serial.print ("New Password: ");
+            Serial.print (F("New Password: "));
             Serial.println (songPassword);
 
             /* Reset fail counter */
@@ -418,7 +417,7 @@ void keypadEvent(KeypadEvent eKey){
           }
 
           Serial.print (3 - fail);
-          Serial.print (" time(s) left! The password is ");
+          Serial.print (F(" time(s) left! The password is "));
           Serial.println (songPassword);
 
           locked = true;
@@ -428,7 +427,7 @@ void keypadEvent(KeypadEvent eKey){
       if ('*' == eKey || '#' == eKey){
         locked = true;
         clearPassword();
-        Serial.println("Lock!");
+        Serial.println(F("Lock!"));
       }
     }
   }
@@ -509,9 +508,9 @@ void handleCounter(){
     lcdPrint = true;
 
     //Serial.println ("Debug: updateCounter()");
-    Serial.print ("CountdownEvent: ");
+    Serial.print (F("CountdownEvent: "));
     Serial.print (countdownEvent);
-    Serial.print (", Counter: ");
+    Serial.print (F(", Counter: "));
     Serial.println (counter);
     
     counterFlag = false;
@@ -587,13 +586,13 @@ bool charArrayCompare (char one[], char two[]){
 }
 
 int randomEquation(){
-    Serial.print ("Random equation ");
+    Serial.print (F("Random equation "));
 
     randomSeed(analogRead(A0));
     int randomNumber = random(NUM_EQUATION - 1);
 
     Serial.print (randomNumber);
-    Serial.println (" selected.");
+    Serial.println (F(" selected."));
 
     return randomNumber;
 }
