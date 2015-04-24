@@ -53,7 +53,7 @@ void setup() {
   keypad.setDebounceTime(20);
   
   // try to print a number thats too long
-  matrix.print(0x0255,HEX);
+  matrix.clear();
   matrix.writeDisplay();
   
   Wire.begin(CLOCK_I2C_ADDR);

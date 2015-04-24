@@ -41,7 +41,7 @@ void setup() {
   Serial.begin(9600);
   
   // initialize the digital pin as an output.                                                                                                                                                                                           
-  for(int i=1; i<=3; i++){
+  for(int i=2; i<=3; i++){
     pinMode(laserPins[i-1], OUTPUT);
     digitalWrite(laserPins[i-1], LOW);
     laserController.setLaserPin((laserControllerId * 3)+i, laserPins[i-1]);    

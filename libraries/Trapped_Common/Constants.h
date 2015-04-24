@@ -122,9 +122,9 @@ const int GLOBAL_LASER_ID[9] = {1,2,3,4,5,6,7,8,9};
 const int GLOBAL_LASER_MANAGER_ID[9] = {0,0,0,1,1,1,2,2,2};
 const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
-const bool GLOBAL_ENABLE_LASER[9] = {true,true,true,true,true,true,false,true,false}; // if laser is false, then sensor will not turn on
+const bool GLOBAL_ENABLE_LASER[9] = {true,true,true,true,true,true,true,true,true}; // if laser is false, then sensor will not turn on
 const bool GLOBAL_ENABLE_SENSOR[9] = {true,true,true,true,true,true,true,true,true};
-const int SENSOR_TRESHOLD[9] = {15,30,30,30,30,20,5,30,40}; 
+const int SENSOR_TRESHOLD[9] = {5,10,10,10,15,25,5,15,15}; 
 	// 7,8,9 - 40,10,40
 const bool AUTO_CALIBRATE_SENSOR[9] = {false,false,false,false,false,false,false,false,false};
 const bool GLOBAL_LASER_PATTERN_1[9] = {true, true, true, false, true, false, false, true, true};

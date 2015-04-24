@@ -105,8 +105,6 @@ void receivedEvent (int numberByte){
 void requestEvent(){}
 
 void loop(){
-
-    if (lockState){
     readKeyState();
 
     /* Use below only if handleKey() is not in readKeyState() */
@@ -123,7 +121,7 @@ void loop(){
             lcd.print ("Exit through doors");
 
             unlock();
-
+            while(true){}
         } else {
             fail += 1;
 
@@ -150,7 +148,7 @@ void loop(){
 
         }
     }
-    }
+    
 }
 
 void readKeyState(){
