@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: gameduino2
+Version: 0.1.4
+Summary: Package of Gameduino 2 development tools
+Home-page: http://gameduino.com
+Author: James Bowman
+Author-email: jamesb@excamera.com
+License: GPL
+Description: Gameduino 2 (http://gameduino.com) is an Arduino video games adapter.  This package contains tools for developers: data preparation, remote control.
+Platform: UNKNOWN
