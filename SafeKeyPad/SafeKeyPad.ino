@@ -78,7 +78,7 @@ void setup(){
     lcdController.initLCD();
 
     /* Show random equation at start-up */
-    lcdController.currentEquationIndex = randomEquation();
+    //lcdController.currentEquationIndex = randomEquation();
 
     lcdController.displayAllLCD();
     Serial.println (F("---- LCD_Controller initialize complete"));
