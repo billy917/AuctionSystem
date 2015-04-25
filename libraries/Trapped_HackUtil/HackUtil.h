@@ -7,17 +7,20 @@
 #define HackUtil_h
 
 #include "Arduino.h"  
-#include "Wire.h"
-#include <Digits.h>
 
 class HackUtil
 {
   public:
     HackUtil();
+    void init();
     void run();
     
   private:
   	int _mode;
+    void _clearScreen();
+    void _displaySplashScreen();
+    void _displayMainScreen();
+
 };
 
 #endif
