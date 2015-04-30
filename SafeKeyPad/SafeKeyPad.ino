@@ -175,6 +175,14 @@ void loop(){
         if (lcdController.canCheckEquation()){
             if (lcdController.checkEquation()) {
                 unlockShelf();
+                
+                /* アンロック メインドーア */
+                Wire.beginTransmission(LOCK_MANAGER_I2C_ADDR);
+                Wire.write (MESSAGETYPEID_LOCK);
+                Wire.write (MESSAGETYPEID_LOCK_LOCKID_MAINDOOR);
+                Wire.write (2);
+                Wire.endTransmission();
+                
             } else {
                 lockShelf();
             }
@@ -356,18 +364,11 @@ void keypadEvent(KeypadEvent eKey){
 
           turnOnGreenLEDs();
 
-          /* アンロック セイフ*/
+          /* アンロック セイフ */
           Wire.beginTransmission (LOCK_MANAGER_I2C_ADDR);
           Wire.write (MESSAGETYPEID_LOCK);
           Wire.write (MESSAGETYPEID_LOCK_LOCKID_INWALL);
           Wire.write (MESSAGETYPEID_LOCK_UNLOCK);
-          Wire.endTransmission();
-
-          /* アンロック メインドーア */
-          Wire.beginTransmission(LOCK_MANAGER_I2C_ADDR);
-          Wire.write (MESSAGETYPEID_LOCK);
-          Wire.write (MESSAGETYPEID_LOCK_LOCKID_MAINDOOR);
-          Wire.write (2);
           Wire.endTransmission();
 
           /* 全てのレーザーを遮断する */
