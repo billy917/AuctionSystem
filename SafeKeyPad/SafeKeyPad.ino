@@ -140,7 +140,7 @@ void loop(){
     /* Free RAM */
     //Serial.println(freeRam());
 
-    /* Get key input from keypad */
+    /* Get key input from keypad iff in_wall_lock is active */
     if (locked){
     if ((!delayKeyPress)) keypad.getKey();
 
@@ -152,6 +152,7 @@ void loop(){
     }
     }
 
+    /* Handle received I2C messages */
     if (receivedI2CMessage){
         //counterFlag = true;
         //counterLock = true;
@@ -169,9 +170,11 @@ void loop(){
         //counterFlag = false;
     }
 
+    /* Handles LCD display iff in_wall_lock is disabled */
     if (!locked){
         if (!counterFlag && !counterLock) handleCounter();
 
+        /* Check NFC equation for shelf_lock lockstate */
         if (lcdController.canCheckEquation()){
             if (lcdController.checkEquation()) {
                 unlockShelf();
@@ -189,13 +192,15 @@ void loop(){
         } else {
             lockShelf();
         }
-
+        
+        /* Print to LCD */
         if (lcdPrint){
             /* the code below may cause lcd corruption */
             //if (((long)millis())%300000 == 0) lcdController.lcd->init();
             if (bookLock) lcdController.displayAllLCD();
             lcdPrint = false;
         }
+
     }
 
     //t.update();
@@ -509,10 +514,10 @@ void handleCounter(){
     lcdPrint = true;
 
     //Serial.println ("Debug: updateCounter()");
-    Serial.print (F("CountdownEvent: "));
-    Serial.print (countdownEvent);
-    Serial.print (F(", Counter: "));
-    Serial.println (counter);
+    //Serial.print (F("CountdownEvent: "));
+    //Serial.print (countdownEvent);
+    //Serial.print (F(", Counter: "));
+    //Serial.println (counter);
     
     counterFlag = false;
 
