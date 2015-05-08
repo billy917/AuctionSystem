@@ -68,7 +68,8 @@ void HackUtil::_displaySplashScreen(){
   GD.Vertex2ii(0, 0, TRAPPED_LOGO_FULL_HANDLE);
   GD.swap();
 
-delay (3000);
+  delay (3000);
+
   _menuState = SCREEN_USER;
   _user = ADMIN_USER;
 }
@@ -83,17 +84,17 @@ void HackUtil::_handleTouchInput(){
         /* Admin -> Lock -> In_Wall_Safe */
         case TAG_LOCK_INWALL: 
             _manageLock(TAG_LOCK_INWALL);
-            _menuState = TAG_LOCK_INWALL;
+            _menuState = SCREEN_ADMIN_LOCK;
             break;
         /* Admin -> Lock -> Main_Door */
         case TAG_LOCK_MAIN_DOOR: 
             _manageLock(TAG_LOCK_MAIN_DOOR);
-            _menuState = TAG_LOCK_MAIN_DOOR;
+            _menuState = SCREEN_ADMIN_LOCK;
             break;
         /* Admin -> LOCK -> Shelf */
         case TAG_LOCK_SHELF: 
             _manageLock(TAG_LOCK_SHELF);
-            _menuState = TAG_LOCK_SELF;
+            _menuState = SCREEN_ADMIN_LOCK;
             break;
 
         /* Admin -> Laser */
@@ -107,6 +108,7 @@ void HackUtil::_handleTouchInput(){
 
         /* Previous Menu */
         case SCREEN_PREVIOUS: _handlePreviousScreen(); break;
+
         default: break;
         
     }

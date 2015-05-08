@@ -7,19 +7,21 @@
 #define HackUtil_h
 
 #include "Arduino.h"
+#include "MenuState.h"
 #include "XBee.h"
+
+/* Admin screen tags */
+#define TAG_A1 110 // enable/disable Locks
+#define TAG_A2 120 // enable/disable Lasers
+#define TAG_A3 130 // enable/disable Sensors
+#define TAG_A4 140 // ten recent received Messages
+
+/* Normal User screen tags */
+#define TAG_N1 210
+#define TAG_N2 220
 
 class HackUtil
 {
-  /* Admin screen tags */
-  #define TAG_A1 110 // enable/disable Locks
-  #define TAG_A2 120 // enable/disable Lasers
-  #define TAG_A3 130 // enable/disable Sensors
-  #define TAG_A4 140 // ten recent received Messages
-
-  /* Normal User screen tags */
-  #define TAG_N1 210
-  #define TAG_N2 220
 
   public:
     HackUtil();
