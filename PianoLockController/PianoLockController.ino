@@ -160,7 +160,7 @@ void handleKey (int _key){
     //for (int i=0; i < NUMBER_KEYS; i++){
 
         Serial.print (F("micros(): "));
-        Serial.println ((long)micros());
+        Serial.println (micros());
 
         if ((long)(micros()-debounceTime[_key]) >= (DEBOUNCE_TIME*1000)){
            

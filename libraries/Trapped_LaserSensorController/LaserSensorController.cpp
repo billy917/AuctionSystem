@@ -99,6 +99,10 @@ void LaserSensorController::handleMessage(uint8_t dataLength, uint8_t data[]){
 			enableSensorBySensorId(data[2]);
 		} else if(MESSAGETYPEID_LASER_SENSOR_OFF == data[1]){
 			disableSensorBySensorId(data[2]);
+		} else if(MESSAGETYPEID_LASER_SENSOR_OFF_ALL == data[1]){
+			pauseAllSensors();
+		} else if(MESSAGETYPEID_LASER_SENSOR_ON_ALL == data[1]){
+			reenableAllSensors();
 		} else if(MESSAGETYPEID_LASER_SENSOR_CALIBRATE == data[1]){		
 			calibrateSensorBySensorId(data[2]);			
 		} else if(MESSAGETYPEID_LASER_SENSOR_DEBUG == data[1]){
