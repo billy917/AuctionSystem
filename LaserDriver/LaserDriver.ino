@@ -20,6 +20,12 @@ uint8_t xbeePayload[4] = { 0, 0, 0, 0 };
 XBeeAddress64 laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
 ZBTxRequest laser2Tx = ZBTxRequest(laser2Addr, xbeePayload, sizeof(xbeePayload));
 
+XBeeAddress64 sensor1Addr = XBeeAddress64(0x0013a200, 0x40cab3f1);
+ZBTxRequest sensor1Tx = ZBTxRequest(sensor1Addr, xbeePayload, sizeof(xbeePayload));
+XBeeAddress64 sensor2Addr = XBeeAddress64(0x0013a200, 0x40bef834);
+ZBTxRequest sensor2Tx = ZBTxRequest(sensor2Addr, xbeePayload, sizeof(xbeePayload));
+XBeeAddress64 sensor3Addr = XBeeAddress64(0x0013a200, 0x40bf36b4);
+ZBTxRequest sensor3Tx = ZBTxRequest(sensor3Addr, xbeePayload, sizeof(xbeePayload));
 
 int laserControllerId = 0;
 int nfcManagerId = 0;
@@ -123,6 +129,14 @@ void handleXBeeMsg(){
   }   
 }
 
+void forwardXBeeMessageToSensors(){
+  xbeePayload[0] = localBuffer[0];
+  xbeePayload[1] = localBuffer[1];
+  xbeePayload[2] = localBuffer[2];
+  xbee.send(sensor1Tx);
+  xbee.send(sensor2Tx);
+  xbee.send(sensor3Tx);
+}
 
 void forwardXBeeMessage(){
   xbeePayload[0] = localBuffer[0];
@@ -156,7 +170,7 @@ void handleMessage(){
   } else if (MESSAGETYPEID_NFC_MANAGE == localBuffer[0]){
     forwardI2CMessage(KEYPAD_LOCK_I2C_ADDR);
   } else if (MESSAGETYPEID_LASER_SENSOR == localBuffer[0]){
-    forwardI2CMessage(LASER_SENSOR_I2C_ADDR);
+    forwardXBeeMessageToSensors();
   } else if (MESSAGETYPEID_CLOCK == localBuffer[0]){
     forwardXBeeMessage();
   }

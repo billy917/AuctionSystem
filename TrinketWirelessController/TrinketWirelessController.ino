@@ -74,9 +74,17 @@ void loop() {
 
 void detectedSignal(int pinIndex){
   if(0 == pinIndex){ // pin 3 A
-    gameController.start();
+    if(GAME_STATE_RUNNING == gameController.getCurrentState()){
+      gameController.pause();  
+    } else {
+      gameController.start();
+    }
   } else if (1 == pinIndex){ // pin 4 B
-    gameController.pause();    
+    if(gameController.areSensorsDisabled()){
+      gameController.enableSensors();
+    } else {
+      gameController.disableSensors();
+    }    
   } else if (2 == pinIndex){ // pin 5 C
     gameController.addTime();
   } else if (3 == pinIndex){ // pin 6 D

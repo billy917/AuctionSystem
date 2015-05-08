@@ -73,6 +73,8 @@ const uint8_t MESSAGETYPEID_LASER_SENSOR_DEBUG = 3; // Tool -> Sensor1
 const uint8_t MESSAGETYPEID_LASER_SENSOR_ON = 5;  // x -> SensorController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF = 6; // x -> SensorController
 const uint8_t MESSAGETYPEID_LASER_SENSOR_CALIBRATE = 7;
+const uint8_t MESSAGETYPEID_LASER_SENSOR_OFF_ALL = 8;
+const uint8_t MESSAGETYPEID_LASER_SENSOR_ON_ALL = 9;
 
 const uint8_t MESSAGETYPEID_LASER_CONTROL_ON = 1;  // Tool -> Laser1
 const uint8_t MESSAGETYPEID_LASER_CONTROL_OFF = 2; // Tool -> Laser1
@@ -124,7 +126,7 @@ const int GLOBAL_SENSOR_ID[9] = {6,3,2,4,1,5,7,8,9};
 const int GLOBAL_SENSOR_MANAGER_ID[9] = {1,0,0,1,0,1,2,2,2};
 const bool GLOBAL_ENABLE_LASER[9] = {true,true,true,true,true,true,true,true,true}; // if laser is false, then sensor will not turn on
 const bool GLOBAL_ENABLE_SENSOR[9] = {true,true,true,true,true,true,true,true,true};
-const int SENSOR_TRESHOLD[9] = {5,10,10,10,15,25,5,15,15}; 
+const int SENSOR_TRESHOLD[9] = {3,3,3,3,3,3,3,3,3}; 
 	// 7,8,9 - 40,10,40
 const bool AUTO_CALIBRATE_SENSOR[9] = {false,false,false,false,false,false,false,false,false};
 const bool GLOBAL_LASER_PATTERN_1[9] = {true, true, true, false, true, false, false, true, true};

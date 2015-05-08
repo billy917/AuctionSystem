@@ -12,6 +12,31 @@
 
 GameController::GameController(){
 	_gameState = GAME_STATE_STOPPED;
+	_disableSensor = false;
+}
+
+uint8_t GameController::getCurrentState(){
+	return _gameState;
+}
+
+bool GameController::areSensorsDisabled(){
+	return _disableSensor;
+}
+
+void GameController::enableSensors(){
+	Wire.beginTransmission (NFC_MANAGER_I2C_ADDR);
+    Wire.write(MESSAGETYPEID_LASER_SENSOR);
+    Wire.write(MESSAGETYPEID_LASER_SENSOR_ON_ALL);
+	Wire.endTransmission();
+	_disableSensor = false;
+}
+
+void GameController::disableSensors(){
+	Wire.beginTransmission (NFC_MANAGER_I2C_ADDR);
+    Wire.write(MESSAGETYPEID_LASER_SENSOR);
+    Wire.write(MESSAGETYPEID_LASER_SENSOR_OFF_ALL);
+	Wire.endTransmission();
+	_disableSensor = true;
 }
 
 void GameController::start(){

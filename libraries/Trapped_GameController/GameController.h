@@ -19,8 +19,13 @@ class GameController
     void addTime();
     void overrideConfig();
     void ended();
+    void disableSensors();
+    void enableSensors();
+    uint8_t getCurrentState();
+    bool areSensorsDisabled();
   private:
     uint8_t _gameState;
+    bool _disableSensor;
     
 };
 
