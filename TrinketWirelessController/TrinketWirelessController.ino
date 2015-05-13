@@ -80,11 +80,15 @@ void detectedSignal(int pinIndex){
       gameController.start();
     }
   } else if (1 == pinIndex){ // pin 4 B
-    if(gameController.areSensorsDisabled()){
-      gameController.enableSensors();
+    if(GAME_STATE_PAUSED == gameController.getCurrentState()){
+      gameController.unlockBookCase();
     } else {
-      gameController.disableSensors();
-    }    
+      if(gameController.areSensorsDisabled()){
+        gameController.enableSensors();
+      } else {
+        gameController.disableSensors();
+      }    
+    }
   } else if (2 == pinIndex){ // pin 5 C
     gameController.addTime();
   } else if (3 == pinIndex){ // pin 6 D

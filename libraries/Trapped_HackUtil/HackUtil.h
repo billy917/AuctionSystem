@@ -8,17 +8,7 @@
 
 #include "Arduino.h"
 #include "MenuState.h"
-#include "XBee.h"
-
-/* Admin screen tags */
-#define TAG_A1 110 // enable/disable Locks
-#define TAG_A2 120 // enable/disable Lasers
-#define TAG_A3 130 // enable/disable Sensors
-#define TAG_A4 140 // ten recent received Messages
-
-/* Normal User screen tags */
-#define TAG_N1 210
-#define TAG_N2 220
+#include <XBee.h>
 
 class HackUtil
 {
@@ -29,24 +19,18 @@ class HackUtil
     void run();
     
   private:
-    /*
+    
+    /* XBee protocol */
     XBee _xbee;
-    XBeeResponse _xbeeResponse;
-    ZBRxResponse rx = ZBRxResponse();
-    uint8_t xbeePayload[4];
-    XBeeAddress64 laser2Addr;
-    ZBTxRequest laser2Tx;
-    */
+    uint8_t _xbeePayload[4];
+    ZBTxRequest _laser1Tx;
+    ZBTxRequest _laser2Tx;
 
     int _mode;
     void _clearScreen();
     void _displaySplashScreen();
     void _displayMainScreen();
-
-    bool _inWallLock;
-    bool _mainDoorLock;
-    bool _shelfLock;
-
+    
     #define ADMIN_USER 0
     #define NORMAL_USER 1
     uint8_t _user;
@@ -58,6 +42,10 @@ class HackUtil
     void _handlePreviousScreen();
 
     /* ADMIN_USER screen */
+    bool _inWallLock;
+    bool _mainDoorLock;
+    bool _shelfLock;
+
     void _displayLockScreen();
     void _manageLock(uint8_t tagLock);
 
@@ -72,7 +60,7 @@ class HackUtil
         int colorQ3, int tagQ3, int colorQ4, int tagQ4);
     void _drawSplit (int colorQ1, int tagQ1, int colorQ2, int tagQ2);
     void _drawPoint (int x, int y, int size, int color, int tag);
-    void _drawText (int x, int y, int size, int color, char message[])
+    void _drawText (int x, int y, int size, int color, char message[]);
 
 };
 
