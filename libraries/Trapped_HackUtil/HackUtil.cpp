@@ -12,19 +12,21 @@
 #include <SPI.h>
 #include <GD2.h>
 #include "asset/trapped_logo_full.h"
-#include "XBee.h"
+#include <XBee.h>
 
 HackUtil::HackUtil(){
   _mode = 1;
 
-    /*
     _xbee = XBee();
-    _xbeeResponse = XBeeResponse();
-    _xbeeRx = ZBRxResponse();
-    _xbeePayload[4] = { 0, 0, 0, 0 };
-    _laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
+    for (int i=0; i < 4; i++){
+	_xbeePayload[i] = 0;
+    }
+    XBeeResponse _xbeeResponse = XBeeResponse();
+    ZBRxResponse _xbeeRx = ZBRxResponse();
+    XBeeAddress64 _laser1Addr = XBeeAddress64(0x0013a200, 0x40c04edf);
+    XBeeAddress64 _laser2Addr = XBeeAddress64(0x0013a200, 0x40c04ef1);
+    _laser1Tx = ZBTxRequest(_laser1Addr, _xbeePayload, sizeof(_xbeePayload));
     _laser2Tx = ZBTxRequest(_laser2Addr, _xbeePayload, sizeof(_xbeePayload));
-    */
 
   _inWallLock = true;
   _mainDoorLock = true;
@@ -32,23 +34,30 @@ HackUtil::HackUtil(){
 }
 
 void HackUtil::init(){
+  GD.begin();
+
   // display splash screen
-  _displaySplashScreen();
+  _menuState = SCREEN_SPLASH;
+  //_displaySplashScreen();
 
   // connect to game 
+  
+  ms = 0;
 
 }
 
 void HackUtil::run(){
-    // get input
-    GD.get_inputs();
-
-    // process input
-    _handleTouchInput();
-
-    // update menu
-    _handleDisplayScreen();
-    
+    if ((long)millis() >= (long)(ms + 100)){
+        // get input
+        GD.get_inputs();
+   
+	// process input
+	_handleTouchInput();
+	    
+	// update menu
+	_handleDisplayScreen();
+	ms = (long)millis();
+    }
 }
 
 void HackUtil::_clearScreen(){
@@ -58,8 +67,6 @@ void HackUtil::_clearScreen(){
 }
 
 void HackUtil::_displaySplashScreen(){
-  //_clearScreen();
-  GD.begin();
   LOAD_ASSETS();
 
   GD.ClearColorRGB(0x404042);
@@ -101,7 +108,7 @@ void HackUtil::_handleTouchInput(){
         case SCREEN_ADMIN_LASER: _menuState = SCREEN_ADMIN_LASER; break;
 
         /* Admin -> Sensor */
-        case SCREEN_ADMIN_SENSOR: _menuState = SCREEN_ADMIN_SENSOR; break:
+        case SCREEN_ADMIN_SENSOR: _menuState = SCREEN_ADMIN_SENSOR; break;
 
         /* Admin -> Log */
         case SCREEN_ADMIN_LOG: _menuState = SCREEN_ADMIN_LOG; break;
@@ -109,68 +116,192 @@ void HackUtil::_handleTouchInput(){
         /* Previous Menu */
         case SCREEN_PREVIOUS: _handlePreviousScreen(); break;
 
-        default: break;
-        
     }
+
 }
 
 void HackUtil::_handleDisplayScreen(){
+   
+    /* clearing AND swapping screens MUST be in each method */
     switch (_menuState){
         case SCREEN_SPLASH: _displaySplashScreen(); break;
         case SCREEN_USER: _displayUserScreen(); break;
 
-        case SCREEN_ADMIN_LOCK: _displayLockScreen(SCREEN_ADMIN_LOCK); break;
-        //case TAG_LOCK_INWALL: _displayLockScreen(TAG_LOCK_INWALL); break;
-        //case TAG_LOCK_MAIN_DOOR: _displayLockScreen(TAG_LOCK_MAIN_DOOR); break;
-        //case TAG_LOCK_SHELF: _displayLockScreen(TAG_LOCK_SHELF); break;
-
+        case SCREEN_ADMIN_LOCK: _displayLockScreen(); break;
 
         case SCREEN_ADMIN_LASER: _displayLaserScreen(); break;
         case SCREEN_ADMIN_SENSOR: _displaySensorScreen(); break;
         case SCREEN_ADMIN_LOG: _displayLogScreen(); break;
-
-        default: break;
-        
     }
 
-    GD.swap();
 }
 
 
 /* Assuming _user has already been defined beforehand */
 void HackUtil::_displayUserScreen(){
+    GD.ClearColorRGB (0x103000);
+    GD.Clear();
+
     if (_user == ADMIN_USER){
         _drawQuadSplit (0xff4b76, SCREEN_ADMIN_LOCK,
                         0xffaf4b, SCREEN_ADMIN_LASER,
                         0xf94bff, SCREEN_ADMIN_SENSOR,
-                        0x6a4bff, SCREEN_ADMIN_LOG);
-        //TODO: _drawQuadText
+                        0x612a9f, SCREEN_ADMIN_LOG);
+
+	_drawText (119, 67, 24, 0xffffff, "Lock");
+	_drawText (359, 67, 24, 0xffffff, "Laser");
+	_drawText (119, 203, 24, 0xffffff, "Sensor");
+	_drawText (359, 203, 24, 0xffffff, "Log");
     }
 
-    else if (_user == NORMAL_USER){
+    if (_user == NORMAL_USER){
         //_drawQuadSplit (0xc0ff1b, 0xff881b, 0x1bff2d, 0x1c66ff);
         _drawSplit (0xc0ff1b, TAG_N1,
                     0x1c66ff, TAG_N2);
-        //TODO: _drawQuadText
+        //TODO: _drawSplitText
     }
 
-    else{}
+    GD.swap();
 
+}
+
+void HackUtil::_displayLockScreen(){
+    GD.ClearColorRGB (0x103000);
+    GD.Clear();
+
+    _drawQuadSplit (0xff0000, TAG_LOCK_INWALL,
+		    0x00ff00, TAG_LOCK_MAIN_DOOR,
+		    0x0000ff, TAG_LOCK_SHELF,
+		    0xe4e4e4, SCREEN_PREVIOUS);
+
+    if (_inWallLock){
+	_drawText (119, 67, 24, 0xffffff, "In Wall (Locked)");
+    }else{
+	_drawText (119, 67, 24, 0xffffff, "In Wall (Unlocked)");
+    }
+
+    if (_mainDoorLock){
+	_drawText (359, 67, 24, 0xffffff, "Main Door (Locked)");
+    }else{
+	_drawText (359, 67, 24, 0xffffff, "Main Door (Unlocked)");
+    }
+
+    if (_shelfLock){
+	_drawText (119, 203, 24, 0xffffff, "Shelf (Locked)");
+    }else{
+	_drawText (119, 203, 24, 0xffffff, "Shelf (Unlocked)");
+    }
+
+    _drawText (359, 203, 24, 0xffffff, "Back");
+
+    GD.swap();
+
+}
+
+void HackUtil::_manageLock (uint8_t tagLock){
+    if (tagLock == TAG_LOCK_INWALL){
+        if (_inWallLock){
+            // disable in_wall_lock
+	    _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_INWALL;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_UNLOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _inWallLock = false;
+        }
+	else {
+            // enable in_wall_lock
+            _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_INWALL;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_LOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _inWallLock = true;
+        }
+        
+    }
+
+    if (tagLock == TAG_LOCK_MAIN_DOOR){
+        if (_mainDoorLock){
+            // disable main_door_lock
+            _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_MAINDOOR;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_UNLOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _mainDoorLock = false;
+        }
+	else {
+            // enable main_door_lock
+            _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_MAINDOOR;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_LOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _mainDoorLock = true;
+        }
+
+    }
+
+    if (tagLock == TAG_LOCK_SHELF){
+        if (_shelfLock){
+            // disable shelf_lock
+            _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_SHELF;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_UNLOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _shelfLock = false;
+        }
+	else {
+            // enable shelf_lock
+            _xbeePayload[0] = MESSAGETYPEID_LOCK;
+            _xbeePayload[1] = MESSAGETYPEID_LOCK_LOCKID_SHELF;
+            _xbeePayload[2] = MESSAGETYPEID_LOCK_LOCK;
+	    
+            //_xbee.send (_laser1Tx);
+
+            _shelfLock = true;
+        }
+        
+    }
+
+}
+
+void HackUtil::_displayLaserScreen(){
+    
+}
+
+void HackUtil::_displaySensorScreen(){
+    
+}
+
+void HackUtil::_displayLogScreen(){
+    
 }
 
 void HackUtil::_handlePreviousScreen(){
     if (_menuState == SCREEN_ADMIN_LOCK ||
         _menuState == SCREEN_ADMIN_LASER ||
         _menuState == SCREEN_ADMIN_SENSOR ||
-        _menuState == SCEEN_ADMIN_LOG)
+        _menuState == SCREEN_ADMIN_LOG)
     {
-        _menuState = SCREEN_ADMIN;
+        _menuState = SCREEN_USER;
     }
     
 }
 
-void HackUtil::_drawQuadSplit (int colorQ1, int tagQ1, int colorQ2, int tagQ2,
-int colorQ3, int tagQ3, int colorQ4, int tagQ4){
+void HackUtil::_drawQuadSplit (int colorQ1, int tagQ1,
+	int colorQ2, int tagQ2, 
+	int colorQ3, int tagQ3,
+	int colorQ4, int tagQ4){
+    GD.ClearColorRGB(0x404042);
+    GD.Clear();
     GD.Begin (RECTS);
 
     /* Two opposite points make a rectangle */
@@ -178,30 +309,32 @@ int colorQ3, int tagQ3, int colorQ4, int tagQ4){
     /* Q1: Top-Left */
     GD.ColorRGB (colorQ1);
     GD.Tag (tagQ1);
-    GD.Vertex2ii (0,0);
-    GD.Vertex2ii (239,135);
+    GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+    GD.Vertex2ii (239 - (QUAD_BORDER / 2), 135 - (QUAD_BORDER / 2));
 
     /* Q2: Top-Right */
     GD.ColorRGB (colorQ2);
     GD.Tag (tagQ2);
-    GD.Vertex2ii (240,0);
-    GD.Vertex2ii (479,135);
+    GD.Vertex2ii (240 + (QUAD_BORDER / 2), 0 + QUAD_BORDER);
+    GD.Vertex2ii (479 - QUAD_BORDER, 135 - (QUAD_BORDER / 2));
 
     /* Q3: Bottom-Left */
     GD.ColorRGB (colorQ3);
     GD.Tag (tagQ3);
-    GD.Vertex2ii (0,136);
-    GD.Vertex2ii (239,271);
+    GD.Vertex2ii (0 + QUAD_BORDER, 136 + (QUAD_BORDER / 2));
+    GD.Vertex2ii (239 - (QUAD_BORDER / 2), 271 - QUAD_BORDER);
 
     /* Q4: Bottom-Right */
     GD.ColorRGB (colorQ4);
     GD.Tag (tagQ4);
-    GD.Vertex2ii (240,136);
-    GD.Vertex2ii (479,271);
+    GD.Vertex2ii (240 + (QUAD_BORDER / 2), 136 + (QUAD_BORDER / 2));
+    GD.Vertex2ii (479 - QUAD_BORDER, 271 - QUAD_BORDER);
 
 }
 
 void HackUtil::_drawSplit (int colorQ1, int tagQ1, int colorQ2, int tagQ2){
+    GD.Begin (RECTS);
+
     /* Q1: Top */
     GD.ColorRGB (colorQ1);
     GD.Tag (tagQ1);
@@ -217,7 +350,7 @@ void HackUtil::_drawSplit (int colorQ1, int tagQ1, int colorQ2, int tagQ2){
 }
 
 void HackUtil::_drawPoint (int x, int y, int size, int color, int tag){
-    GD.PointSize = 16 * size;
+    GD.PointSize (16 * size);
     GD.ColorRGB (color);
     GD.Begin (POINTS);
     GD.Tag (tag);

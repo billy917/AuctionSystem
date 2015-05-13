@@ -3,9 +3,9 @@
   Copyright 2014 - Unauthorized users cannot run, copy, distribute, study, change, modify, and/or improve the software.
 */
 
-//#define SCREEN_SPLASH 0
-#define SCREEN_USER 0
-#define SCREEN_PREVIOUS 1
+#define SCREEN_SPLASH 0
+#define SCREEN_USER 1
+#define SCREEN_PREVIOUS 9
 
 
 /* Admin User screen state and touch tags */
@@ -45,5 +45,9 @@
 /* 10 most recent received Commands */
 #define SCREEN_ADMIN_LOG 14
 
-/* Normal User screen state and touch tags */
+/* Modify Timer values */
+#define SCREEN_ADMIN_TIMER 15
 
+/* Normal User screen state and touch tags */
+#define TAG_N1 210
+#define TAG_N2 220
