@@ -75,7 +75,10 @@ void HackUtil::_displaySplashScreen(){
   GD.Vertex2ii(0, 0, TRAPPED_LOGO_FULL_HANDLE);
   GD.swap();
 
-  delay (3000);
+  ms = (long)millis();
+  while ((long)millis() <= (long)(ms + 3000)){
+      // get input for admin mode
+  }
 
   _menuState = SCREEN_USER;
   _user = ADMIN_USER;
@@ -121,7 +124,9 @@ void HackUtil::_handleTouchInput(){
 }
 
 void HackUtil::_handleDisplayScreen(){
-   
+    GD.ClearColorRGB (0x404042);
+    GD.Clear();
+
     /* clearing AND swapping screens MUST be in each method */
     switch (_menuState){
         case SCREEN_SPLASH: _displaySplashScreen(); break;
@@ -139,7 +144,7 @@ void HackUtil::_handleDisplayScreen(){
 
 /* Assuming _user has already been defined beforehand */
 void HackUtil::_displayUserScreen(){
-    GD.ClearColorRGB (0x103000);
+    GD.ClearColorRGB (0x404042);
     GD.Clear();
 
     if (_user == ADMIN_USER){
@@ -166,32 +171,55 @@ void HackUtil::_displayUserScreen(){
 }
 
 void HackUtil::_displayLockScreen(){
-    GD.ClearColorRGB (0x103000);
+    GD.ClearColorRGB (0x404042);
     GD.Clear();
+    GD.Begin (RECTS);
 
-    _drawQuadSplit (0xff0000, TAG_LOCK_INWALL,
-		    0x00ff00, TAG_LOCK_MAIN_DOOR,
-		    0x0000ff, TAG_LOCK_SHELF,
-		    0xe4e4e4, SCREEN_PREVIOUS);
-
+    /* in_wall_lock */
+    (_inWallLock)? GD.ColorRGB (0xff0000) : GD.ColorRGB (0xff00ff);
+    GD.Tag (TAG_LOCK_INWALL);
+    GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+    GD.Vertex2ii (239 - (QUAD_BORDER / 2), 135 - (QUAD_BORDER / 2));
+    GD.Tag (TAG_LOCK_INWALL);
     if (_inWallLock){
-	_drawText (119, 67, 24, 0xffffff, "In Wall (Locked)");
+	_drawText (119, 67, 24, 0xffffff, "In Wall (ON)");
     }else{
-	_drawText (119, 67, 24, 0xffffff, "In Wall (Unlocked)");
+	_drawText (119, 67, 24, 0xffffff, "In Wall (OFF)");
     }
 
+    GD.Begin (RECTS);
+    /* main_door_lock */
+    (_mainDoorLock)? GD.ColorRGB (0x00ff00) : GD.ColorRGB (0x00ffff);
+    GD.Tag (TAG_LOCK_MAIN_DOOR);
+    GD.Vertex2ii (240 + (QUAD_BORDER / 2), 0 + QUAD_BORDER);
+    GD.Vertex2ii (479 - QUAD_BORDER, 135 - (QUAD_BORDER / 2));
+    GD.Tag (TAG_LOCK_MAIN_DOOR);
     if (_mainDoorLock){
-	_drawText (359, 67, 24, 0xffffff, "Main Door (Locked)");
+	_drawText (359, 67, 24, 0xffffff, "Main Door (ON)");
     }else{
-	_drawText (359, 67, 24, 0xffffff, "Main Door (Unlocked)");
+	_drawText (359, 67, 24, 0xffffff, "Main Door (OFF)");
     }
 
+    GD.Begin (RECTS);
+    /* shelf_lock */
+    (_shelfLock)? GD.ColorRGB (0x0000ff) : GD.ColorRGB (0xffff00);
+    GD.Tag (TAG_LOCK_SHELF);
+    GD.Vertex2ii (0 + QUAD_BORDER, 136 + (QUAD_BORDER / 2));
+    GD.Vertex2ii (239 - (QUAD_BORDER / 2), 271 - QUAD_BORDER);
+    GD.Tag (TAG_LOCK_SHELF);
     if (_shelfLock){
-	_drawText (119, 203, 24, 0xffffff, "Shelf (Locked)");
+	_drawText (119, 203, 24, 0xffffff, "Shelf (ON)");
     }else{
-	_drawText (119, 203, 24, 0xffffff, "Shelf (Unlocked)");
+	_drawText (119, 203, 24, 0xffffff, "Shelf (OFF)");
     }
 
+    GD.Begin (RECTS);
+    /* back */
+    GD.ColorRGB (0xe4e4e4);
+    GD.Tag (SCREEN_PREVIOUS);
+    GD.Vertex2ii (240 + (QUAD_BORDER / 2), 136 + (QUAD_BORDER / 2));
+    GD.Vertex2ii (479 - QUAD_BORDER, 271 - QUAD_BORDER);
+    GD.Tag (SCREEN_PREVIOUS);
     _drawText (359, 203, 24, 0xffffff, "Back");
 
     GD.swap();
