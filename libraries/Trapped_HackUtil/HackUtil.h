@@ -42,6 +42,7 @@ class HackUtil
     void _displayUserScreen();
     void _handleTouchInput();
     void _handleDisplayScreen();
+    void _displayPrevious();
     void _handlePreviousScreen();
 
     /* ADMIN_USER screen */
@@ -57,12 +58,23 @@ class HackUtil
     void _displayLogScreen();
 
     /* NORMAL_USER screen */
+    bool _isClockKeypadHacked;
+    bool _isSafeKeypadHacked;
+
+    void _displayHackSystem();
+    void _displayServer();
+    void _displayServerAccess();
+    void _displayHackLaser();
+    void _displayFile();
+    void _displayFloorplan();
 
     /* Helper methods */
     void _drawQuadSplit (int colorQ1, int tagQ1,
-	int colorQ2, int tagQ2,
+	    int colorQ2, int tagQ2,
         int colorQ3, int tagQ3,
-	int colorQ4, int tagQ4);
+	    int colorQ4, int tagQ4);
+   // void _drawRect (int color, int tag, int point1x, int point1y,
+        //int point2x, int point2y);
     void _drawSplit (int colorQ1, int tagQ1, int colorQ2, int tagQ2);
     void _drawPoint (int x, int y, int size, int color, int tag);
     void _drawText (int x, int y, int size, int color, char message[]);

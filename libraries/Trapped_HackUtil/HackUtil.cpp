@@ -28,6 +28,8 @@ HackUtil::HackUtil(){
     _laser1Tx = ZBTxRequest(_laser1Addr, _xbeePayload, sizeof(_xbeePayload));
     _laser2Tx = ZBTxRequest(_laser2Addr, _xbeePayload, sizeof(_xbeePayload));
 
+  _isClockKeypadHacked = false;
+  _isSafeKeypadHacked = false;
   _inWallLock = true;
   _mainDoorLock = true;
   _shelfLock = true;
@@ -78,10 +80,12 @@ void HackUtil::_displaySplashScreen(){
   ms = (long)millis();
   while ((long)millis() <= (long)(ms + 3000)){
       // get input for admin mode
+      _user = ADMIN_USER;
   }
 
   _menuState = SCREEN_USER;
-  _user = ADMIN_USER;
+  _user = NORMAL_USER;
+
 }
 
 /* Assuming GD.get_inputs() has already been called beforehand */
@@ -116,6 +120,24 @@ void HackUtil::_handleTouchInput(){
         /* Admin -> Log */
         case SCREEN_ADMIN_LOG: _menuState = SCREEN_ADMIN_LOG; break;
 
+        /* User -> Hack System */
+        case SCREEN_USER_HACK_SYSTEM: _menuState = SCREEN_HACK_SYSTEM; break;
+
+        /* User -> Hack System -> Server */
+        case SCREEN_USER_SERVER: _menuState = SCREEN_USER_SERVER; break;
+
+        /* User -> Hack System -> Server -> Access */
+        case SCREEN_USER_SERVER_ACCESS: _menuState = SCREEN_USER_SERVER_ACCESS; break;
+        
+        /* User -> Hack System -> Server -> Access -> Hack Laser */
+        case SCREEN_USER_HACK_LASER: _menuState = SCREEN_USER_HAK_LASER; break;
+
+        /* User -> Downloaded Files */
+        case SCREEN_USER_FILE: _menuState = SCREEN_USER_FILE; break;
+
+        /* Downloaded Files -> Floorplan */
+        case SCREEN_USER_FLOORPLAN: _menuState = SCREEN_USER_FLOORPLAN; break;
+
         /* Previous Menu */
         case SCREEN_PREVIOUS: _handlePreviousScreen(); break;
 
@@ -133,14 +155,20 @@ void HackUtil::_handleDisplayScreen(){
         case SCREEN_USER: _displayUserScreen(); break;
 
         case SCREEN_ADMIN_LOCK: _displayLockScreen(); break;
-
         case SCREEN_ADMIN_LASER: _displayLaserScreen(); break;
         case SCREEN_ADMIN_SENSOR: _displaySensorScreen(); break;
         case SCREEN_ADMIN_LOG: _displayLogScreen(); break;
+
+        case SCREEN_USER_HACK_SYSTEM: _displayHackSystem(); break;
+        case SCREEN_USER_SERVER: _displayServer(); break;
+        case SCREEN_USER_SERVER_ACCESS: _displayServerAccess(); break;
+        case SCREEN_USER_HACK_LASER: _displayHackLaser(); break;
+        case SCREEN_USER_FILES: _displayFile(); break;
+        case SCREEN_USER_FLOORPLAN: _displayFloorplan(); break;
+
     }
 
 }
-
 
 /* Assuming _user has already been defined beforehand */
 void HackUtil::_displayUserScreen(){
@@ -153,17 +181,48 @@ void HackUtil::_displayUserScreen(){
                         0xf94bff, SCREEN_ADMIN_SENSOR,
                         0x612a9f, SCREEN_ADMIN_LOG);
 
+    GD.Tag (SCREEN_ADMIN_LOCK);
 	_drawText (119, 67, 24, 0xffffff, "Lock");
+
+    GD.Tag (SCREEN_ADMIN_LASER);
 	_drawText (359, 67, 24, 0xffffff, "Laser");
+
+    GD.Tag (SCREEN_ADMIN_SENSOR);
 	_drawText (119, 203, 24, 0xffffff, "Sensor");
+
+    GD.Tag (SCREEN_ADMIN_LOG);
 	_drawText (359, 203, 24, 0xffffff, "Log");
     }
 
     if (_user == NORMAL_USER){
-        //_drawQuadSplit (0xc0ff1b, 0xff881b, 0x1bff2d, 0x1c66ff);
-        _drawSplit (0xc0ff1b, TAG_N1,
-                    0x1c66ff, TAG_N2);
-        //TODO: _drawSplitText
+        if (!_isClockKeypadHacked){
+            GD.Begin (RECTS);
+            GD.ColorRGB (0xff0000);
+            GD.Tag (SCREEN_USER_HACK_SYSTEM);
+            GD.Vertex2ii (0 + 16, 0 + 16);
+            GD.Vertex2ii (479 - (16 / 2), 271 - (16 / 2));
+
+            GD.Tag (SCREEN_USER_HACK_SYSTEM);
+            _drawText (239, 135, 24, 0xffffff, "Hack Security System");
+        }else{
+            GD.Begin (RECTS);
+            GD.ColorRGB (0x99ffff);
+            GD.Tag (SCREEN_USER_HACK_SYSTEM);
+            GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+            GD.Vertex2ii (479 - (QUAD_BORDER / 2), 135 - (QUAD_BORDER / 2));
+
+            GD.Tag (SCREEN_USER_HACK_SYSTEM);
+            _drawText (239, 67, 24, 0xffffff, "Hack Security System");
+            
+            GD.Begin (RECTS);
+            GD.ColorRGB (0x0000ff);
+            GD.Tag (SCREEN_USER_FILE);
+            GD.Vertex2ii (0 + QUAD_BORDER, 136 + QUAD_BORDER);
+            GD.Vertex2ii (479 - (QUAD_BORDER / 2), 271 - (QUAD_BORDER / 2));
+
+            GD.Tag (SCREEN_USER_FILE);
+            _drawText (239, 203, 24, 0xffffff, "View Downloaded Files");
+        }
     }
 
     GD.swap();
@@ -173,9 +232,9 @@ void HackUtil::_displayUserScreen(){
 void HackUtil::_displayLockScreen(){
     GD.ClearColorRGB (0x404042);
     GD.Clear();
-    GD.Begin (RECTS);
 
     /* in_wall_lock */
+    GD.Begin (RECTS);
     (_inWallLock)? GD.ColorRGB (0xff0000) : GD.ColorRGB (0xff00ff);
     GD.Tag (TAG_LOCK_INWALL);
     GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
@@ -187,8 +246,8 @@ void HackUtil::_displayLockScreen(){
 	_drawText (119, 67, 24, 0xffffff, "In Wall (OFF)");
     }
 
-    GD.Begin (RECTS);
     /* main_door_lock */
+    GD.Begin (RECTS);
     (_mainDoorLock)? GD.ColorRGB (0x00ff00) : GD.ColorRGB (0x00ffff);
     GD.Tag (TAG_LOCK_MAIN_DOOR);
     GD.Vertex2ii (240 + (QUAD_BORDER / 2), 0 + QUAD_BORDER);
@@ -200,8 +259,8 @@ void HackUtil::_displayLockScreen(){
 	_drawText (359, 67, 24, 0xffffff, "Main Door (OFF)");
     }
 
-    GD.Begin (RECTS);
     /* shelf_lock */
+    GD.Begin (RECTS);
     (_shelfLock)? GD.ColorRGB (0x0000ff) : GD.ColorRGB (0xffff00);
     GD.Tag (TAG_LOCK_SHELF);
     GD.Vertex2ii (0 + QUAD_BORDER, 136 + (QUAD_BORDER / 2));
@@ -213,8 +272,8 @@ void HackUtil::_displayLockScreen(){
 	_drawText (119, 203, 24, 0xffffff, "Shelf (OFF)");
     }
 
-    GD.Begin (RECTS);
     /* back */
+    GD.Begin (RECTS);
     GD.ColorRGB (0xe4e4e4);
     GD.Tag (SCREEN_PREVIOUS);
     GD.Vertex2ii (240 + (QUAD_BORDER / 2), 136 + (QUAD_BORDER / 2));
@@ -313,11 +372,88 @@ void HackUtil::_displayLogScreen(){
     
 }
 
+void HackUtil::_displayHackSystem(){
+    bool _isConnected = false;
+    unsigned long int _connectTime = 0;
+
+    /* for a total of 500ms, each 100ms does:
+     *  increment loading bar,
+     *  check connection to ethernet jack
+     */
+    _connectTime = (long) millis();
+    for (int i=0; i < 6; i++){
+        while ((long)millis() <= _connectTime + 60){}
+        GD.ClearColorRGB (0x404042);
+        GD.Clear();
+    
+        _drawText (239, 67, 24, 0xffffff, "Connect device to security system.");
+
+        if (i == 0){
+            _drawText (239, 203, 24, 0xffffff,
+                "[=>                    ]");
+        }
+
+        if (i == 1){
+            _drawText (239, 203, 24, 0xffffff,
+                "[====>                 ]");
+        }
+
+        if (i == 2){
+            _drawText (239, 203, 24, 0xffffff,
+                "[========>             ]");
+        }
+
+        if (i == 3){
+            _drawText (239, 203, 24, 0xffffff,
+                "[================>     ]");
+        }
+
+        if (i == 4){
+            if (_isConnected){
+                _drawText (239, 203, 24, 0xffffff,
+                    "[====================>]");
+            } else {
+                _drawText (239, 203, 24, 0xffffff,
+                "[==================>   ]");
+            }
+        }
+
+        GD.swap();
+        _connectTime = (long)millis();
+    }
+
+    if (_isConnected){
+        _menuState = SCREEN_USER_SERVER;
+        
+    } else {
+        GD.ClearColorRGB (0x404042);
+        GD.Clear();
+
+        //TODO: back button
+        GD.Begin (RECTS);
+        GD.Tag (SCREEN_USER);
+        GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+        GD.Vertex2ii (479 - QUAD_BORDER, 271 - QUAD_BORDER);
+        
+        GD.Tag (SCREEN_USER);
+        _drawText (239, 135, 36, 0xffffff, "Could not detect security system");
+
+        GD.swap();
+
+    }
+
+}
+
+void HackUtil::_displayPrevious(){}
+
 void HackUtil::_handlePreviousScreen(){
     if (_menuState == SCREEN_ADMIN_LOCK ||
         _menuState == SCREEN_ADMIN_LASER ||
         _menuState == SCREEN_ADMIN_SENSOR ||
-        _menuState == SCREEN_ADMIN_LOG)
+        _menuState == SCREEN_ADMIN_LOG ||
+        
+        _menuState == SCREEN_USER_HACK_SYSTEM ||
+        _menuState == SCREEN_USER_FILE)
     {
         _menuState = SCREEN_USER;
     }
