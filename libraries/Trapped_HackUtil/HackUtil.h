@@ -62,13 +62,16 @@ class HackUtil
     bool _isSafeKeypadHacked;
 
     void _displayHackSystem();
+    void _displayHackFailed();
     void _displayServer();
     void _displayServerAccess();
     void _displayHackLaser();
     void _displayFile();
-    void _displayFloorplan();
+    void _displayFloorplan(uint8_t floorplan);
 
     /* Helper methods */
+    void _delay (int time);
+
     void _drawQuadSplit (int colorQ1, int tagQ1,
 	    int colorQ2, int tagQ2,
         int colorQ3, int tagQ3,
