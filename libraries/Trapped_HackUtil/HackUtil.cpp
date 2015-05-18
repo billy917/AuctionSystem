@@ -76,7 +76,6 @@ void HackUtil::_clearScreen(){
 
 void HackUtil::_displaySplashScreen(){
   LOAD_ASSETS();
-
   GD.ClearColorRGB(0x404042);
   GD.Clear();
   GD.Begin(BITMAPS);
@@ -91,6 +90,10 @@ void HackUtil::_displaySplashScreen(){
 
   _menuState = SCREEN_USER;
   _user = NORMAL_USER;
+
+  /* DEBUG ONLY */
+  //_isClockKeypadHacked = true;
+  //_isSafeKeypadHacked = true;
 
 }
 
@@ -142,7 +145,8 @@ void HackUtil::_handleTouchInput(){
         case SCREEN_USER_FILE: _menuState = SCREEN_USER_FILE; break;
 
         /* Downloaded Files -> Floorplan */
-        case SCREEN_USER_FLOORPLAN: _menuState = SCREEN_USER_FLOORPLAN; break;
+        case TAG_FLOORPLAN_1: _menuState = TAG_FLOORPLAN_1; break;
+		case TAG_FLOORPLAN_2: _menuState = TAG_FLOORPLAN_2; break;
 
         /* Previous Menu */
         case SCREEN_PREVIOUS: _handlePreviousScreen(); break;
@@ -166,11 +170,14 @@ void HackUtil::_handleDisplayScreen(){
         case SCREEN_ADMIN_LOG: _displayLogScreen(); break;
 
         case SCREEN_USER_HACK_SYSTEM: _displayHackSystem(); break;
-        case SCREEN_USER_SERVER: _displayServer(); break;
-        case SCREEN_USER_SERVER_ACCESS: _displayServerAccess(); break;
-        case SCREEN_USER_HACK_LASER: _displayHackLaser(); break;
+		case SCREEN_USER_HACK_FAILED: _displayHackFailed(); break;
+        //case SCREEN_USER_SERVER: _displayServer(); break;
+        //case SCREEN_USER_SERVER_ACCESS: _displayServerAccess(); break;
+        //case SCREEN_USER_HACK_LASER: _displayHackLaser(); break;
         case SCREEN_USER_FILE: _displayFile(); break;
-        case SCREEN_USER_FLOORPLAN: _displayFloorplan(); break;
+
+        case TAG_FLOORPLAN_1: _displayFloorplan(TAG_FLOORPLAN_1); break;
+		case TAG_FLOORPLAN_2: _displayFloorplan(TAG_FLOORPLAN_2); break;
 
     }
 
@@ -203,10 +210,10 @@ void HackUtil::_displayUserScreen(){
     if (_user == NORMAL_USER){
         if (!_isClockKeypadHacked){
             GD.Begin (RECTS);
-            GD.ColorRGB (0xff0000);
+            GD.ColorRGB (0x990000);
             GD.Tag (SCREEN_USER_HACK_SYSTEM);
             GD.Vertex2ii (0 + 16, 0 + 16);
-            GD.Vertex2ii (479 - (16 / 2), 271 - (16 / 2));
+            GD.Vertex2ii (479 - 16, 271 - 16);
 
             GD.Tag (SCREEN_USER_HACK_SYSTEM);
             _drawText (239, 135, 24, 0xffffff, "Hack Security System");
@@ -387,8 +394,8 @@ void HackUtil::_displayHackSystem(){
      *  check connection to ethernet jack
      */
     _connectTime = (long) millis();
-    for (int i=0; i < 6; i++){
-        while ((long)millis() <= _connectTime + 60){}
+    for (int i=0; i <= 5; i++){
+        while ((long)millis() <= _connectTime + 300){}
         GD.ClearColorRGB (0x404042);
         GD.Clear();
     
@@ -396,22 +403,22 @@ void HackUtil::_displayHackSystem(){
 
         if (i == 0){
             _drawText (239, 203, 24, 0xffffff,
-                "[=>                    ]");
+                "[>                                                  ]");
         }
 
         if (i == 1){
             _drawText (239, 203, 24, 0xffffff,
-                "[====>                 ]");
+                "[====>                                        ]");
         }
 
         if (i == 2){
             _drawText (239, 203, 24, 0xffffff,
-                "[========>             ]");
+                "[========>                              ]");
         }
 
         if (i == 3){
             _drawText (239, 203, 24, 0xffffff,
-                "[================>     ]");
+                "[================>          ]");
             _isConnected = _isSystemDetected();
         }
 
@@ -419,35 +426,41 @@ void HackUtil::_displayHackSystem(){
             if (_isConnected){
                 _drawText (239, 203, 24, 0xffffff,
                     "[====================>]");
+
+				_delay (300);
+				
+        		_menuState = SCREEN_USER_SERVER;
+
             } else {
                 _drawText (239, 203, 24, 0xffffff,
-                "[==================>   ]");
+		    		"[================>          ]");
             }
         }
+
+		if ((i == 5) && (!_isConnected)){
+			_drawText (239, 203, 24, 0xffffff,
+		    "[================>          ]");
+	
+			_delay (500);
+			_menuState = SCREEN_USER_HACK_FAILED;
+		}
 
         GD.swap();
         _connectTime = (long)millis();
     }
+}
 
-    if (_isConnected){
-        _menuState = SCREEN_USER_SERVER;
-        
-    } else {
-        GD.ClearColorRGB (0x404042);
-        GD.Clear();
+void HackUtil::_displayHackFailed(){
+	GD.ClearColorRGB (0x404042);
+	GD.Clear();
 
-        //TODO: back button
-        GD.Begin (RECTS);
-        GD.Tag (SCREEN_USER);
-        GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
-        GD.Vertex2ii (479 - QUAD_BORDER, 271 - QUAD_BORDER);
-        
-        GD.Tag (SCREEN_USER);
-        _drawText (239, 135, 36, 0xffffff, "Could not detect security system");
+    _drawText (239, 135, 24, 0xffffff, "Could not detect security system");
 
-        GD.swap();
+	GD.swap();
 
-    }
+	_delay (1000);
+
+	_menuState = SCREEN_USER;
 
 }
 
@@ -462,7 +475,82 @@ bool _isSystemDetected(){
 
 }
 
-void HackUtil::_displayPrevious(){}
+void HackUtil::_displayFile(){
+	GD.ClearColorRGB (0x404042);
+	GD.Clear();
+
+	if (_isClockKeypadHacked){
+		GD.Begin (RECTS);
+		GD.ColorRGB (0x990099);
+		GD.Tag (TAG_FLOORPLAN_1);
+		GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+		GD.Vertex2ii (479 - QUAD_BORDER, 79);		
+
+		GD.Tag (TAG_FLOORPLAN_1);
+		_drawText (239, 43, 24, 0xffffff, "Floor Plan 1");
+		
+	}
+
+	if (_isSafeKeypadHacked){
+		GD.Begin (RECTS);
+		GD.ColorRGB (0x009999);
+		GD.Tag (TAG_FLOORPLAN_2);
+		GD.Vertex2ii (0 + QUAD_BORDER, 95);
+		GD.Vertex2ii (479 - QUAD_BORDER, 174);
+
+		GD.Tag (TAG_FLOORPLAN_2);
+		_drawText (239, 129, 24, 0xffffff, "Floor Plan 2");
+
+	}
+
+	GD.swap();
+
+}
+
+void HackUtil::_displayFloorplan(uint8_t floorplan){
+
+		
+	
+	/* Security Floor Plan */
+	if (floorplan == TAG_FLOORPLAN_1){
+			
+		GD.BitmapHandle(0);
+		GD.cmd_loadimage (-1, 0);
+		GD.load ("security_floor_plan.jpg");
+		GD.Clear();
+
+		GD.Begin(BITMAPS);
+		GD.Vertex2ii(0,0,0);
+
+	}
+
+	/* NFC Floor Plan */
+	if (floorplan == TAG_FLOORPLAN_2){
+
+		GD.BitmapHandle(1);
+		GD.cmd_loadimage(-1, 0);
+		GD.load ("nfc_floor_plan.jpg");
+		GD.Clear();
+
+		GD.Begin(BITMAPS);
+		GD.Vertex2ii(0,0,1);
+
+	}
+	
+	GD.swap();
+
+}
+
+/*
+void HackUtil::_displayPrevious(){
+	GD.cmd_loadimage(0,0);
+	GD.load ("previous_button.jpg");
+
+	GD.Begin (BITMAPS);
+	GD.Vertex2ii(0,0);
+
+}
+*/
 
 void HackUtil::_handlePreviousScreen(){
     if (_menuState == SCREEN_ADMIN_LOCK ||
@@ -475,6 +563,12 @@ void HackUtil::_handlePreviousScreen(){
     {
         _menuState = SCREEN_USER;
     }
+
+	if (_menuState == TAG_FLOORPLAN_1 ||
+		_menuState == TAG_FLOORPLAN_2)
+	{
+		_menuState = SCREEN_USER_FILE;
+	}
     
 }
 
@@ -544,4 +638,11 @@ void HackUtil::_drawText (int x, int y, int size, int color, char message[]){
     GD.ColorRGB (color);
     GD.cmd_text (x, y, size, OPT_CENTER, message);
     
+}
+
+void HackUtil::_delay (int time){
+	unsigned long int delay = (long)millis();
+
+	while ((long)millis() <= (long)(delay + time)){}
+
 }
