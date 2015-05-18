@@ -464,7 +464,7 @@ void HackUtil::_displayHackFailed(){
 
 }
 
-bool _isSystemDetected(){
+bool HackUtil::_isSystemDetected(){
     /* read pins if there is current or not */
     if ((digitalRead (ETHERNET_READ_1) == HIGH) &&
             (digitalRead (ETHERNET_READ_2) == HIGH)){
