@@ -40,6 +40,7 @@ class HackUtil
     #define ETHERNET_PWR_2 6
     #define ETHERNET_READ_2 7
     bool _isSystemDetected();
+	void _resetEthernetPin();
 
     #define ADMIN_USER 0
     #define NORMAL_USER 1

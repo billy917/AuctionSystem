@@ -29,16 +29,14 @@ HackUtil::HackUtil(){
     _laser2Tx = ZBTxRequest(_laser2Addr, _xbeePayload, sizeof(_xbeePayload));
 
     /* set up pins for ethernet */
-    pinMode (ETHERNET_PWR_1, OUTPUT);
-    digitalWrite (ETHERNET_PWR_1, HIGH);
+    _resetEthernetPin();
+    
+    _isClockKeypadHacked = false;
+  	_isSafeKeypadHacked = false;
 
-    pinMode (ETHERNET_PWR_2, OUTPUT);
-    digitalWrite (ETHERNET_PWR_2, HIGH);  _isClockKeypadHacked = false;
-
-  _isSafeKeypadHacked = false;
-  _inWallLock = true;
-  _mainDoorLock = true;
-  _shelfLock = true;
+  	_inWallLock = true;
+ 	_mainDoorLock = true;
+  	_shelfLock = true;
 }
 
 void HackUtil::init(){
@@ -219,7 +217,7 @@ void HackUtil::_displayUserScreen(){
             _drawText (239, 135, 24, 0xffffff, "Hack Security System");
         }else{
             GD.Begin (RECTS);
-            GD.ColorRGB (0x99ffff);
+            GD.ColorRGB (0x994ff9);
             GD.Tag (SCREEN_USER_HACK_SYSTEM);
             GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
             GD.Vertex2ii (479 - (QUAD_BORDER / 2), 135 - (QUAD_BORDER / 2));
@@ -419,7 +417,9 @@ void HackUtil::_displayHackSystem(){
         if (i == 3){
             _drawText (239, 203, 24, 0xffffff,
                 "[================>          ]");
+
             _isConnected = _isSystemDetected();
+
         }
 
         if (i == 4){
@@ -429,7 +429,11 @@ void HackUtil::_displayHackSystem(){
 
 				_delay (300);
 				
-        		_menuState = SCREEN_USER_SERVER;
+				/* DEBUG ONLY */
+				_isClockKeypadHacked = true;
+        		_menuState = SCREEN_USER;
+
+				//_menuState = SCREEN_USER_SERVER;
 
             } else {
                 _drawText (239, 203, 24, 0xffffff,
@@ -468,10 +472,26 @@ bool HackUtil::_isSystemDetected(){
     /* read pins if there is current or not */
     if ((digitalRead (ETHERNET_READ_1) == HIGH) &&
             (digitalRead (ETHERNET_READ_2) == HIGH)){
+		_resetEthernetPin();
+
         return true;
     } else {
+		_resetEthernetPin();
         return false;
     }
+
+}
+
+void HackUtil::_resetEthernetPin(){
+	pinMode (ETHERNET_PWR_1, OUTPUT);
+    digitalWrite (ETHERNET_PWR_1, HIGH);
+	
+	pinMode (ETHERNET_READ_1, INPUT);
+
+    pinMode (ETHERNET_PWR_2, OUTPUT);
+    digitalWrite (ETHERNET_PWR_2, HIGH);
+
+	pinMode (ETHERNET_READ_2, INPUT);
 
 }
 
