@@ -34,6 +34,13 @@ class HackUtil
     void _displaySplashScreen();
     void _displayMainScreen();
     
+    /* Ethernet jack pins */
+    #define ETHERNET_PWR_1 4
+    #define ETHERNET_READ_1 5
+    #define ETHERNET_PWR_2 6
+    #define ETHERNET_READ_2 7
+    bool _isSystemDetected();
+
     #define ADMIN_USER 0
     #define NORMAL_USER 1
     uint8_t _user;

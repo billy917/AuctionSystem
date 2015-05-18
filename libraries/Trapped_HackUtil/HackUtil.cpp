@@ -28,7 +28,13 @@ HackUtil::HackUtil(){
     _laser1Tx = ZBTxRequest(_laser1Addr, _xbeePayload, sizeof(_xbeePayload));
     _laser2Tx = ZBTxRequest(_laser2Addr, _xbeePayload, sizeof(_xbeePayload));
 
-  _isClockKeypadHacked = false;
+    /* set up pins for ethernet */
+    pinMode (ETHERNET_PWR_1, OUTPUT);
+    digitalWrite (ETHERNET_PWR_1, HIGH);
+
+    pinMode (ETHERNET_PWR_2, OUTPUT);
+    digitalWrite (ETHERNET_PWR_2, HIGH);  _isClockKeypadHacked = false;
+
   _isSafeKeypadHacked = false;
   _inWallLock = true;
   _mainDoorLock = true;
@@ -121,7 +127,7 @@ void HackUtil::_handleTouchInput(){
         case SCREEN_ADMIN_LOG: _menuState = SCREEN_ADMIN_LOG; break;
 
         /* User -> Hack System */
-        case SCREEN_USER_HACK_SYSTEM: _menuState = SCREEN_HACK_SYSTEM; break;
+        case SCREEN_USER_HACK_SYSTEM: _menuState = SCREEN_USER_HACK_SYSTEM; break;
 
         /* User -> Hack System -> Server */
         case SCREEN_USER_SERVER: _menuState = SCREEN_USER_SERVER; break;
@@ -130,7 +136,7 @@ void HackUtil::_handleTouchInput(){
         case SCREEN_USER_SERVER_ACCESS: _menuState = SCREEN_USER_SERVER_ACCESS; break;
         
         /* User -> Hack System -> Server -> Access -> Hack Laser */
-        case SCREEN_USER_HACK_LASER: _menuState = SCREEN_USER_HAK_LASER; break;
+        case SCREEN_USER_HACK_LASER: _menuState = SCREEN_USER_HACK_LASER; break;
 
         /* User -> Downloaded Files */
         case SCREEN_USER_FILE: _menuState = SCREEN_USER_FILE; break;
@@ -163,7 +169,7 @@ void HackUtil::_handleDisplayScreen(){
         case SCREEN_USER_SERVER: _displayServer(); break;
         case SCREEN_USER_SERVER_ACCESS: _displayServerAccess(); break;
         case SCREEN_USER_HACK_LASER: _displayHackLaser(); break;
-        case SCREEN_USER_FILES: _displayFile(); break;
+        case SCREEN_USER_FILE: _displayFile(); break;
         case SCREEN_USER_FLOORPLAN: _displayFloorplan(); break;
 
     }
@@ -406,6 +412,7 @@ void HackUtil::_displayHackSystem(){
         if (i == 3){
             _drawText (239, 203, 24, 0xffffff,
                 "[================>     ]");
+            _isConnected = _isSystemDetected();
         }
 
         if (i == 4){
@@ -440,6 +447,17 @@ void HackUtil::_displayHackSystem(){
 
         GD.swap();
 
+    }
+
+}
+
+bool _isSystemDetected(){
+    /* read pins if there is current or not */
+    if ((digitalRead (ETHERNET_READ_1) == HIGH) &&
+            (digitalRead (ETHERNET_READ_2) == HIGH)){
+        return true;
+    } else {
+        return false;
     }
 
 }

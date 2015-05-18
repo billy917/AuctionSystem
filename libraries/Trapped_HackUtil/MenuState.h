@@ -50,6 +50,7 @@
 
 /* Normal User screen state and touch tags */
 #define SCREEN_USER_HACK_SYSTEM 20
+#define SCREEN_USER_HACK_FAIL 21
 #define SCREEN_USER_SERVER 200
 #define SCREEN_USER_SERVER_ACCESS 210
 #define TAG_DOWNLOAD_FLOORPLAN 211
