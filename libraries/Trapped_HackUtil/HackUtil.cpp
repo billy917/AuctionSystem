@@ -433,6 +433,10 @@ void HackUtil::_displayHackSystem(){
 				_isClockKeypadHacked = true;
         		_menuState = SCREEN_USER;
 
+                /* if !SCREEN_USER_SERVER
+                 *  make connection successful state
+                 */
+
 				//_menuState = SCREEN_USER_SERVER;
 
             } else {
@@ -529,8 +533,6 @@ void HackUtil::_displayFile(){
 
 void HackUtil::_displayFloorplan(uint8_t floorplan){
 
-		
-	
 	/* Security Floor Plan */
 	if (floorplan == TAG_FLOORPLAN_1){
 			
@@ -561,16 +563,17 @@ void HackUtil::_displayFloorplan(uint8_t floorplan){
 
 }
 
-/*
 void HackUtil::_displayPrevious(){
-	GD.cmd_loadimage(0,0);
-	GD.load ("previous_button.jpg");
+
+	GD.cmd_loadimage(-1,0);
+	GD.load ("back_button_50.jpg");
 
 	GD.Begin (BITMAPS);
 	GD.Vertex2ii(0,0);
 
+    GD.swap();
+
 }
-*/
 
 void HackUtil::_handlePreviousScreen(){
     if (_menuState == SCREEN_ADMIN_LOCK ||
