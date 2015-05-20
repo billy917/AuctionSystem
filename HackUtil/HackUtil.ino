@@ -7,7 +7,7 @@
 #include "Constants.h"
 #include "MenuState.h"
 
-//HackUtil util = HackUtil();
+HackUtil util = HackUtil();
 
 void setup()
 {

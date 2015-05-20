@@ -11,7 +11,8 @@
 #include <EEPROM.h>
 #include <SPI.h>
 #include <GD2.h>
-#include "asset/trapped_logo_full.h"
+//#include "asset/trapped_assets.h"
+#include "asset/trapped_logo.h"
 #include <XBee.h>
 
 HackUtil::HackUtil(){
@@ -40,17 +41,40 @@ HackUtil::HackUtil(){
 }
 
 void HackUtil::init(){
-  GD.begin();
 
-  
-  
- // display splash screen
-  _menuState = SCREEN_SPLASH;
-  //_displaySplashScreen();
+    GD.begin();
 
-  // connect to game 
-  
-  ms = 0;
+    /* load bitmaps */
+    LOAD_ASSETS();
+
+    /* Back button */
+    /*
+    GD.BitmapHandle(1);
+    GD.cmd_loadimage (-1,0);
+    GD.load ("back_button_25.jpg");
+    */
+
+    /* Security Floor Plan */
+    /*
+    GD.BitmapHandle(2);
+    GD.safeload ("security_floor_plan.jpg");
+    GD.cmd_loadimage (-1,0);
+    */
+
+    /* NFC Floor Plan */
+    /*
+    GD.BitmapHandle(3);
+    GD.cmd_loadimage (-1,0);
+    GD.load ("nfc_floor_plan.jpg");
+    */
+
+    // display splash screen
+    _menuState = SCREEN_SPLASH;
+    //_displaySplashScreen();
+
+    // connect to game 
+      
+    ms = 0;
 
 }
 
@@ -75,11 +99,16 @@ void HackUtil::_clearScreen(){
 }
 
 void HackUtil::_displaySplashScreen(){
-  LOAD_ASSETS();
   GD.ClearColorRGB(0x404042);
   GD.Clear();
+
+  /* Splash logo */
+  //GD.BitmapHandle(0);
+  //GD.cmd_loadimage (0,0);
+  //GD.safeload("trapped_logo.jpg");
+
   GD.Begin(BITMAPS);
-  GD.Vertex2ii(0, 0, TRAPPED_LOGO_FULL_HANDLE);
+  GD.Vertex2ii(0,0,TRAPPED_LOGO_HANDLE);
   GD.swap();
 
   ms = (long)millis();
@@ -542,24 +571,24 @@ void HackUtil::_displayFloorplan(uint8_t floorplan){
 	/* Security Floor Plan */
 	if (floorplan == TAG_FLOORPLAN_1){
 
-		GD.BitmapHandle(1);
-  		GD.cmd_loadimage (1, 0);
-  		GD.load ("security_floor_plan.jpg");
+		//GD.BitmapHandle(1);
+  		//GD.cmd_loadimage (1, 0);
+  		//GD.load ("security_floor_plan.jpg");
 	
 		GD.Begin(BITMAPS);
-		GD.Vertex2ii(0,0,1);
+		GD.Vertex2ii(0,0,2);
 
 	}
 
 	/* NFC Floor Plan */
 	if (floorplan == TAG_FLOORPLAN_2){
 
-		GD.BitmapHandle(2);
-  		GD.cmd_loadimage(2, 0);
-  		GD.load ("nfc_floor_plan.jpg");
+		//GD.BitmapHandle(2);
+  		//GD.cmd_loadimage(2, 0);
+  		//GD.load ("nfc_floor_plan.jpg");
 
 		GD.Begin(BITMAPS);
-		GD.Vertex2ii(0,0,2);
+		GD.Vertex2ii(0,0,3);
 
 	}
 	
