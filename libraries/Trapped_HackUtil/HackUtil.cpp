@@ -42,7 +42,9 @@ HackUtil::HackUtil(){
 void HackUtil::init(){
   GD.begin();
 
-  // display splash screen
+  
+  
+ // display splash screen
   _menuState = SCREEN_SPLASH;
   //_displaySplashScreen();
 
@@ -220,7 +222,7 @@ void HackUtil::_displayUserScreen(){
             GD.ColorRGB (0x994ff9);
             GD.Tag (SCREEN_USER_HACK_SYSTEM);
             GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
-            GD.Vertex2ii (479 - (QUAD_BORDER / 2), 135 - (QUAD_BORDER / 2));
+            GD.Vertex2ii (479 - QUAD_BORDER, 135 - (QUAD_BORDER / 2));
 
             GD.Tag (SCREEN_USER_HACK_SYSTEM);
             _drawText (239, 67, 24, 0xffffff, "Hack Security System");
@@ -229,7 +231,7 @@ void HackUtil::_displayUserScreen(){
             GD.ColorRGB (0x0000ff);
             GD.Tag (SCREEN_USER_FILE);
             GD.Vertex2ii (0 + QUAD_BORDER, 136 + QUAD_BORDER);
-            GD.Vertex2ii (479 - (QUAD_BORDER / 2), 271 - (QUAD_BORDER / 2));
+            GD.Vertex2ii (479 - QUAD_BORDER, 271 - QUAD_BORDER);
 
             GD.Tag (SCREEN_USER_FILE);
             _drawText (239, 203, 24, 0xffffff, "View Downloaded Files");
@@ -527,52 +529,68 @@ void HackUtil::_displayFile(){
 
 	}
 
+	_displayPrevious();
+
 	GD.swap();
 
 }
 
 void HackUtil::_displayFloorplan(uint8_t floorplan){
+	GD.ClearColorRGB (0x404042);
+	GD.Clear();
 
 	/* Security Floor Plan */
 	if (floorplan == TAG_FLOORPLAN_1){
-			
-		GD.BitmapHandle(0);
-		GD.cmd_loadimage (-1, 0);
-		GD.load ("security_floor_plan.jpg");
-		GD.Clear();
 
+		GD.BitmapHandle(1);
+  		GD.cmd_loadimage (1, 0);
+  		GD.load ("security_floor_plan.jpg");
+	
 		GD.Begin(BITMAPS);
-		GD.Vertex2ii(0,0,0);
+		GD.Vertex2ii(0,0,1);
 
 	}
 
 	/* NFC Floor Plan */
 	if (floorplan == TAG_FLOORPLAN_2){
 
-		GD.BitmapHandle(1);
-		GD.cmd_loadimage(-1, 0);
-		GD.load ("nfc_floor_plan.jpg");
-		GD.Clear();
+		GD.BitmapHandle(2);
+  		GD.cmd_loadimage(2, 0);
+  		GD.load ("nfc_floor_plan.jpg");
 
 		GD.Begin(BITMAPS);
-		GD.Vertex2ii(0,0,1);
+		GD.Vertex2ii(0,0,2);
 
 	}
 	
+	_displayPrevious();
+
 	GD.swap();
 
 }
 
 void HackUtil::_displayPrevious(){
 
-	GD.cmd_loadimage(-1,0);
+	/*
+	GD.BitmapHandle(0);
+	GD.cmd_loadimage(0,0);
 	GD.load ("back_button_50.jpg");
 
 	GD.Begin (BITMAPS);
-	GD.Vertex2ii(0,0);
+	GD.Tag (SCREEN_PREVIOUS);
+	GD.Vertex2ii(0,0,0);
+	*/
 
-    GD.swap();
+	GD.Begin (RECTS);
+	GD.ColorRGB (0x2d3035);
+	GD.ColorA (45);
+	GD.Tag (SCREEN_PREVIOUS);
+	GD.Vertex2ii (0 + QUAD_BORDER, 0 + QUAD_BORDER);
+	GD.Vertex2ii (50 + QUAD_BORDER, 50 + QUAD_BORDER);
 
+	GD.ColorA (75);
+	GD.Tag (SCREEN_PREVIOUS);
+	_drawText (25 + (QUAD_BORDER / 2), 25 + (QUAD_BORDER / 2), 24, 0xffffff, "<-");	
 }
 
 void HackUtil::_handlePreviousScreen(){
