@@ -133,6 +133,11 @@ void loop(){
         }
     }
     
+    /* Every 30 seconds, change song */
+    if ((millis()) % 30000 == 0){
+        nextPassword();
+    }
+    
 }
 
 void readKeyState(){
